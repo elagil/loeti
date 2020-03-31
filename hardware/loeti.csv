@@ -1,30 +1,26 @@
-Comment,Designator,Footprint,LCSC
-"1μF 25V","C1,C4,C11,C9","otter:C_0603",""
-"1μF 25V","C15,C13,C14,C12,C20,C19","otter:C_0402",""
-"18p","C16","otter:C_0402",""
-"DNP","C17","otter:C_0402",""
-"0.1μF","C3,C5,C7,C8,C10,C2,C18,C6,C21,C22","otter:C_0402",""
-"B140-E3","D3","Diode_SMD:D_SOD-123F",""
-"USB_C_Receptacle_USB2.0","J1","otter:USB-C 16Pin",""
-"OLED_64x32","J2","otter:0.69OLED",""
-"C245","J3","Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical",""
-"JUNC_N","NT1","NetTie:NetTie-2_SMD_Pad0.5mm",""
-"TC2030-CTX","P1","otter:TC2030",""
-"SS8050","Q1","Package_TO_SOT_SMD:SOT-23",""
-"DMP3017SFG","Q2","otter:Diodes_PowerDI3333-8",""
-"560k","R1,R11","otter:R_0402",""
-"750k","R15","otter:R_0402",""
-"20","R19","otter:R_0402",""
-"100k","R2,R17","otter:R_0402",""
-"33","R20,R21","otter:R_0402",""
-"10m","R22","otter:R_0805",""
-"2k37","R5,R3,R4,R6,R12,R9,R10,R13,R16,R14,R18,R7,R8,R23,R24","otter:R_0402",""
-"key1","SW1","Button_Switch_SMD:SW_SPST_EVQP7C",""
-"key2","SW2","Button_Switch_SMD:SW_SPST_EVQP7C",""
-"USBLC6-4SC6","U1","Package_TO_SOT_SMD:SOT-23-6",""
-"AP2204R-3.3","U2","Package_TO_SOT_SMD:SOT-89-3",""
-"STUSB4500QTR","U3","otter:QFN-24-1EP_4x4mm_P0.5mm_EP2.7x2.7mm",""
-"STM32F072C8Tx","U4","otter:LQFP-48_7x7mm_P0.5mm",""
-"OPA340NA","U5","Package_TO_SOT_SMD:SOT-23-5",""
-"MCP9700AT-ETT","U6","Package_TO_SOT_SMD:SOT-23",""
-"SI8540","U7","Package_TO_SOT_SMD:SOT-23-5",""
+"ID";"Bezeichner";"Gehäuse";"Stückzahl";"Bezeichnung";"Anbieter und Referenz";
+1;"C16";"C_0805_2012Metric_Pad1.15x1.40mm_HandSolder";1;"4.7μF 25V";;;
+2;"TP6";"TestPoint_THTPad_2.0x2.0mm_Drill1.0mm";1;"PA5";;;
+3;"TP5";"TestPoint_THTPad_2.0x2.0mm_Drill1.0mm";1;"PA4";;;
+4;"TP4";"TestPoint_THTPad_2.0x2.0mm_Drill1.0mm";1;"PA3";;;
+5;"J1";"PinHeader_2x07_P1.27mm_Vertical";1;"STDC14";;;
+6;"SW0";"SW_SPST_PTS810";1;"key2";;;
+7;"TP3";"TestPoint_THTPad_4.0x4.0mm_Drill2.0mm";1;"3V3";;;
+8;"TP2";"TestPoint_THTPad_4.0x4.0mm_Drill2.0mm";1;"GND";;;
+9;"TP1";"TestPoint_THTPad_4.0x4.0mm_Drill2.0mm";1;"WIPE";;;
+10;"C10,C15,C4,C7,C6,C5";"C_0603_1608Metric_Pad1.05x0.95mm_HandSolder";6;"0.1μF";;;
+11;"J2";"CUI_SJ-43614-SMT";1;"AudioJack4";;;
+12;"J0";"CX90M-16P";1;"USB_C_Receptacle_USB2.0";;;
+13;"C13,C1,C11,C9,C8,C3,C0,C2";"C_0603_1608Metric_Pad1.05x0.95mm_HandSolder";8;"1μF 25V";;;
+14;"C12,C14";"C_0603_1608Metric_Pad1.05x0.95mm_HandSolder";2;"0.01μF";;;
+15;"R12,R11";"C_0603_1608Metric_Pad1.05x0.95mm_HandSolder";2;"470";;;
+16;"R10,R9";"C_0603_1608Metric_Pad1.05x0.95mm_HandSolder";2;"1M";;;
+17;"U6";"DFN-10-1EP_3x3mm_P0.5mm_EP1.75x2.7mm";1;"ADS1118IDGS";;;
+18;"R7,R6,R5,R8,R4";"C_0603_1608Metric_Pad1.05x0.95mm_HandSolder";5;"10k";;;
+19;"U2";"SOT-23-6";1;"USBLC6-4SC6";;;
+20;"U5";"SO-8_3.9x4.9mm_P1.27mm";1;"VN7040AS";;;
+21;"U4";"EA_DOGS104X-A";1;"EA_DOGS104B-A";;;
+22;"U1";"QFN-24-1EP_4x4mm_P0.5mm_EP2.7x2.7mm";1;"STUSB4500QTR";;;
+23;"U3";"LQFP-32_7x7mm_P0.8mm";1;"STM32F042K6Tx";;;
+24;"U0";"SOT-89-3";1;"AP2204R-3.3";;;
+25;"R3,R2,R1,R0";"C_0603_1608Metric_Pad1.05x0.95mm_HandSolder";4;"1k";;;

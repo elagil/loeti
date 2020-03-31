@@ -89,10 +89,10 @@ PROJECT = ch
 MCU  = cortex-m0
 
 # Imported source files and paths.
-CHIBIOS  := ./../chibios
-CONFDIR  := ./cfg
-BUILDDIR := ./build
-DEPDIR   := ./.dep
+CHIBIOS   := ./../chibios
+CONFDIR   := ./cfg
+BUILDDIR  := ./build
+DEPDIR    := ./.dep
 
 # Licensing files.
 include $(CHIBIOS)/os/license/license.mk
