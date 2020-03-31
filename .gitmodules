@@ -1,3 +1,4 @@
-[submodule "ChibiOS"]
-	path = ChibiOS
+[submodule "chibios"]
+	path = chibios
 	url = https://github.com/ChibiOS/ChibiOS.git
+	ignore = dirty
