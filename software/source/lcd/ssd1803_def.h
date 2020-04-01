@@ -150,6 +150,12 @@ typedef struct
 
 typedef struct
 {
+    bool rom1;
+    bool rom2;
+} ssd1803_rom_selection_set_reg_t;
+
+typedef struct
+{
     ssd1803_power_down_mode_set_reg_t *ssd1803_power_down_mode_set_reg;
     ssd1803_entry_mode_set_reg_0_t *ssd1803_entry_mode_set_reg_0;
     ssd1803_entry_mode_set_reg_1_t *ssd1803_entry_mode_set_reg_1;
@@ -167,6 +173,7 @@ typedef struct
     ssd1803_follower_control_reg_t *ssd1803_follower_control_reg;
     ssd1803_contrast_set_reg_t *ssd1803_contrast_set_reg;
     ssd1803_set_ddram_address_reg_t *ssd1803_set_ddram_address_reg;
+    ssd1803_rom_selection_set_reg_t *ssd1803_rom_selection_set_reg;
 } ssd1803_reg_t;
 
 #endif
