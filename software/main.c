@@ -23,7 +23,8 @@
 /*
  * Application entry point.
  */
-int main(void) {
+int main(void)
+{
 
   /*
    * System initializations.
@@ -40,7 +41,8 @@ int main(void) {
    */
   chThdCreateStatic(waLcdThread, sizeof(waLcdThread), NORMALPRIO, lcdThread, NULL);
 
-  while (true) {
+  while (true)
+  {
     chThdSleepMilliseconds(500);
   }
 }

@@ -2,194 +2,199 @@
 #include "ssd1803_reg.h"
 #include "ssd1803_def.h"
 
-void ssd1803_decode_instruction(uint16_t code, ssd1803_instruction_t * instruction)
+void ssd1803_decode_instruction(uint16_t code, ssd1803_instruction_t *instruction)
 {
     // Set up special register markers
-    if(code & ssd1803_SET_RS) instruction->rs = true;
-    else instruction->rs = false;
+    if (code & ssd1803_SET_RS)
+        instruction->rs = true;
+    else
+        instruction->rs = false;
 
-    if(code & ssd1803_SET_RE) instruction->re = true;
-    else instruction->re = false;
+    if (code & ssd1803_SET_RE)
+        instruction->re = true;
+    else
+        instruction->re = false;
 
-    if(code & ssd1803_SET_IS) instruction->is = true;
-    else instruction->is = false;
+    if (code & ssd1803_SET_IS)
+        instruction->is = true;
+    else
+        instruction->is = false;
 
     // Only store actual instruction payload in the corresponding field
     instruction->payload = code & 0xff;
-
 }
 
-void ssd1803_clear_display(ssd1803_instruction_t * instruction)
+void ssd1803_clear_display(ssd1803_instruction_t *instruction)
 {
     ssd1803_decode_instruction(ssd1803_CLEAR_DISPLAY, instruction);
 }
 
-void ssd1803_return_home(ssd1803_instruction_t * instruction)
+void ssd1803_return_home(ssd1803_instruction_t *instruction)
 {
     ssd1803_decode_instruction(ssd1803_RETURN_HOME, instruction);
 }
 
-void ssd1803_power_down_mode_set(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_power_down_mode_set(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_POWER_DOWN_MODE | 
-        ssd1803_reg->ssd1803_power_down_mode_set_reg->pd << ssd1803_POWER_DOWN;
+    uint16_t code = ssd1803_POWER_DOWN_MODE |
+                    ssd1803_reg->ssd1803_power_down_mode_set_reg->pd << ssd1803_POWER_DOWN;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_entry_mode_set_0(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_entry_mode_set_0(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_ENTRY_MODE_SET_0 | 
-        ssd1803_reg->ssd1803_power_down_mode_set_reg->pd << ssd1803_POWER_DOWN;
+    uint16_t code = ssd1803_ENTRY_MODE_SET_0 |
+                    ssd1803_reg->ssd1803_power_down_mode_set_reg->pd << ssd1803_POWER_DOWN;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_entry_mode_set_1(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_entry_mode_set_1(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_ENTRY_MODE_SET_1 | 
-        ssd1803_reg->ssd1803_entry_mode_set_reg_1->bdc << ssd1803_ENTRY_MODE_SET_1_BDC |
-        ssd1803_reg->ssd1803_entry_mode_set_reg_1->bds << ssd1803_ENTRY_MODE_SET_1_BDS;
+    uint16_t code = ssd1803_ENTRY_MODE_SET_1 |
+                    ssd1803_reg->ssd1803_entry_mode_set_reg_1->bdc << ssd1803_ENTRY_MODE_SET_1_BDC |
+                    ssd1803_reg->ssd1803_entry_mode_set_reg_1->bds << ssd1803_ENTRY_MODE_SET_1_BDS;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_display_on_off_control(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_display_on_off_control(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_DISPLAY_ON_OFF_CONTROL | 
-        ssd1803_reg->ssd1803_display_on_off_control_reg->b << ssd1803_DISPLAY_ON_OFF_CONTROL_B |
-        ssd1803_reg->ssd1803_display_on_off_control_reg->c << ssd1803_DISPLAY_ON_OFF_CONTROL_C |
-        ssd1803_reg->ssd1803_display_on_off_control_reg->d << ssd1803_DISPLAY_ON_OFF_CONTROL_D;
+    uint16_t code = ssd1803_DISPLAY_ON_OFF_CONTROL |
+                    ssd1803_reg->ssd1803_display_on_off_control_reg->b << ssd1803_DISPLAY_ON_OFF_CONTROL_B |
+                    ssd1803_reg->ssd1803_display_on_off_control_reg->c << ssd1803_DISPLAY_ON_OFF_CONTROL_C |
+                    ssd1803_reg->ssd1803_display_on_off_control_reg->d << ssd1803_DISPLAY_ON_OFF_CONTROL_D;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_extended_function_set(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_extended_function_set(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_EXTENDED_FUNCTION_SET | 
-        ssd1803_reg->ssd1803_extended_function_set_reg->bw << ssd1803_EXTENDED_FUNCTION_SET_BW |
-        ssd1803_reg->ssd1803_extended_function_set_reg->fw << ssd1803_EXTENDED_FUNCTION_SET_FW |
-        ssd1803_reg->ssd1803_extended_function_set_reg->nw << ssd1803_EXTENDED_FUNCTION_SET_NW;
+    uint16_t code = ssd1803_EXTENDED_FUNCTION_SET |
+                    ssd1803_reg->ssd1803_extended_function_set_reg->bw << ssd1803_EXTENDED_FUNCTION_SET_BW |
+                    ssd1803_reg->ssd1803_extended_function_set_reg->fw << ssd1803_EXTENDED_FUNCTION_SET_FW |
+                    ssd1803_reg->ssd1803_extended_function_set_reg->nw << ssd1803_EXTENDED_FUNCTION_SET_NW;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_cursor_or_display_shift(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_cursor_or_display_shift(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_CURSOR_OR_DISPLAY_SHIFT | 
-        ssd1803_reg->ssd1803_cursor_or_display_shift_reg->rl << ssd1803_CURSOR_OR_DISPLAY_SHIFT_RL |
-        ssd1803_reg->ssd1803_cursor_or_display_shift_reg->sc << ssd1803_CURSOR_OR_DISPLAY_SHIFT_SC;
+    uint16_t code = ssd1803_CURSOR_OR_DISPLAY_SHIFT |
+                    ssd1803_reg->ssd1803_cursor_or_display_shift_reg->rl << ssd1803_CURSOR_OR_DISPLAY_SHIFT_RL |
+                    ssd1803_reg->ssd1803_cursor_or_display_shift_reg->sc << ssd1803_CURSOR_OR_DISPLAY_SHIFT_SC;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_double_height(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_double_height(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_DOUBLE_HEIGHT | 
-        ssd1803_reg->ssd1803_double_height_reg->bs1 << ssd1803_DOUBLE_HEIGHT_BS1 |
-        ssd1803_reg->ssd1803_double_height_reg->dh << ssd1803_DOUBLE_HEIGHT_DH |
-        ssd1803_reg->ssd1803_double_height_reg->ud1 << ssd1803_DOUBLE_HEIGHT_UD1 |
-        ssd1803_reg->ssd1803_double_height_reg->ud2 << ssd1803_DOUBLE_HEIGHT_UD2;
+    uint16_t code = ssd1803_DOUBLE_HEIGHT |
+                    ssd1803_reg->ssd1803_double_height_reg->bs1 << ssd1803_DOUBLE_HEIGHT_BS1 |
+                    ssd1803_reg->ssd1803_double_height_reg->dh << ssd1803_DOUBLE_HEIGHT_DH |
+                    ssd1803_reg->ssd1803_double_height_reg->ud1 << ssd1803_DOUBLE_HEIGHT_UD1 |
+                    ssd1803_reg->ssd1803_double_height_reg->ud2 << ssd1803_DOUBLE_HEIGHT_UD2;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_internal_osc(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_internal_osc(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_INTERNAL_OSC | 
-        ssd1803_reg->ssd1803_internal_osc_reg->bs0 << ssd1803_INTERNAL_OSC_BS0 |
-        ssd1803_reg->ssd1803_internal_osc_reg->f0 << ssd1803_INTERNAL_OSC_F0 |
-        ssd1803_reg->ssd1803_internal_osc_reg->f1 << ssd1803_INTERNAL_OSC_F1 |
-        ssd1803_reg->ssd1803_internal_osc_reg->f2 << ssd1803_INTERNAL_OSC_F2;
+    uint16_t code = ssd1803_INTERNAL_OSC |
+                    ssd1803_reg->ssd1803_internal_osc_reg->bs0 << ssd1803_INTERNAL_OSC_BS0 |
+                    ssd1803_reg->ssd1803_internal_osc_reg->f0 << ssd1803_INTERNAL_OSC_F0 |
+                    ssd1803_reg->ssd1803_internal_osc_reg->f1 << ssd1803_INTERNAL_OSC_F1 |
+                    ssd1803_reg->ssd1803_internal_osc_reg->f2 << ssd1803_INTERNAL_OSC_F2;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_shift_scroll_enable(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_shift_scroll_enable(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_SHIFT_SCROLL_ENABLE | 
-        ssd1803_reg->ssd1803_shift_scroll_enable_reg->s1 << ssd1803_SHIFT_SCROLL_ENABLE_S1 |
-        ssd1803_reg->ssd1803_shift_scroll_enable_reg->s2 << ssd1803_SHIFT_SCROLL_ENABLE_S2 |
-        ssd1803_reg->ssd1803_shift_scroll_enable_reg->s3 << ssd1803_SHIFT_SCROLL_ENABLE_S3 |
-        ssd1803_reg->ssd1803_shift_scroll_enable_reg->s4 << ssd1803_SHIFT_SCROLL_ENABLE_S4;
+    uint16_t code = ssd1803_SHIFT_SCROLL_ENABLE |
+                    ssd1803_reg->ssd1803_shift_scroll_enable_reg->s1 << ssd1803_SHIFT_SCROLL_ENABLE_S1 |
+                    ssd1803_reg->ssd1803_shift_scroll_enable_reg->s2 << ssd1803_SHIFT_SCROLL_ENABLE_S2 |
+                    ssd1803_reg->ssd1803_shift_scroll_enable_reg->s3 << ssd1803_SHIFT_SCROLL_ENABLE_S3 |
+                    ssd1803_reg->ssd1803_shift_scroll_enable_reg->s4 << ssd1803_SHIFT_SCROLL_ENABLE_S4;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_function_set_0(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_function_set_0(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_FUNCTION_SET_0 | 
-        ssd1803_reg->ssd1803_function_set_0_reg->dh << ssd1803_FUNCTION_SET_0_DH |
-        ssd1803_reg->ssd1803_function_set_0_reg->dl << ssd1803_FUNCTION_SET_0_DL |
-        ssd1803_reg->ssd1803_function_set_0_reg->is << ssd1803_FUNCTION_SET_0_IS |
-        ssd1803_reg->ssd1803_function_set_0_reg->n << ssd1803_FUNCTION_SET_0_N |
-        ssd1803_reg->ssd1803_function_set_0_reg->re << ssd1803_FUNCTION_SET_0_RE;
+    uint16_t code = ssd1803_FUNCTION_SET_0 |
+                    ssd1803_reg->ssd1803_function_set_0_reg->dh << ssd1803_FUNCTION_SET_0_DH |
+                    ssd1803_reg->ssd1803_function_set_0_reg->dl << ssd1803_FUNCTION_SET_0_DL |
+                    ssd1803_reg->ssd1803_function_set_0_reg->is << ssd1803_FUNCTION_SET_0_IS |
+                    ssd1803_reg->ssd1803_function_set_0_reg->n << ssd1803_FUNCTION_SET_0_N |
+                    ssd1803_reg->ssd1803_function_set_0_reg->re << ssd1803_FUNCTION_SET_0_RE;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_function_set_1(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_function_set_1(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_FUNCTION_SET_1 | 
-        ssd1803_reg->ssd1803_function_set_1_reg->be << ssd1803_FUNCTION_SET_1_BE |
-        ssd1803_reg->ssd1803_function_set_1_reg->dl << ssd1803_FUNCTION_SET_1_DL |
-        ssd1803_reg->ssd1803_function_set_1_reg->rev << ssd1803_FUNCTION_SET_1_REV |
-        ssd1803_reg->ssd1803_function_set_1_reg->n << ssd1803_FUNCTION_SET_1_N |
-        ssd1803_reg->ssd1803_function_set_1_reg->re << ssd1803_FUNCTION_SET_1_RE;
+    uint16_t code = ssd1803_FUNCTION_SET_1 |
+                    ssd1803_reg->ssd1803_function_set_1_reg->be << ssd1803_FUNCTION_SET_1_BE |
+                    ssd1803_reg->ssd1803_function_set_1_reg->dl << ssd1803_FUNCTION_SET_1_DL |
+                    ssd1803_reg->ssd1803_function_set_1_reg->rev << ssd1803_FUNCTION_SET_1_REV |
+                    ssd1803_reg->ssd1803_function_set_1_reg->n << ssd1803_FUNCTION_SET_1_N |
+                    ssd1803_reg->ssd1803_function_set_1_reg->re << ssd1803_FUNCTION_SET_1_RE;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_set_cgram_address(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_set_cgram_address(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_SET_CGRAM_ADDRESS | 
-        ssd1803_reg->ssd1803_set_cgram_address_reg->ac;
+    uint16_t code = ssd1803_SET_CGRAM_ADDRESS |
+                    ssd1803_reg->ssd1803_set_cgram_address_reg->ac;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_set_segram_address(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_set_segram_address(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_SET_SEGRAM_ADDRESS | 
-        ssd1803_reg->ssd1803_set_segram_address_reg->ac;
+    uint16_t code = ssd1803_SET_SEGRAM_ADDRESS |
+                    ssd1803_reg->ssd1803_set_segram_address_reg->ac;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_power_set(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_power_set(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_POWER_SET | 
-        ssd1803_reg->ssd1803_power_icon_contrast_set_reg->bon << ssd1803_POWER_SET_BON |
-        ssd1803_reg->ssd1803_power_icon_contrast_set_reg->c4 << ssd1803_POWER_SET_C4 |
-        ssd1803_reg->ssd1803_power_icon_contrast_set_reg->c5 << ssd1803_POWER_SET_C5 |
-        ssd1803_reg->ssd1803_power_icon_contrast_set_reg->ion << ssd1803_POWER_SET_ION;
+    uint16_t code = ssd1803_POWER_SET |
+                    ssd1803_reg->ssd1803_power_icon_contrast_set_reg->bon << ssd1803_POWER_SET_BON |
+                    ssd1803_reg->ssd1803_power_icon_contrast_set_reg->c4 << ssd1803_POWER_SET_C4 |
+                    ssd1803_reg->ssd1803_power_icon_contrast_set_reg->c5 << ssd1803_POWER_SET_C5 |
+                    ssd1803_reg->ssd1803_power_icon_contrast_set_reg->ion << ssd1803_POWER_SET_ION;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_follower_control(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_follower_control(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_FOLLOWER_CONTROL | 
-        ssd1803_reg->ssd1803_follower_control_reg->don << ssd1803_FOLLOWER_CONTROL_DON |
-        ssd1803_reg->ssd1803_follower_control_reg->rab0 << ssd1803_FOLLOWER_CONTROL_RAB0 |
-        ssd1803_reg->ssd1803_follower_control_reg->rab1 << ssd1803_FOLLOWER_CONTROL_RAB1 |
-        ssd1803_reg->ssd1803_follower_control_reg->rab2 << ssd1803_FOLLOWER_CONTROL_RAB2;
+    uint16_t code = ssd1803_FOLLOWER_CONTROL |
+                    ssd1803_reg->ssd1803_follower_control_reg->don << ssd1803_FOLLOWER_CONTROL_DON |
+                    ssd1803_reg->ssd1803_follower_control_reg->rab0 << ssd1803_FOLLOWER_CONTROL_RAB0 |
+                    ssd1803_reg->ssd1803_follower_control_reg->rab1 << ssd1803_FOLLOWER_CONTROL_RAB1 |
+                    ssd1803_reg->ssd1803_follower_control_reg->rab2 << ssd1803_FOLLOWER_CONTROL_RAB2;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_contrast_set(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_contrast_set(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_CONTRAST_SET | 
-        ssd1803_reg->ssd1803_contrast_set_reg->c;
+    uint16_t code = ssd1803_CONTRAST_SET |
+                    ssd1803_reg->ssd1803_contrast_set_reg->c;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
-void ssd1803_set_ddram_address(ssd1803_instruction_t * instruction, ssd1803_reg_t * ssd1803_reg)
+void ssd1803_set_ddram_address(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_SET_DDRAM_ADDRESS | 
-        ssd1803_reg->ssd1803_set_ddram_address_reg->ac;
+    uint16_t code = ssd1803_SET_DDRAM_ADDRESS |
+                    ssd1803_reg->ssd1803_set_ddram_address_reg->ac;
 
     ssd1803_decode_instruction(code, instruction);
 }

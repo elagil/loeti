@@ -2,7 +2,7 @@
 #define ssd1803_REG_H_
 
 // Register address calculation
-#define ssd1803_REG(pos) (1<<pos)
+#define ssd1803_REG(pos) (1 << pos)
 
 // Set RS bit
 #define ssd1803_SET_RS (ssd1803_REG(9))
