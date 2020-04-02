@@ -22,7 +22,6 @@ void ssd1803_calc_contrast(ssd1803_reg_t *ssd1803_reg, uint8_t contrast)
 
 void ssd1803_calc_initialize(ssd1803_reg_t *ssd1803_reg)
 {
-
     ssd1803_reg->ssd1803_function_set_0_reg->dl =
         ssd1803_reg->ssd1803_function_set_1_reg->dl = true; // 8 bit wide transfers
 

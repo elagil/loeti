@@ -24,8 +24,11 @@ typedef struct
 {
     uint8_t payload; ///< payload byte
     bool rs;         ///< RS enable bit
-    bool re;         ///< Extended register enable bit
-    bool is;         ///< Special register enable bit
+    bool set_re;
+    bool set_is;
+    bool rw; ///< read or write bit (write = false, read = true)
+    bool re; ///< Extended register enable bit
+    bool is; ///< Special register enable bit
 } ssd1803_instruction_t;
 
 typedef struct
