@@ -37,7 +37,7 @@ int main(void)
   chSysInit();
 
   /*
-   * Creates the blinker thread.
+   * Creates the LCD thread.
    */
   chThdCreateStatic(waLcdThread, sizeof(waLcdThread), NORMALPRIO, lcdThread, NULL);
 
