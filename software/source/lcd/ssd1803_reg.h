@@ -1,6 +1,8 @@
 #ifndef SSD1803_REG_H_
 #define SSD1803_REG_H_
 
+#define SSD1803_SPI_TX_LEN 3
+
 // Register address calculation
 #define SSD1803_REG(pos) (1 << pos)
 
@@ -20,6 +22,11 @@
 #define SSD1803_READ_OPERATION 1
 
 #define SSD1803_SPI_START_BYTE 0xf8
+
+// positions in LSB order!
+#define SSD1803_SPI_START_BYTE_LSB_ORDER 0x1f
+#define SSD1803_SPI_START_BYTE_RS_POS 6
+#define SSD1803_SPI_START_BYTE_RW_POS 5
 
 #define SSD1803_CLEAR_DISPLAY SSD1803_REG(0)
 

@@ -124,17 +124,17 @@ void ssd1803_double_height(ssd1803_instruction_t *instruction, ssd1803_reg_t *ss
 void ssd1803_internal_osc(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
     uint16_t code = SSD1803_INTERNAL_OSC |
-                    ssd1803_reg->ssd1803_internal_osc_reg->bs0 << ssd1803_INTERNAL_OSC_BS0 |
-                    ssd1803_reg->ssd1803_internal_osc_reg->f0 << ssd1803_INTERNAL_OSC_F0 |
-                    ssd1803_reg->ssd1803_internal_osc_reg->f1 << ssd1803_INTERNAL_OSC_F1 |
-                    ssd1803_reg->ssd1803_internal_osc_reg->f2 << ssd1803_INTERNAL_OSC_F2;
+                    ssd1803_reg->ssd1803_internal_osc_reg->bs0 << SSD1803_INTERNAL_OSC_BS0 |
+                    ssd1803_reg->ssd1803_internal_osc_reg->f0 << SSD1803_INTERNAL_OSC_F0 |
+                    ssd1803_reg->ssd1803_internal_osc_reg->f1 << SSD1803_INTERNAL_OSC_F1 |
+                    ssd1803_reg->ssd1803_internal_osc_reg->f2 << SSD1803_INTERNAL_OSC_F2;
 
     ssd1803_decode_instruction(code, instruction);
 }
 
 void ssd1803_shift_scroll_enable(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg)
 {
-    uint16_t code = ssd1803_SHIFT_SCROLL_ENABLE |
+    uint16_t code = SSD1803_SHIFT_SCROLL_ENABLE |
                     ssd1803_reg->ssd1803_shift_scroll_enable_reg->s1 << SSD1803_SHIFT_SCROLL_ENABLE_S1 |
                     ssd1803_reg->ssd1803_shift_scroll_enable_reg->s2 << SSD1803_SHIFT_SCROLL_ENABLE_S2 |
                     ssd1803_reg->ssd1803_shift_scroll_enable_reg->s3 << SSD1803_SHIFT_SCROLL_ENABLE_S3 |

@@ -1,5 +1,5 @@
-#ifndef SSD1803_REG_H_
-#define SSD1803_REG_H_
+#ifndef SSD1803_SET_H_
+#define SSD1803_SET_H_
 
 #include "ssd1803_def.h"
 
