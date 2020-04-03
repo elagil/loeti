@@ -3,6 +3,10 @@
 
 #define SSD1803_SPI_TX_LEN 3
 
+#define SSD1803_DDRAM_ADR_BOT 0x00
+#define SSD1803_DDRAM_ADR_TOP 0x0A
+#define SSD1803_DDRAM_ADR_OFFSET 0x20
+
 // Register address calculation
 #define SSD1803_REG(pos) (1 << pos)
 
