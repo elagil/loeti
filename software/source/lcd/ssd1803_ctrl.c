@@ -1,5 +1,6 @@
 #include "ch.h"
 #include "hal.h"
+#include "spi.h"
 
 #include "ssd1803_ctrl.h"
 #include "ssd1803_set.h"
@@ -15,6 +16,8 @@
 // Choose view from TOP or BOTTOM
 #define VIEW BOTTOM
 
+#define writeLcdRegister(buffer) exchangeSpi(&SPID1, &lcd_spicfg, SSD1803_SPI_TX_LEN, buffer, NULL)
+
 /*
  * SPI configuration (1/32 f_pclk, CPHA=1, CPOL=1, 8 bit, LSB first).
  */
@@ -29,21 +32,6 @@ static const SPIConfig lcd_spicfg = {
 
 ssd1803_reg_t ssd1803_reg;
 ssd1803_state_t ssd1803_state;
-
-void writeLcdRegister(uint8_t *buffer)
-{
-    /* Bush acquisition and SPI reprogramming.*/
-    spiAcquireBus(&SPID1);
-    spiStart(&SPID1, &lcd_spicfg);
-
-    /* Slave selection and data transmission.*/
-    spiSelect(&SPID1);
-    spiStartSend(&SPID1, SSD1803_SPI_TX_LEN, buffer);
-    spiUnselect(&SPID1);
-
-    /* Releasing the bus.*/
-    spiReleaseBus(&SPID1);
-}
 
 void writeInstruction(ssd1803_instruction_t *instruction)
 {

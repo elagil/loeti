@@ -23,4 +23,14 @@ THD_FUNCTION(lcdThread, arg)
 
     uint8_t juhu[] = "hi sophi.";
     ssd1803_writeString(juhu, 9);
+
+    while (true)
+    {
+        thread_t *tp = chMsgWait();
+
+        msg_t msg = chMsgGet(tp);
+        (void)msg;
+
+        chMsgRelease(tp, MSG_OK);
+    }
 }

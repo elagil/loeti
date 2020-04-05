@@ -39,7 +39,7 @@ int main(void)
   /*
    * Creates the LCD thread.
    */
-  chThdCreateStatic(waLcdThread, sizeof(waLcdThread), NORMALPRIO, lcdThread, NULL);
+  thread_t *lcdThread_p = chThdCreateStatic(waLcdThread, sizeof(waLcdThread), NORMALPRIO, lcdThread, NULL);
 
   while (true)
   {
