@@ -142,9 +142,9 @@
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="Floating"
-        Mode="Alternate"
-        Alternate="1" />
+        Resistor="PullUp"
+        Mode="Output"
+        Alternate="0" />
     </GPIOA>
     <GPIOB>
       <pin0

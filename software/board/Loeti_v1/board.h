@@ -244,7 +244,7 @@
  * PA12 - USB_DP                    (input pullup).
  * PA13 - SWDIO                     (alternate 0).
  * PA14 - SWCLK                     (alternate 0).
- * PA15 - SPI1_NSS1                 (alternate 1).
+ * PA15 - SPI1_NSS1                 (output pushpull maximum).
  */
 #define VAL_GPIOA_MODER             (PIN_MODE_INPUT(GPIOA_PIN0) |           \
                                      PIN_MODE_INPUT(GPIOA_CV_SENSE) |       \
@@ -261,7 +261,7 @@
                                      PIN_MODE_INPUT(GPIOA_USB_DP) |         \
                                      PIN_MODE_ALTERNATE(GPIOA_SWDIO) |      \
                                      PIN_MODE_ALTERNATE(GPIOA_SWCLK) |      \
-                                     PIN_MODE_ALTERNATE(GPIOA_SPI1_NSS1))
+                                     PIN_MODE_OUTPUT(GPIOA_SPI1_NSS1))
 #define VAL_GPIOA_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOA_PIN0) |       \
                                      PIN_OTYPE_PUSHPULL(GPIOA_CV_SENSE) |   \
                                      PIN_OTYPE_PUSHPULL(GPIOA_POT) |        \
@@ -309,7 +309,7 @@
                                      PIN_PUPDR_PULLUP(GPIOA_USB_DP) |       \
                                      PIN_PUPDR_PULLUP(GPIOA_SWDIO) |        \
                                      PIN_PUPDR_PULLDOWN(GPIOA_SWCLK) |      \
-                                     PIN_PUPDR_FLOATING(GPIOA_SPI1_NSS1))
+                                     PIN_PUPDR_PULLUP(GPIOA_SPI1_NSS1))
 #define VAL_GPIOA_ODR               (PIN_ODR_HIGH(GPIOA_PIN0) |             \
                                      PIN_ODR_HIGH(GPIOA_CV_SENSE) |         \
                                      PIN_ODR_HIGH(GPIOA_POT) |              \
@@ -341,7 +341,7 @@
                                      PIN_AFIO_AF(GPIOA_USB_DP, 0U) |        \
                                      PIN_AFIO_AF(GPIOA_SWDIO, 0U) |         \
                                      PIN_AFIO_AF(GPIOA_SWCLK, 0U) |         \
-                                     PIN_AFIO_AF(GPIOA_SPI1_NSS1, 1U))
+                                     PIN_AFIO_AF(GPIOA_SPI1_NSS1, 0U))
 
 /*
  * GPIOB setup:

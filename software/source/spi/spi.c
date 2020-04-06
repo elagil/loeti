@@ -16,10 +16,10 @@ void exchangeSpi(SPIDriver *spi, const SPIConfig *conf, uint32_t length, uint8_t
         spiExchange(spi, length, txbuf, rxbuf);
 
     else if (txbuf != NULL && rxbuf == NULL) // only send
-        spiStartSend(spi, length, txbuf);
+        spiSend(spi, length, txbuf);
 
     else if (rxbuf != NULL && txbuf == NULL) // only receive
-        spiStartReceive(spi, length, txbuf);
+        spiReceive(spi, length, txbuf);
 
     spiUnselect(spi);
 
