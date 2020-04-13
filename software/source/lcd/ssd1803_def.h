@@ -22,8 +22,10 @@ typedef struct
  */
 typedef struct
 {
-    uint8_t payload; ///< payload byte
-    bool rs;         ///< RS enable bit
+    uint8_t *payload; ///< payload
+    uint32_t payload_length;
+
+    bool rs; ///< RS enable bit
     bool set_re;
     bool set_is;
     bool rw; ///< read or write bit (write = false, read = true)

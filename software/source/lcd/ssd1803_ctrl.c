@@ -1,6 +1,6 @@
 #include "ch.h"
 #include "hal.h"
-#include "spi.h"
+#include "spiHelper.h"
 
 #include "ssd1803_ctrl.h"
 #include "ssd1803_set.h"
@@ -16,74 +16,99 @@
 // Choose view from TOP or BOTTOM
 #define VIEW BOTTOM
 
-#define writeLcdRegister(buffer) exchangeSpi(&SPID1, &lcd_spicfg, SSD1803_SPI_TX_LEN, buffer, NULL)
+#define writeLcdRegLong(buf, bytes) spiExchangeHelper(&SPID1, &lcd_spicfg, bytes, buf, NULL)
+#define writeLcdReg(buf) writeLcdRegLong(buf, 3)
 
 /*
- * SPI configuration (1/32 f_pclk, CPHA=1, CPOL=1, 8 bit, LSB first).
+ * SPI configuration (1/64 f_pclk, CPHA=1, CPOL=1, 8 bit, LSB first).
  */
 static const SPIConfig lcd_spicfg = {
-    false,                                                         // circular buffer mode
-    NULL,                                                          // end callback
-    GPIOA,                                                         // chip select port
-    GPIOA_SPI1_NSS2,                                               // chip select line
-    SPI_CR1_CPHA | SPI_CR1_CPOL | SPI_CR1_BR_2 | SPI_CR1_LSBFIRST, // CR1 settings
-    SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0                     // CR2 settings
+    false,                                                                        // circular buffer mode
+    NULL,                                                                         // end callback
+    GPIOA,                                                                        // chip select port
+    GPIOA_SPI1_NSS2,                                                              // chip select line
+    SPI_CR1_CPHA | SPI_CR1_CPOL | SPI_CR1_BR_2 | SPI_CR1_BR_0 | SPI_CR1_LSBFIRST, // CR1 settings
+    SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0                                    // CR2 settings
 };
 
 ssd1803_reg_t ssd1803_reg;
+ssd1803_power_down_mode_set_reg_t ssd1803_power_down_mode_set_reg;
+ssd1803_entry_mode_set_reg_0_t ssd1803_entry_mode_set_reg_0;
+ssd1803_entry_mode_set_reg_1_t ssd1803_entry_mode_set_reg_1;
+ssd1803_display_on_off_control_reg_t ssd1803_display_on_off_control_reg;
+ssd1803_extended_function_set_reg_t ssd1803_extended_function_set_reg;
+ssd1803_cursor_or_display_shift_reg_t ssd1803_cursor_or_display_shift_reg;
+ssd1803_double_height_reg_t ssd1803_double_height_reg;
+ssd1803_internal_osc_reg_t ssd1803_internal_osc_reg;
+ssd1803_shift_scroll_enable_reg_t ssd1803_shift_scroll_enable_reg;
+ssd1803_function_set_0_reg_t ssd1803_function_set_0_reg;
+ssd1803_function_set_1_reg_t ssd1803_function_set_1_reg;
+ssd1803_set_cgram_address_reg_t ssd1803_set_cgram_address_reg;
+ssd1803_set_segram_address_reg_t ssd1803_set_segram_address_reg;
+ssd1803_power_icon_contrast_set_reg_t ssd1803_power_icon_contrast_set_reg;
+ssd1803_follower_control_reg_t ssd1803_follower_control_reg;
+ssd1803_contrast_set_reg_t ssd1803_contrast_set_reg;
+ssd1803_set_ddram_address_reg_t ssd1803_set_ddram_address_reg;
+ssd1803_rom_selection_set_reg_t ssd1803_rom_selection_set_reg;
+
 ssd1803_state_t ssd1803_state;
 
-void writeInstruction(ssd1803_instruction_t *instruction)
+ssd1803_instruction_t instruction;
+ssd1803_instruction_t intermediate_instruction;
+
+uint8_t buf_instruction[64];
+uint8_t buf_intermediate_instruction[4];
+
+void setRe(bool val)
 {
-    ssd1803_instruction_t intermediate_instruction;
-
-    // IS has to be adjusted first ...
-    // Only set is, if it was changed, or the instruction requires it
-    if ((ssd1803_state.is != instruction->is) && instruction->set_is)
+    if (ssd1803_state.re != val)
     {
-        // update state structure
-        ssd1803_state.is = instruction->is;
-
-        ssd1803_reg.ssd1803_function_set_0_reg->is = instruction->is;
-        ssd1803_function_set_0(&intermediate_instruction, &ssd1803_reg);
-        writeInstruction(&intermediate_instruction);
-    }
-
-    // ... afterwards, RE.
-    // Only set re, if it was changed, or the instruction requires it
-    if ((ssd1803_state.re != instruction->re) && instruction->set_re)
-    {
-        bool previous_re = ssd1803_state.re;
-
-        // update state structure
-        ssd1803_state.re = instruction->re;
-
-        // re has to be adjusted in function_set_0 or _1, depending on its previous state
-        if (previous_re == false)
+        if (ssd1803_state.re)
         {
-            ssd1803_reg.ssd1803_function_set_0_reg->re = instruction->re;
-            ssd1803_function_set_0(&intermediate_instruction, &ssd1803_reg);
-            writeInstruction(&intermediate_instruction);
+            ssd1803_reg.ssd1803_function_set_1_reg->re = val;
+            ssd1803_function_set_1(&intermediate_instruction, &ssd1803_reg);
+            writeLcdReg(intermediate_instruction.payload);
         }
         else
         {
-            ssd1803_reg.ssd1803_function_set_1_reg->re = instruction->re;
+            ssd1803_reg.ssd1803_function_set_1_reg->re = val;
             ssd1803_function_set_1(&intermediate_instruction, &ssd1803_reg);
-            writeInstruction(&intermediate_instruction);
+            writeLcdReg(intermediate_instruction.payload);
         }
+
+        ssd1803_state.re = val;
+    }
+}
+
+void setIs(bool val)
+{
+    if (ssd1803_state.is != val)
+    {
+        setRe(false);
+
+        ssd1803_reg.ssd1803_function_set_0_reg->is = val;
+        ssd1803_function_set_0(&intermediate_instruction, &ssd1803_reg);
+        writeLcdReg(intermediate_instruction.payload);
+
+        ssd1803_state.is = val;
+    }
+}
+
+void writeInstruction(ssd1803_instruction_t *instruction)
+{
+    // Only set is, if the instruction requires it
+    if (instruction->set_is)
+    {
+        setIs(instruction->is);
     }
 
-    // build spi buffer from all its components
-    uint8_t buffer[SSD1803_SPI_TX_LEN];
+    // Only set re, if the instruction requires it
+    if (instruction->set_re)
+    {
+        setRe(instruction->re);
+    }
 
-    buffer[0] = SSD1803_SPI_START_BYTE_LSB_ORDER |
-                (instruction->rs << SSD1803_SPI_START_BYTE_RS_POS) |
-                (instruction->rw << SSD1803_SPI_START_BYTE_RW_POS);
-
-    buffer[1] = instruction->payload & 0xf;        // lower 4 bit
-    buffer[2] = (instruction->payload >> 4) & 0xf; // upper 4 bit
-
-    writeLcdRegister(buffer);
+    writeLcdRegLong(instruction->payload, instruction->payload_length);
 }
 
 void ssd1803_contrast(uint8_t contrast)
@@ -97,20 +122,47 @@ void ssd1803_contrast(uint8_t contrast)
 
 void ssd1803_initialize(void)
 {
+    instruction.payload = buf_instruction;
+
+    intermediate_instruction.payload = buf_intermediate_instruction;
+    intermediate_instruction.payload_length = 1;
+
+    ssd1803_reg.ssd1803_power_down_mode_set_reg = &ssd1803_power_down_mode_set_reg;
+    ssd1803_reg.ssd1803_entry_mode_set_reg_0 = &ssd1803_entry_mode_set_reg_0;
+    ssd1803_reg.ssd1803_entry_mode_set_reg_1 = &ssd1803_entry_mode_set_reg_1;
+    ssd1803_reg.ssd1803_display_on_off_control_reg = &ssd1803_display_on_off_control_reg;
+    ssd1803_reg.ssd1803_extended_function_set_reg = &ssd1803_extended_function_set_reg;
+    ssd1803_reg.ssd1803_cursor_or_display_shift_reg = &ssd1803_cursor_or_display_shift_reg;
+    ssd1803_reg.ssd1803_double_height_reg = &ssd1803_double_height_reg;
+    ssd1803_reg.ssd1803_internal_osc_reg = &ssd1803_internal_osc_reg;
+    ssd1803_reg.ssd1803_shift_scroll_enable_reg = &ssd1803_shift_scroll_enable_reg;
+    ssd1803_reg.ssd1803_function_set_0_reg = &ssd1803_function_set_0_reg;
+    ssd1803_reg.ssd1803_function_set_1_reg = &ssd1803_function_set_1_reg;
+    ssd1803_reg.ssd1803_set_cgram_address_reg = &ssd1803_set_cgram_address_reg;
+    ssd1803_reg.ssd1803_set_segram_address_reg = &ssd1803_set_segram_address_reg;
+    ssd1803_reg.ssd1803_power_icon_contrast_set_reg = &ssd1803_power_icon_contrast_set_reg;
+    ssd1803_reg.ssd1803_follower_control_reg = &ssd1803_follower_control_reg;
+    ssd1803_reg.ssd1803_contrast_set_reg = &ssd1803_contrast_set_reg;
+    ssd1803_reg.ssd1803_set_ddram_address_reg = &ssd1803_set_ddram_address_reg;
+    ssd1803_reg.ssd1803_rom_selection_set_reg = &ssd1803_rom_selection_set_reg;
+
     ssd1803_reg.ssd1803_function_set_0_reg->dl =
         ssd1803_reg.ssd1803_function_set_1_reg->dl = true; // 8 bit wide transfers
 
+    ssd1803_reg.ssd1803_function_set_0_reg->dh = true; // Enable double height fonts
+
     // set number of lines in the display
-    if (LINES == 1 || LINES == 3)
+    if (LINES == 1 || LINES == 2)
     {
         ssd1803_reg.ssd1803_function_set_0_reg->n =
-            ssd1803_reg.ssd1803_function_set_1_reg->n = false; // 1 or 3-line display option
+            ssd1803_reg.ssd1803_function_set_1_reg->n = false; // 1 or 2-line display option
     }
     else
     {
         ssd1803_reg.ssd1803_function_set_0_reg->n =
-            ssd1803_reg.ssd1803_function_set_1_reg->n = false; // 2 or 4-line display option
+            ssd1803_reg.ssd1803_function_set_1_reg->n = true; // 3 or 4-line display option
     }
+
     if (LINES == 1 || LINES == 2)
     {
         ssd1803_reg.ssd1803_extended_function_set_reg->nw = false; // 1 or 2 line option
@@ -140,25 +192,27 @@ void ssd1803_initialize(void)
 
     // set oscillator frequency
     ssd1803_reg.ssd1803_internal_osc_reg->f0 = true; // oscillator set to 540 kHz
-    ssd1803_reg.ssd1803_internal_osc_reg->f1 = false;
+    ssd1803_reg.ssd1803_internal_osc_reg->f1 = true;
     ssd1803_reg.ssd1803_internal_osc_reg->f2 = false;
 
     // set lcd driving voltage end enable internal divider:  1+Rb/Ra = 5.3
     ssd1803_reg.ssd1803_follower_control_reg->rab0 = false;
     ssd1803_reg.ssd1803_follower_control_reg->rab1 = true;
+    ssd1803_reg.ssd1803_follower_control_reg->rab2 = true;
     ssd1803_reg.ssd1803_follower_control_reg->don = true;
-    ssd1803_reg.ssd1803_follower_control_reg->rab0 = true;
 
     // enable dcdc converter and regulator circuit
     ssd1803_reg.ssd1803_power_icon_contrast_set_reg->bon = true;
     ssd1803_reg.ssd1803_power_icon_contrast_set_reg->ion = false;
 
-    ssd1803_reg.ssd1803_double_height_reg->ud1 = false; // middle line is double height
-    ssd1803_reg.ssd1803_double_height_reg->ud2 = true;
+    ssd1803_reg.ssd1803_double_height_reg->dh = true;
+    ssd1803_reg.ssd1803_double_height_reg->bs1 = true; // bias of 1/6
+    ssd1803_reg.ssd1803_double_height_reg->ud1 = true; // middle line is double height
+    ssd1803_reg.ssd1803_double_height_reg->ud2 = false;
 
     // select rom A
-    // ssd1803_reg.ssd1803_rom_selection_set_reg->rom1 = 0;
-    // ssd1803_reg.ssd1803_rom_selection_set_reg->rom2 = 0;
+    ssd1803_reg.ssd1803_rom_selection_set_reg->rom1 = false;
+    ssd1803_reg.ssd1803_rom_selection_set_reg->rom2 = false;
 
     ssd1803_reg.ssd1803_display_on_off_control_reg->d = true;  // switch on display
     ssd1803_reg.ssd1803_display_on_off_control_reg->c = false; // switch off cursor
@@ -167,18 +221,28 @@ void ssd1803_initialize(void)
     // set contrast
     ssd1803_contrast(CONTRAST);
 
-    ssd1803_instruction_t instruction;
+    ssd1803_clear_display(&instruction);
+    writeInstruction(&instruction);
+
+    ssd1803_function_set_1(&instruction, &ssd1803_reg);
+    writeInstruction(&instruction);
 
     ssd1803_function_set_0(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
-    ssd1803_function_set_1(&instruction, &ssd1803_reg);
+    ssd1803_rom_selection(&instruction);
+    writeInstruction(&instruction);
+
+    ssd1803_rom_selection_set(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
     ssd1803_extended_function_set(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
     ssd1803_entry_mode_set_1(&instruction, &ssd1803_reg);
+    writeInstruction(&instruction);
+
+    ssd1803_double_height(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
     ssd1803_internal_osc(&instruction, &ssd1803_reg);
@@ -190,16 +254,10 @@ void ssd1803_initialize(void)
     ssd1803_power_set(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
-    ssd1803_double_height(&instruction, &ssd1803_reg);
-    writeInstruction(&instruction);
-
-    ssd1803_double_height(&instruction, &ssd1803_reg);
+    ssd1803_contrast_set(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
     ssd1803_display_on_off_control(&instruction, &ssd1803_reg);
-    writeInstruction(&instruction);
-
-    ssd1803_return_home(&instruction);
     writeInstruction(&instruction);
 }
 
@@ -214,25 +272,24 @@ void ssd1803_move_to_line(uint8_t line)
         ssd1803_reg.ssd1803_set_ddram_address_reg->ac = SSD1803_DDRAM_ADR_TOP + line * SSD1803_DDRAM_ADR_OFFSET;
     }
 
-    ssd1803_instruction_t instruction;
     ssd1803_set_ddram_address(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 }
 
-void ssd1803_writeData(uint8_t c)
+void ssd1803_writeByte(uint8_t c)
 {
-    ssd1803_instruction_t instruction;
     instruction.rs = true;
     instruction.rw = false;
-    instruction.payload = c;
 
+    ssd1803DecodeInstruction(SSD1803_SET_RS | c, &instruction);
     writeInstruction(&instruction);
 }
 
-void ssd1803_writeString(uint8_t *s, uint32_t length)
+void ssd1803_writeByteArray(uint8_t *s, uint32_t length)
 {
-    for (uint32_t pos = 0; pos < length; pos++)
-    {
-        ssd1803_writeData(*(s + pos));
-    }
+    instruction.rs = true;
+    instruction.rw = false;
+
+    ssd1803Decode(s, length, SSD1803_SET_RS, &instruction);
+    writeInstruction(&instruction);
 }

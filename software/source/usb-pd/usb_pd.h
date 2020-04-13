@@ -3,7 +3,7 @@
 
 #include "ch.h"
 
-#define USB_PD_THREAD_STACK_SIZE 256
+#define USB_PD_THREAD_STACK_SIZE 2048
 
 extern THD_WORKING_AREA(waUsbPdThread, USB_PD_THREAD_STACK_SIZE);
 

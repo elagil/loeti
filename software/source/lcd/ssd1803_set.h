@@ -3,7 +3,8 @@
 
 #include "ssd1803_def.h"
 
-void ssd1803_decode_instruction(uint16_t code, ssd1803_instruction_t *instruction);
+void ssd1803Decode(uint8_t *data, uint32_t data_length, uint16_t instruction_code, ssd1803_instruction_t *instruction);
+void ssd1803DecodeInstruction(uint16_t code, ssd1803_instruction_t *instruction);
 void ssd1803_clear_display(ssd1803_instruction_t *instruction);
 void ssd1803_return_home(ssd1803_instruction_t *instruction);
 void ssd1803_power_down_mode_set(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg);
@@ -23,5 +24,7 @@ void ssd1803_power_set(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd180
 void ssd1803_follower_control(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg);
 void ssd1803_contrast_set(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg);
 void ssd1803_set_ddram_address(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg);
+void ssd1803_rom_selection(ssd1803_instruction_t *instruction);
+void ssd1803_rom_selection_set(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg);
 
 #endif

@@ -2,7 +2,7 @@
 
 #include "ch.h"
 #include "hal.h"
-#include "spi.h"
+#include "spiHelper.h"
 
 #define TC_ADC_LEN 2
 
@@ -83,7 +83,7 @@
 // Do not change ADC settings, by setting invalid flag
 #define UNCHANGED_ADC_SETTINGS (NOP_INVALID << NOP_POS)
 
-#define exchangeSpiAdc(txbuf, rxbuf) exchangeSpi(&SPID1, &tc_adc_spicfg, TC_ADC_LEN, txbuf, rxbuf)
+#define exchangeSpiAdc(txbuf, rxbuf) spiExchangeHelper(&SPID1, &tc_adc_spicfg, TC_ADC_LEN, txbuf, rxbuf)
 
 /*
  * SPI configuration, 5 MHz max.

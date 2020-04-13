@@ -15,6 +15,18 @@
                 "interface/stlink.cfg",
                 "target/stm32f0x.cfg"
             ]
+        },
+        {
+            "name": "Attach",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/build/ch.elf",
+            "request": "attach",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32f0x.cfg"
+            ]
         }
     ]
 }

@@ -160,7 +160,7 @@
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="PullUp"
+        Resistor="PullDown"
         Mode="Output"
         Alternate="0" />
       <pin2

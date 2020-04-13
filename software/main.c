@@ -21,7 +21,7 @@
 #include "lcd.h"
 
 /*
- * Application entry point.
+ * Application entry point.=
  */
 int main(void)
 {
@@ -36,10 +36,17 @@ int main(void)
   halInit();
   chSysInit();
 
+  palClearLine(LINE_PD_RST);
+
   /*
    * Creates the LCD thread.
    */
-  thread_t *lcdThread_p = chThdCreateStatic(waLcdThread, sizeof(waLcdThread), NORMALPRIO, lcdThread, NULL);
+  //chThdCreateStatic(waLcdThread, sizeof(waLcdThread), NORMALPRIO, lcdThread, NULL);
+
+  /*
+   * Creates the USB PD control thread.
+   */
+  chThdCreateStatic(waUsbPdThread, sizeof(waUsbPdThread), NORMALPRIO, usbPdThread, NULL);
 
   while (true)
   {

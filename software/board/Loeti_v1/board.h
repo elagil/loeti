@@ -412,7 +412,7 @@
                                      PIN_OSPEED_HIGH(GPIOB_PIN14) |         \
                                      PIN_OSPEED_HIGH(GPIOB_PIN15))
 #define VAL_GPIOB_PUPDR             (PIN_PUPDR_PULLUP(GPIOB_PIN0) |         \
-                                     PIN_PUPDR_PULLUP(GPIOB_PD_RST) |       \
+                                     PIN_PUPDR_PULLDOWN(GPIOB_PD_RST) |     \
                                      PIN_PUPDR_PULLUP(GPIOB_PIN2) |         \
                                      PIN_PUPDR_FLOATING(GPIOB_SPI1_SCK) |   \
                                      PIN_PUPDR_PULLUP(GPIOB_SPI1_MISO) |    \

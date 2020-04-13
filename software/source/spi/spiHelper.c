@@ -1,9 +1,9 @@
 #include "ch.h"
 #include "hal.h"
 
-#include "spi.h"
+#include "spiHelper.h"
 
-void exchangeSpi(SPIDriver *spi, const SPIConfig *conf, uint32_t length, uint8_t *txbuf, uint8_t *rxbuf)
+void spiExchangeHelper(SPIDriver *spi, const SPIConfig *conf, uint32_t length, uint8_t *txbuf, uint8_t *rxbuf)
 {
     /* Bus acquisition and SPI reprogramming.*/
     spiAcquireBus(spi);

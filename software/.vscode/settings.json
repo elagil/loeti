@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "ssd1803_def.h": "c",
-        "ssd1803_ctrl.h": "c"
+        "ssd1803_ctrl.h": "c",
+        "ssd1803_set.h": "c"
     }
 }
