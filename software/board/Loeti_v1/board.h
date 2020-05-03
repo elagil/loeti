@@ -59,8 +59,8 @@
 /*
  * IO pins assignments.
  */
-#define GPIOA_PIN0                  0U
-#define GPIOA_CV_SENSE              1U
+#define GPIOA_SW0                   0U
+#define GPIOA_SW1                   1U
 #define GPIOA_POT                   2U
 #define GPIOA_PA3                   3U
 #define GPIOA_PA4                   4U
@@ -164,7 +164,8 @@
 /*
  * IO lines assignments.
  */
-#define LINE_CV_SENSE               PAL_LINE(GPIOA, 1U)
+#define LINE_SW0                    PAL_LINE(GPIOA, 0U)
+#define LINE_SW1                    PAL_LINE(GPIOA, 1U)
 #define LINE_POT                    PAL_LINE(GPIOA, 2U)
 #define LINE_PA3                    PAL_LINE(GPIOA, 3U)
 #define LINE_PA4                    PAL_LINE(GPIOA, 4U)
@@ -229,8 +230,8 @@
 /*
  * GPIOA setup:
  *
- * PA0  - PIN0                      (input floating).
- * PA1  - CV_SENSE                  (input floating).
+ * PA0  - SW0                       (input pullup).
+ * PA1  - SW1                       (input pullup).
  * PA2  - POT                       (input floating).
  * PA3  - PA3                       (input floating).
  * PA4  - PA4                       (input floating).
@@ -246,8 +247,8 @@
  * PA14 - SWCLK                     (alternate 0).
  * PA15 - SPI1_NSS1                 (output pushpull maximum).
  */
-#define VAL_GPIOA_MODER             (PIN_MODE_INPUT(GPIOA_PIN0) |           \
-                                     PIN_MODE_INPUT(GPIOA_CV_SENSE) |       \
+#define VAL_GPIOA_MODER             (PIN_MODE_INPUT(GPIOA_SW0) |            \
+                                     PIN_MODE_INPUT(GPIOA_SW1) |            \
                                      PIN_MODE_INPUT(GPIOA_POT) |            \
                                      PIN_MODE_INPUT(GPIOA_PA3) |            \
                                      PIN_MODE_INPUT(GPIOA_PA4) |            \
@@ -262,8 +263,8 @@
                                      PIN_MODE_ALTERNATE(GPIOA_SWDIO) |      \
                                      PIN_MODE_ALTERNATE(GPIOA_SWCLK) |      \
                                      PIN_MODE_OUTPUT(GPIOA_SPI1_NSS1))
-#define VAL_GPIOA_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOA_PIN0) |       \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_CV_SENSE) |   \
+#define VAL_GPIOA_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOA_SW0) |        \
+                                     PIN_OTYPE_PUSHPULL(GPIOA_SW1) |        \
                                      PIN_OTYPE_PUSHPULL(GPIOA_POT) |        \
                                      PIN_OTYPE_PUSHPULL(GPIOA_PA3) |        \
                                      PIN_OTYPE_PUSHPULL(GPIOA_PA4) |        \
@@ -278,8 +279,8 @@
                                      PIN_OTYPE_PUSHPULL(GPIOA_SWDIO) |      \
                                      PIN_OTYPE_PUSHPULL(GPIOA_SWCLK) |      \
                                      PIN_OTYPE_PUSHPULL(GPIOA_SPI1_NSS1))
-#define VAL_GPIOA_OSPEEDR           (PIN_OSPEED_HIGH(GPIOA_PIN0) |          \
-                                     PIN_OSPEED_HIGH(GPIOA_CV_SENSE) |      \
+#define VAL_GPIOA_OSPEEDR           (PIN_OSPEED_HIGH(GPIOA_SW0) |           \
+                                     PIN_OSPEED_HIGH(GPIOA_SW1) |           \
                                      PIN_OSPEED_LOW(GPIOA_POT) |            \
                                      PIN_OSPEED_LOW(GPIOA_PA3) |            \
                                      PIN_OSPEED_HIGH(GPIOA_PA4) |           \
@@ -294,8 +295,8 @@
                                      PIN_OSPEED_HIGH(GPIOA_SWDIO) |         \
                                      PIN_OSPEED_HIGH(GPIOA_SWCLK) |         \
                                      PIN_OSPEED_HIGH(GPIOA_SPI1_NSS1))
-#define VAL_GPIOA_PUPDR             (PIN_PUPDR_FLOATING(GPIOA_PIN0) |       \
-                                     PIN_PUPDR_FLOATING(GPIOA_CV_SENSE) |   \
+#define VAL_GPIOA_PUPDR             (PIN_PUPDR_PULLUP(GPIOA_SW0) |          \
+                                     PIN_PUPDR_PULLUP(GPIOA_SW1) |          \
                                      PIN_PUPDR_FLOATING(GPIOA_POT) |        \
                                      PIN_PUPDR_FLOATING(GPIOA_PA3) |        \
                                      PIN_PUPDR_FLOATING(GPIOA_PA4) |        \
@@ -310,8 +311,8 @@
                                      PIN_PUPDR_PULLUP(GPIOA_SWDIO) |        \
                                      PIN_PUPDR_PULLDOWN(GPIOA_SWCLK) |      \
                                      PIN_PUPDR_PULLUP(GPIOA_SPI1_NSS1))
-#define VAL_GPIOA_ODR               (PIN_ODR_HIGH(GPIOA_PIN0) |             \
-                                     PIN_ODR_HIGH(GPIOA_CV_SENSE) |         \
+#define VAL_GPIOA_ODR               (PIN_ODR_HIGH(GPIOA_SW0) |              \
+                                     PIN_ODR_HIGH(GPIOA_SW1) |              \
                                      PIN_ODR_HIGH(GPIOA_POT) |              \
                                      PIN_ODR_HIGH(GPIOA_PA3) |              \
                                      PIN_ODR_HIGH(GPIOA_PA4) |              \
@@ -326,8 +327,8 @@
                                      PIN_ODR_HIGH(GPIOA_SWDIO) |            \
                                      PIN_ODR_HIGH(GPIOA_SWCLK) |            \
                                      PIN_ODR_HIGH(GPIOA_SPI1_NSS1))
-#define VAL_GPIOA_AFRL              (PIN_AFIO_AF(GPIOA_PIN0, 0U) |          \
-                                     PIN_AFIO_AF(GPIOA_CV_SENSE, 0U) |      \
+#define VAL_GPIOA_AFRL              (PIN_AFIO_AF(GPIOA_SW0, 0U) |           \
+                                     PIN_AFIO_AF(GPIOA_SW1, 0U) |           \
                                      PIN_AFIO_AF(GPIOA_POT, 0U) |           \
                                      PIN_AFIO_AF(GPIOA_PA3, 0U) |           \
                                      PIN_AFIO_AF(GPIOA_PA4, 0U) |           \

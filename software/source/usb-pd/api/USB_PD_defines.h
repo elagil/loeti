@@ -465,7 +465,7 @@ typedef union {
 } STUSB_GEN1S_RDO_REG_STATUS_RegTypeDef;
 
 /*Identification of STUSB */
-#define DEVICE_ID 0x2F
+#define REG_DEVICE_ID 0x2F
 #define EXTENTION_10 (uint8_t)0x80
 #define ID_Reg (uint8_t)0x1C
 #define CUT (uint8_t)3 << 2

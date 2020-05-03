@@ -137,11 +137,14 @@ void usb_pd_init(void);
 void ALARM_MANAGEMENT(void *arg);
 void Read_SNK_PDO(void);
 void Read_RDO(void);
-void Update_PDO(uint8_t PDO_Number, int Voltage, int Current);
+void Update_PDO(uint8_t PDO_Number, uint32_t Voltage, uint32_t Current);
 void Update_Valid_PDO_Number(uint8_t Number_PDO);
-int Find_Matching_SRC_PDO(int Min_Power, int Min_V, int Max_V);
-int Request_SRC_PDO_NUMBER(uint8_t SRC_PDO_position);
+uint32_t Find_Matching_SRC_PDO(uint32_t Min_Power, uint32_t Min_V, uint32_t Max_V);
+uint32_t Request_SRC_PDO_NUMBER(uint8_t SRC_PDO_position);
 void Negotiate_5V(void);
+uint8_t FindHighestSrcPower(void);
+uint32_t getPdoCurrent(uint8_t pdo);
+uint32_t getPdoVoltage(uint8_t pdo);
 
 #ifdef __cplusplus
 }

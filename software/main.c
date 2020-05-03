@@ -17,8 +17,14 @@
 #include "ch.h"
 #include "hal.h"
 
+#include "heater.h"
+#include "tc_adc.h"
 #include "usb_pd.h"
 #include "lcd.h"
+#include "ui.h"
+#include "events.h"
+
+binary_semaphore_t dma_lock;
 
 /*
  * Application entry point.=
@@ -36,20 +42,44 @@ int main(void)
   halInit();
   chSysInit();
 
+  chBSemObjectInit(&switches.bsem, false);
+  chBSemObjectInit(&heater.bsem, false);
+  chBSemObjectInit(&dma_lock, false);
+
+  chEvtObjectInit(&switch_event_source);
+  chEvtObjectInit(&temp_event);
+  chEvtObjectInit(&power_event_source);
+
   palClearLine(LINE_PD_RST);
+  palClearLine(LINE_PWM);
+
+  /*
+   * Creates the switch checker thread.
+   */
+  chThdCreateStatic(waUiThread, sizeof(waUiThread), NORMALPRIO, uiThread, NULL);
 
   /*
    * Creates the LCD thread.
    */
-  //chThdCreateStatic(waLcdThread, sizeof(waLcdThread), NORMALPRIO, lcdThread, NULL);
+  chThdCreateStatic(waLcdThread, sizeof(waLcdThread), NORMALPRIO, lcdThread, NULL);
 
   /*
    * Creates the USB PD control thread.
    */
   chThdCreateStatic(waUsbPdThread, sizeof(waUsbPdThread), NORMALPRIO, usbPdThread, NULL);
 
+  /*
+   * Creates the heater and control loop thread.
+   */
+  thread_t *heaterThread_p = chThdCreateStatic(waHeaterThread, sizeof(waHeaterThread), NORMALPRIO, heaterThread, NULL);
+
+  /*
+   * Creates the temperature ADC read thread.
+   */
+  chThdCreateStatic(waAdcThread, sizeof(waAdcThread), NORMALPRIO, adcThread, (void *)heaterThread_p);
+
   while (true)
   {
-    chThdSleepMilliseconds(500);
+    chEvtWaitAny(SWITCH_EVENT);
   }
 }

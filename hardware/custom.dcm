@@ -1,3 +1,8 @@
 EESchema-DOCLIB  Version 2.0
 #
+$CMP SI4425FDY
+D P-Channel 30 V (D-S) MOSFET
+F https://www.vishay.com/docs/77095/si4425fdy.pdf
+$ENDCMP
+#
 #End Doc Library

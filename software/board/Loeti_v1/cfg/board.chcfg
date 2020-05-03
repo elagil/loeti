@@ -18,19 +18,19 @@
   <ports>
     <GPIOA>
       <pin0
-        ID=""
+        ID="SW0"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="Floating"
+        Resistor="PullUp"
         Mode="Input"
         Alternate="0" />
       <pin1
-        ID="CV_SENSE"
+        ID="SW1"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="Floating"
+        Resistor="PullUp"
         Mode="Input"
         Alternate="0" />
       <pin2

@@ -2,13 +2,19 @@
 
 #include "ch.h"
 #include "hal.h"
+#include "heater.h"
+#include "usb_pd.h"
 #include "spiHelper.h"
+#include "events.h"
+
+event_source_t temp_event;
 
 #define TC_ADC_LEN 2
 
 // Extracts the upper or lower byte from the register (16 bit length)
 #define CONF_REG_LOWER_BYTE(reg) (reg & 0xff)
 #define CONF_REG_HIGHER_BYTE(reg) ((reg >> 8) & 0xff)
+#define REG_TO_TEMP(x) ((x & 0xff) << 8) | ((x >> 8) & 0xff)
 
 #define SS_POS 15
 // Single shot conversion start (or not)
@@ -74,10 +80,10 @@
 #define DEFAULT_ADC_SETTINGS (NOP_VALID << NOP_POS |          \
                               PULL_UP_ENABLE << PULL_UP_POS | \
                               TS_MODE_ADC << TS_MODE_POS |    \
-                              DR_128_SPS << DR_POS |          \
+                              DR_475_SPS << DR_POS |          \
                               MODE_SS << MODE_POS |           \
-                              PGA_2048mV << PGA_POS |         \
-                              MUX_P3_NG << MUX_POS |          \
+                              PGA_256mV << PGA_POS |          \
+                              MUX_P2_NG << MUX_POS |          \
                               SS_START << SS_POS)
 
 // Do not change ADC settings, by setting invalid flag
@@ -108,30 +114,49 @@ void calcBuffer(uint8_t *txbuf, uint16_t config)
 
 THD_FUNCTION(adcThread, arg)
 {
-    (void)arg;
+    thread_t *heaterThread_p = (thread_t *)arg;
+
+    event_listener_t power_event_listener;
 
     chRegSetThreadName("tc_adc");
 
+    chEvtRegisterMask(&power_event_source, &power_event_listener, POWER_EVENT);
+
     uint8_t conf_acquire[TC_ADC_LEN];
     uint8_t conf_read[TC_ADC_LEN];
-    uint8_t adc_data[TC_ADC_LEN];
 
     calcBuffer(conf_acquire, DEFAULT_ADC_SETTINGS);
     calcBuffer(conf_read, UNCHANGED_ADC_SETTINGS);
 
+    chEvtWaitAny(POWER_EVENT);
+
+    uint16_t val;
+    uint16_t raw_is_temperature;
+
+    // initial conversion
+    exchangeSpiAdc(conf_acquire, (uint8_t *)&val);
+
+    chThdSleepMilliseconds(10);
+
     while (true)
     {
-        thread_t *tp = chMsgWait();
+        // read conversion
+        exchangeSpiAdc(conf_read, (uint8_t *)&val);
 
-        msg_t msg = chMsgGet(tp);
-        (void)msg;
+        chBSemWait(&heater.bsem);
+        raw_is_temperature = REG_TO_TEMP(val);
+        heater.is_temperature = raw_is_temperature * 0.27057471 + 47.4137931;
+        chBSemSignal(&heater.bsem);
 
-        // initiate a measurement
-        exchangeSpiAdc(conf_acquire, NULL);
+        chEvtBroadcast(&temp_event);
 
-        // read adc content
-        exchangeSpiAdc(conf_read, adc_data);
+        chMsgSend(heaterThread_p, (msg_t)val);
 
-        chMsgRelease(tp, MSG_OK);
+        chThdSleepMilliseconds(5);
+
+        // start conversion after heater switches off
+        exchangeSpiAdc(conf_acquire, (uint8_t *)&val);
+
+        chThdSleepMilliseconds(5);
     }
 }

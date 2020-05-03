@@ -26,5 +26,6 @@ void ssd1803_contrast_set(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd
 void ssd1803_set_ddram_address(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg);
 void ssd1803_rom_selection(ssd1803_instruction_t *instruction);
 void ssd1803_rom_selection_set(ssd1803_instruction_t *instruction, ssd1803_reg_t *ssd1803_reg);
+void ssd1803_busy_addr_cnt(ssd1803_instruction_t *instruction);
 
 #endif

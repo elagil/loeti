@@ -1,13 +1,16 @@
 #include "ch.h"
 #include "hal.h"
+#include "dma_lock.h"
 
 #include "spiHelper.h"
 
 void spiExchangeHelper(SPIDriver *spi, const SPIConfig *conf, uint32_t length, uint8_t *txbuf, uint8_t *rxbuf)
 {
+    chBSemWait(&dma_lock);
+
+    spiStart(spi, conf);
     /* Bus acquisition and SPI reprogramming.*/
     spiAcquireBus(spi);
-    spiStart(spi, conf);
 
     /* Slave selection and data transmission.*/
     spiSelect(spi);
@@ -19,10 +22,12 @@ void spiExchangeHelper(SPIDriver *spi, const SPIConfig *conf, uint32_t length, u
         spiSend(spi, length, txbuf);
 
     else if (rxbuf != NULL && txbuf == NULL) // only receive
-        spiReceive(spi, length, txbuf);
+        spiReceive(spi, length, rxbuf);
 
     spiUnselect(spi);
 
     /* Releasing the bus.*/
     spiReleaseBus(spi);
+
+    chBSemSignal(&dma_lock);
 }

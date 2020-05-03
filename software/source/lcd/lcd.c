@@ -2,23 +2,41 @@
 
 #include "ch.h"
 #include "hal.h"
+#include "heater.h"
+#include "usb_pd.h"
+#include "chprintf.h"
+#include "events.h"
+
+#include "tc_adc.h"
 
 #include "ssd1803_reg.h"
 #include "ssd1803_ctrl.h"
 #include "ssd1803_set.h"
 #include "ssd1803_def.h"
 
+#define TEMP_EVENT EVENT_MASK(0)
+#define POWER_EVENT EVENT_MASK(0)
+
 THD_WORKING_AREA(waLcdThread, LCD_THREAD_STACK_SIZE);
 
 THD_FUNCTION(lcdThread, arg)
 {
     (void)arg;
+
+    event_listener_t temp_event_listener;
+    event_listener_t power_event_listener;
+
     ssd1803_state.row = 0;
     ssd1803_state.col = 0;
     ssd1803_state.is = false;
     ssd1803_state.re = true;
 
     chRegSetThreadName("lcd");
+
+    chEvtRegisterMask(&temp_event, &temp_event_listener, TEMP_EVENT);
+    chEvtRegisterMask(&power_event_source, &power_event_listener, POWER_EVENT);
+
+    chEvtWaitAny(POWER_EVENT);
 
     palSetLine(LINE_LCD_NRST);
     chThdSleepMilliseconds(1);
@@ -28,26 +46,37 @@ THD_FUNCTION(lcdThread, arg)
 
     ssd1803_initialize();
 
-    ssd1803_move_to_line(0);
-
-    uint8_t juhu[] = "Moin Gurli";
-    ssd1803_writeByteArray(juhu, 10);
-
-    ssd1803_move_to_line(1);
-
-    uint8_t juhu2[] = "289";
-    ssd1803_writeByteArray(juhu2, 3);
-
-    ssd1803_move_to_line(2);
-
-    uint8_t juhu3[] = "\xd6\xd6\xd6\xd7";
-    ssd1803_writeByteArray(juhu3, 4);
-
-    uint8_t cnt;
+    char str[10];
+    char str2[10] = "     ---  ";
 
     while (true)
     {
-        cnt++;
-        chThdSleepMilliseconds(100);
+        chEvtWaitAny(TEMP_EVENT);
+
+        chBSemWait(&heater.bsem);
+        double is = heater.is_temperature;
+        double set = heater.set_temperature;
+        double max = heater.max_temperature;
+        double power = heater.power_max * heater.pwm / 10000;
+        chBSemSignal(&heater.bsem);
+
+        ssd1803_move_to_line(0);
+        chsnprintf(str, 11, "set  %3d  ", (uint16_t)set);
+        ssd1803_writeByteArray((uint8_t *)str, 10);
+
+        ssd1803_move_to_line(1);
+        if (is > max)
+        {
+            ssd1803_writeByteArray((uint8_t *)str2, 10);
+        }
+        else
+        {
+            chsnprintf(str, 11, "     %3d  ", (uint16_t)is);
+            ssd1803_writeByteArray((uint8_t *)str, 8);
+        }
+
+        ssd1803_move_to_line(2);
+        chsnprintf(str, 11, "pwr  %3d W", (uint16_t)power);
+        ssd1803_writeByteArray((uint8_t *)str, 10);
     }
 }

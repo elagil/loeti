@@ -1,18 +1,16 @@
-#include "usb_pd.h"
 #include "ch.h"
 #include "hal.h"
+#include "heater.h"
+#include "usb_pd.h"
 #include "USB_PD_core.h"
+#include "events.h"
 
-event_source_t alert_source;
-event_listener_t alert_listener;
+event_source_t power_event_source;
+event_source_t alert_event_source;
+event_listener_t alert_event_listener;
 
 USB_PD_I2C_PORT STUSB45DeviceConf;
 extern uint8_t Cut;
-uint8_t USB_PD_Interupt_Flag;
-uint8_t USB_PD_Interupt_PostponedFlag;
-uint8_t push_button_Action_Flag;
-uint8_t Timer_Action_Flag;
-uint8_t flag_once = 1;
 /* PDO Variables */
 extern USB_PD_StatusTypeDef PD_status;
 extern USB_PD_SNK_PDO_TypeDef PDO_SNK[3];
@@ -21,27 +19,16 @@ extern uint8_t PDO_SNK_NUMB;
 extern uint8_t PDO_FROM_SRC_Valid;
 extern uint32_t ConnectionStamp;
 extern uint8_t TypeC_Only_status;
-extern uint8_t PDO_FROM_SRC_Num_Sel;
 extern USB_PD_SRC_PDOTypeDef PDO_FROM_SRC[7];
 
 THD_WORKING_AREA(waUsbPdThread, USB_PD_THREAD_STACK_SIZE);
-
-// 400 kHz fast mode for I2C
-static const I2CConfig i2ccfg = {
-    STM32_TIMINGR_PRESC(0) |
-        STM32_TIMINGR_SCLDEL(3) |
-        STM32_TIMINGR_SDADEL(1) |
-        STM32_TIMINGR_SCLH(3) |
-        STM32_TIMINGR_SCLL(9),
-    0,
-    0};
 
 void toggleAlarmManagement(void *arg)
 {
     (void)arg;
     chSysLockFromISR();
     /* Invocation of some I-Class system APIs, never preemptable.*/
-    chEvtBroadcastI(&alert_source);
+    chEvtBroadcastI(&alert_event_source);
     chSysUnlockFromISR();
 }
 
@@ -53,37 +40,76 @@ THD_FUNCTION(usbPdThread, arg)
 
     STUSB45DeviceConf.I2cDeviceID_7bit = 0x28;
 
-    chEvtObjectInit(&alert_source);
-    chEvtRegister(&alert_source, &alert_listener, 0);
+    chEvtObjectInit(&alert_event_source);
+    chEvtRegisterMask(&alert_event_source, &alert_event_listener, PD_ALERT_EVENT);
 
     palEnableLineEvent(LINE_PD_ALERT_INT, PAL_EVENT_MODE_FALLING_EDGE);
     palSetLineCallback(LINE_PD_ALERT_INT, toggleAlarmManagement, NULL);
 
-    i2cStart(&I2CD1, &i2ccfg);
-
     usb_pd_init();
 
     Read_SNK_PDO();
-    Send_Soft_reset_Message();
+    Read_RDO();
 
-    chEvtWaitAny(EVENT_MASK(0));
-
-    uint32_t k = 0;
-    while (k < 1000)
+    while (true)
     {
-        ALARM_MANAGEMENT(NULL);
+        Send_Soft_reset_Message();
+
+        chEvtWaitAny(PD_ALERT_EVENT);
+
+        uint32_t k = 0;
+        while (k < 500)
+        {
+            ALARM_MANAGEMENT(NULL);
+            if (PDO_FROM_SRC_Valid)
+            {
+                break;
+            }
+            k++;
+        }
+
         if (PDO_FROM_SRC_Valid)
         {
             break;
         }
-        k++;
+
+        chThdSleepMilliseconds(100);
     }
 
-    Find_Matching_SRC_PDO(10, 8000, 20000);
+    chThdSleepMilliseconds(1000);
+
+    volatile uint8_t pdo = FindHighestSrcPower();
+
+    chThdSleepMilliseconds(1000);
+
     Send_Soft_reset_Message();
+
+    Read_SNK_PDO();
+    Read_RDO();
+
+    volatile uint32_t current = getPdoCurrent(pdo);
+    volatile uint32_t voltage = getPdoVoltage(pdo);
+    heater.power_max = (current / 1000) * (voltage / 1000);
+
+    chBSemWait(&heater.bsem);
+    volatile uint32_t max_current = (uint32_t)((double)voltage / heater.resistance);
+    volatile double pwm_max = heater.power_safety_margin * 10000 * current / max_current;
+
+    if (pwm_max > 10000)
+    {
+        heater.pwm_max = 10000;
+    }
+    else
+    {
+        heater.pwm_max = pwm_max;
+    }
+
+    chBSemSignal(&heater.bsem);
+
+    chEvtBroadcast(&power_event_source);
 
     while (true)
     {
-        chThdSleepMilliseconds(500);
+        chThdSleepMilliseconds(1000);
     }
 }

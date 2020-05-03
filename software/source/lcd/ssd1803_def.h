@@ -31,6 +31,7 @@ typedef struct
     bool rw; ///< read or write bit (write = false, read = true)
     bool re; ///< Extended register enable bit
     bool is; ///< Special register enable bit
+    binary_semaphore_t bsem;
 } ssd1803_instruction_t;
 
 typedef struct

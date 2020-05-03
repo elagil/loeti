@@ -16,9 +16,6 @@
 // Choose view from TOP or BOTTOM
 #define VIEW BOTTOM
 
-#define writeLcdRegLong(buf, bytes) spiExchangeHelper(&SPID1, &lcd_spicfg, bytes, buf, NULL)
-#define writeLcdReg(buf) writeLcdRegLong(buf, 3)
-
 /*
  * SPI configuration (1/64 f_pclk, CPHA=1, CPOL=1, 8 bit, LSB first).
  */
@@ -30,6 +27,17 @@ static const SPIConfig lcd_spicfg = {
     SPI_CR1_CPHA | SPI_CR1_CPOL | SPI_CR1_BR_2 | SPI_CR1_BR_0 | SPI_CR1_LSBFIRST, // CR1 settings
     SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0                                    // CR2 settings
 };
+
+bool ssd1803_busy(void);
+
+void writeLcdRegLong(uint8_t *buf, uint32_t bytes)
+{
+    spiExchangeHelper(&SPID1, &lcd_spicfg, bytes, buf, NULL);
+}
+
+#define readLcdRegLong(buf, bytes) spiExchangeHelper(&SPID1, &lcd_spicfg, bytes, buf, buf + 2)
+#define readLcdReg(buf) readLcdRegLong(buf, 2)
+#define writeLcdReg(buf) writeLcdRegLong(buf, 3)
 
 ssd1803_reg_t ssd1803_reg;
 ssd1803_power_down_mode_set_reg_t ssd1803_power_down_mode_set_reg;
@@ -111,6 +119,24 @@ void writeInstruction(ssd1803_instruction_t *instruction)
     writeLcdRegLong(instruction->payload, instruction->payload_length);
 }
 
+bool ssd1803_busy(void)
+{
+    return false;
+
+    ssd1803_busy_addr_cnt(&instruction);
+
+    readLcdRegLong(instruction.payload, instruction.payload_length);
+
+    if (*(instruction.payload + 3) & 0x80)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 void ssd1803_contrast(uint8_t contrast)
 {
     // set contrast, upper two bit ...
@@ -122,10 +148,16 @@ void ssd1803_contrast(uint8_t contrast)
 
 void ssd1803_initialize(void)
 {
+    chBSemObjectInit(&instruction.bsem, true);
+    chBSemObjectInit(&intermediate_instruction.bsem, true);
+
     instruction.payload = buf_instruction;
 
     intermediate_instruction.payload = buf_intermediate_instruction;
     intermediate_instruction.payload_length = 1;
+
+    chBSemSignal(&instruction.bsem);
+    chBSemSignal(&intermediate_instruction.bsem);
 
     ssd1803_reg.ssd1803_power_down_mode_set_reg = &ssd1803_power_down_mode_set_reg;
     ssd1803_reg.ssd1803_entry_mode_set_reg_0 = &ssd1803_entry_mode_set_reg_0;
@@ -221,48 +253,116 @@ void ssd1803_initialize(void)
     // set contrast
     ssd1803_contrast(CONTRAST);
 
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
     ssd1803_clear_display(&instruction);
     writeInstruction(&instruction);
 
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
     ssd1803_function_set_1(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
     ssd1803_function_set_0(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
-    ssd1803_rom_selection(&instruction);
-    writeInstruction(&instruction);
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
+    //ssd1803_rom_selection(&instruction);
+    //writeInstruction(&instruction);
 
-    ssd1803_rom_selection_set(&instruction, &ssd1803_reg);
-    writeInstruction(&instruction);
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
+    // ssd1803_rom_selection_set(&instruction, &ssd1803_reg);
+    //writeInstruction(&instruction);
 
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
     ssd1803_extended_function_set(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
     ssd1803_entry_mode_set_1(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
     ssd1803_double_height(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
     ssd1803_internal_osc(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
     ssd1803_follower_control(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
     ssd1803_power_set(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
     ssd1803_contrast_set(&instruction, &ssd1803_reg);
     writeInstruction(&instruction);
 
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
     ssd1803_display_on_off_control(&instruction, &ssd1803_reg);
+    writeInstruction(&instruction);
+}
+
+void ssd1803_move_home(void)
+{
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
+
+    ssd1803_return_home(&instruction);
     writeInstruction(&instruction);
 }
 
 void ssd1803_move_to_line(uint8_t line)
 {
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
+
     if (VIEW == BOTTOM)
     {
         ssd1803_reg.ssd1803_set_ddram_address_reg->ac = SSD1803_DDRAM_ADR_BOT + line * SSD1803_DDRAM_ADR_OFFSET;
@@ -278,8 +378,10 @@ void ssd1803_move_to_line(uint8_t line)
 
 void ssd1803_writeByte(uint8_t c)
 {
-    instruction.rs = true;
-    instruction.rw = false;
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
 
     ssd1803DecodeInstruction(SSD1803_SET_RS | c, &instruction);
     writeInstruction(&instruction);
@@ -287,9 +389,22 @@ void ssd1803_writeByte(uint8_t c)
 
 void ssd1803_writeByteArray(uint8_t *s, uint32_t length)
 {
-    instruction.rs = true;
-    instruction.rw = false;
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
 
     ssd1803Decode(s, length, SSD1803_SET_RS, &instruction);
+    writeInstruction(&instruction);
+}
+
+void ssd1803_clear(void)
+{
+    while (ssd1803_busy())
+    {
+        chThdSleepMilliseconds(10);
+    }
+
+    ssd1803_clear_display(&instruction);
     writeInstruction(&instruction);
 }

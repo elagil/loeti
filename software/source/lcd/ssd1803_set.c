@@ -4,6 +4,14 @@
 
 void ssd1803Decode(uint8_t *data, uint32_t data_length, uint16_t instruction_code, ssd1803_instruction_t *instruction)
 {
+    chBSemWait(&instruction->bsem);
+
+    // Set up read/write mode
+    if (instruction_code & SSD1803_SET_RW)
+        instruction->rw = true;
+    else
+        instruction->rw = false;
+
     // Set up special register markers
     if (instruction_code & SSD1803_SET_RS)
         instruction->rs = true;
@@ -54,8 +62,17 @@ void ssd1803Decode(uint8_t *data, uint32_t data_length, uint16_t instruction_cod
             instruction->payload[1 + 2 * d + 1] = (data[d] >> 4) & 0xf; // upper 4 bit
         }
     }
+    if (instruction->rw)
+    {
+        instruction->payload[1] = 0;
+        instruction->payload_length = data_length + 1;
+    }
+    else
+    {
+        instruction->payload_length = 2 * data_length + 1;
+    }
 
-    instruction->payload_length = 2 * data_length + 1;
+    chBSemSignal(&instruction->bsem);
 }
 
 void ssd1803DecodeInstruction(uint16_t instruction_code, ssd1803_instruction_t *instruction)
@@ -252,6 +269,13 @@ void ssd1803_rom_selection_set(ssd1803_instruction_t *instruction, ssd1803_reg_t
     uint16_t code = SSD1803_ROM_SELECT_SET |
                     ssd1803_reg->ssd1803_rom_selection_set_reg->rom1 << SSD1803_ROM_SELECT_SET_ROM1 |
                     ssd1803_reg->ssd1803_rom_selection_set_reg->rom2 << SSD1803_ROM_SELECT_SET_ROM2;
+
+    ssd1803DecodeInstruction(code, instruction);
+}
+
+void ssd1803_busy_addr_cnt(ssd1803_instruction_t *instruction)
+{
+    uint16_t code = SSD1803_READ_BUSY_ADDR;
 
     ssd1803DecodeInstruction(code, instruction);
 }

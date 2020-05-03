@@ -10,6 +10,9 @@
 // Register address calculation
 #define SSD1803_REG(pos) (1 << pos)
 
+// Set RW bit
+#define SSD1803_SET_RW (SSD1803_REG(8))
+
 // Set RS bit
 #define SSD1803_SET_RS (SSD1803_REG(9))
 
@@ -21,10 +24,6 @@
 #define SSD1803_SET_IS0 (SSD1803_REG(12))
 #define SSD1803_SET_IS1 (SSD1803_REG(13))
 
-// read or write a register
-#define SSD1803_WRITE_OPERATION 0
-#define SSD1803_READ_OPERATION 1
-
 #define SSD1803_SPI_START_BYTE 0xf8
 
 // positions in LSB order!
@@ -33,6 +32,8 @@
 #define SSD1803_SPI_START_BYTE_RW_POS 5
 
 #define SSD1803_CLEAR_DISPLAY SSD1803_REG(0)
+
+#define SSD1803_READ_BUSY_ADDR SSD1803_SET_RW
 
 #define SSD1803_RETURN_HOME (SSD1803_SET_RE0 | SSD1803_REG(1))
 
