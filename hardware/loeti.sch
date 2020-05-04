@@ -865,8 +865,8 @@ Wire Wire Line
 	7000 3850 6750 3850
 Wire Wire Line
 	6750 3850 6750 4000
-Text GLabel 14100 7000 2    50   Input ~ 0
-HEATER+
+Text GLabel 12400 8850 2    50   Input ~ 0
+SHUNT-
 Wire Wire Line
 	12500 1700 12500 2000
 Text GLabel 1900 9500 0    50   Input ~ 0
@@ -1037,23 +1037,23 @@ Wire Wire Line
 	11600 4450 11700 4450
 Text GLabel 11600 4950 0    50   Input ~ 0
 T-
-Text GLabel 14300 750  0    50   Input ~ 0
+Text GLabel 15250 8250 0    50   Input ~ 0
 HEATER-
-Text GLabel 14300 950  0    50   Input ~ 0
+Text GLabel 15250 8450 0    50   Input ~ 0
 T+
-Text GLabel 14300 1050 0    50   Input ~ 0
+Text GLabel 15250 8550 0    50   Input ~ 0
 HEATER+
-Text GLabel 14300 850  0    50   Input ~ 0
+Text GLabel 15250 8350 0    50   Input ~ 0
 T-
 $Comp
 L Connector:AudioJack4 J3
 U 1 1 5E93DE18
-P 14500 850
-F 0 "J3" H 14170 825 50  0000 R CNN
-F 1 "AudioJack4" H 14170 734 50  0000 R CNN
-F 2 "custom:CUI_SJ-43614-SMT" H 14500 850 50  0001 C CNN
-F 3 "~" H 14500 850 50  0001 C CNN
-	1    14500 850 
+P 15450 8350
+F 0 "J3" H 15120 8325 50  0000 R CNN
+F 1 "AudioJack4" H 15120 8234 50  0000 R CNN
+F 2 "custom:CUI_SJ-43614-SMT" H 15450 8350 50  0001 C CNN
+F 3 "~" H 15450 8350 50  0001 C CNN
+	1    15450 8350
 	-1   0    0    -1  
 $EndComp
 Wire Wire Line
@@ -1154,7 +1154,7 @@ ADC_IN2
 Text GLabel 8750 2550 0    50   Input ~ 0
 ADC_IN2
 Text GLabel 8850 2550 2    50   Input ~ 0
-POT
+CUR
 Wire Wire Line
 	8750 2550 8850 2550
 $Comp
@@ -1705,8 +1705,6 @@ F 3 "" H 15100 6700 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	15100 6650 15100 6700
-Wire Wire Line
-	13200 6150 13200 6550
 $Comp
 L power:VBUS #PWR?
 U 1 1 5EB07163
@@ -1871,4 +1869,120 @@ Wire Notes Line
 	5100 1400 10150 1400
 Text Notes 5150 1550 0    79   ~ 0
 MCU and programming header
+$Comp
+L Amplifier_Current:INA138 U7
+U 1 1 5EAFC52B
+P 11650 8550
+F 0 "U7" H 11994 8596 50  0000 L CNN
+F 1 "INA138" H 11994 8505 50  0000 L CNN
+F 2 "Package_TO_SOT_SMD:SOT-23-5" H 11650 8550 50  0001 C CNN
+F 3 "http://www.ti.com/lit/ds/symlink/ina138.pdf" H 11650 8555 50  0001 C CNN
+	1    11650 8550
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	11950 8450 12150 8450
+Wire Wire Line
+	11950 8650 12150 8650
+Wire Wire Line
+	12400 8850 12300 8850
+Text GLabel 13300 6350 2    50   Input ~ 0
+SHUNT+
+Text GLabel 12400 8250 2    50   Input ~ 0
+SHUNT+
+Text GLabel 13300 6500 2    50   Input ~ 0
+SHUNT-
+Text GLabel 14100 7000 2    50   Input ~ 0
+HEATER+
+Wire Wire Line
+	12400 8250 12300 8250
+$Comp
+L power:GND #PWR0103
+U 1 1 5EBF5E66
+P 11750 8850
+F 0 "#PWR0103" H 11750 8600 50  0001 C CNN
+F 1 "GND" H 11755 8677 50  0000 C CNN
+F 2 "" H 11750 8850 50  0001 C CNN
+F 3 "" H 11750 8850 50  0001 C CNN
+	1    11750 8850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R16
+U 1 1 5EBF6918
+P 10850 8750
+F 0 "R16" H 10919 8796 50  0000 L CNN
+F 1 "1k" H 10919 8705 50  0000 L CNN
+F 2 "Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder" V 10780 8750 50  0001 C CNN
+F 3 "~" H 10850 8750 50  0001 C CNN
+	1    10850 8750
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0104
+U 1 1 5EBF727C
+P 10850 8900
+F 0 "#PWR0104" H 10850 8650 50  0001 C CNN
+F 1 "GND" H 10855 8727 50  0000 C CNN
+F 2 "" H 10850 8900 50  0001 C CNN
+F 3 "" H 10850 8900 50  0001 C CNN
+	1    10850 8900
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	11350 8550 10850 8550
+Wire Wire Line
+	10850 8550 10850 8600
+$Comp
+L power:VBUS #PWR?
+U 1 1 5EC012C6
+P 11750 8250
+AR Path="/588FA5F7/5EC012C6" Ref="#PWR?"  Part="1" 
+AR Path="/588FD270/5EC012C6" Ref="#PWR?"  Part="1" 
+AR Path="/5EC012C6" Ref="#PWR0105"  Part="1" 
+F 0 "#PWR0105" H 11750 8100 50  0001 C CNN
+F 1 "VBUS" H 11765 8423 50  0000 C CNN
+F 2 "" H 11750 8250 50  0001 C CNN
+F 3 "" H 11750 8250 50  0001 C CNN
+	1    11750 8250
+	1    0    0    -1  
+$EndComp
+Text GLabel 10750 8550 0    50   Input ~ 0
+CUR
+Wire Wire Line
+	10850 8550 10750 8550
+Connection ~ 10850 8550
+$Comp
+L Device:R R15
+U 1 1 5EC172DA
+P 12300 8550
+F 0 "R15" H 12369 8596 50  0000 L CNN
+F 1 "10m" H 12369 8505 50  0000 L CNN
+F 2 "Resistor_SMD:R_2010_5025Metric_Pad1.52x2.65mm_HandSolder" V 12230 8550 50  0001 C CNN
+F 3 "~" H 12300 8550 50  0001 C CNN
+	1    12300 8550
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	12300 8250 12300 8400
+Wire Wire Line
+	12300 8700 12300 8850
+Wire Wire Line
+	12150 8450 12150 8250
+Wire Wire Line
+	12150 8250 12300 8250
+Connection ~ 12300 8250
+Wire Wire Line
+	12150 8650 12150 8850
+Wire Wire Line
+	12150 8850 12300 8850
+Connection ~ 12300 8850
+Wire Wire Line
+	13200 6150 13200 6350
+Wire Wire Line
+	13200 6350 13300 6350
+Wire Wire Line
+	13300 6500 13200 6500
+Wire Wire Line
+	13200 6500 13200 6550
 $EndSCHEMATC

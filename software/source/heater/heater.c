@@ -4,30 +4,34 @@
 #include "heater.h"
 #include "events.h"
 
-// default heater values
+#define LOOP_TIME 200
+
+// default heater values, suitable for T245 handles and tips
 heater_t heater = {
-    .power_safety_margin = 0.95,
-    .resistance = 3.04,
+    .power_safety_margin = 1,
+    .resistance = 2.6,
     .min_temperature = 150,
     .max_temperature = 370,
-    .set_temperature = 330,
+    .set_temperature = 300,
     .p = 80,
-    .i = 5,
+    .i = 0.025,
     .d = 0,
     .error = 0,
     .integratedError = 0,
     .power_max = 0,
     .pwm = 0,
-    .pwm_max = 0};
+    .pwm_max = 0,
+    .voltage = 0,
+    .current = 0};
 
 #define POWER_EVENT EVENT_MASK(0)
 
 THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);
 
 static PWMConfig pwmcfg = {
-    2000000, /* 2 MHz PWM clock frequency.     */
-    100,     /* Initial PWM period 50 uS.         */
-    NULL,    /* Period callback.               */
+    24000000, /* 24 MHz PWM clock frequency.     */
+    1200,     /* Initial PWM period 50 uS.       */
+    NULL,     /* Period callback.                */
     {
         {PWM_OUTPUT_ACTIVE_HIGH, NULL}, /* CH1 mode and callback.         */
         {PWM_OUTPUT_DISABLED, NULL},    /* CH2 mode and callback.         */
@@ -38,21 +42,30 @@ static PWMConfig pwmcfg = {
     0  /* DMA/Interrupt Enable Register. */
 };
 
+/**
+ * @brief Control loop for heater element
+ */
 uint16_t controlLoop(void)
 {
     chBSemWait(&heater.bsem);
 
     if ((heater.set_temperature <= heater.max_temperature) && (heater.is_temperature <= heater.max_temperature))
     {
+        // Safety feature, for not letting heater temperature exceed maximum limit
+
+        // Calculation of temperature error
         heater.error = heater.set_temperature - heater.is_temperature;
 
-        if ((heater.pwm < heater.pwm_max) && (heater.pwm > 0)) // anti windup
+        if ((heater.pwm < heater.pwm_max) && (heater.pwm > 0))
         {
+            // anti windup and integration of error
             heater.integratedError += heater.error;
         }
 
-        heater.pwm = heater.p * heater.error + heater.i * heater.integratedError;
+        // Control equation
+        heater.pwm = heater.p * heater.error + heater.i * heater.integratedError * LOOP_TIME;
 
+        // Clamping of PWM ratio
         if (heater.pwm > heater.pwm_max)
         {
             heater.pwm = heater.pwm_max;
@@ -86,18 +99,14 @@ THD_FUNCTION(heaterThread, arg)
     chEvtWaitAny(POWER_EVENT);
     pwmStart(&PWMD1, &pwmcfg);
 
-    // palSetLineMode(LINE_PWM, PAL_MODE_OUTPUT_PUSHPULL);
-
     while (true)
     {
         thread_t *tp = chMsgWait();
         msg_t msg = chMsgGet(tp);
         (void)msg;
 
-        uint16_t power = controlLoop();
-
-        pwmEnableChannel(&PWMD1, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD1, power));
-        chThdSleepMilliseconds(200);
+        pwmEnableChannel(&PWMD1, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD1, controlLoop()));
+        chThdSleepMilliseconds(LOOP_TIME);
         pwmDisableChannel(&PWMD1, 0);
 
         chMsgRelease(tp, MSG_OK);

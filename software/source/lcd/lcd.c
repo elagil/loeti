@@ -47,7 +47,6 @@ THD_FUNCTION(lcdThread, arg)
     ssd1803_initialize();
 
     char str[10];
-    char str2[10] = "     ---  ";
 
     while (true)
     {
@@ -57,26 +56,53 @@ THD_FUNCTION(lcdThread, arg)
         double is = heater.is_temperature;
         double set = heater.set_temperature;
         double max = heater.max_temperature;
-        double power = heater.power_max * heater.pwm / 10000;
+        double voltage = heater.voltage;
+        double current = heater.current;
+        double powerRatio = 100 * heater.pwm / heater.pwm_max;
         chBSemSignal(&heater.bsem);
 
         ssd1803_move_to_line(0);
-        chsnprintf(str, 11, "set  %3d  ", (uint16_t)set);
+        chsnprintf(str, 11, "%2dV   %1.1fA", (uint16_t)voltage, current);
         ssd1803_writeByteArray((uint8_t *)str, 10);
 
         ssd1803_move_to_line(1);
         if (is > max)
         {
-            ssd1803_writeByteArray((uint8_t *)str2, 10);
+            chsnprintf(str, 11, "    ---   ");
+            ssd1803_writeByteArray((uint8_t *)str, 10);
         }
         else
         {
-            chsnprintf(str, 11, "     %3d  ", (uint16_t)is);
-            ssd1803_writeByteArray((uint8_t *)str, 8);
+            chsnprintf(str, 11, "    %3d   ", (uint16_t)is);
+            ssd1803_writeByteArray((uint8_t *)str, 10);
         }
 
         ssd1803_move_to_line(2);
-        chsnprintf(str, 11, "pwr  %3d W", (uint16_t)power);
+        if (powerRatio <= 25)
+        {
+            chsnprintf(str, 11, "\x10%3d     "
+                                " ",
+                       (uint16_t)set);
+        }
+        else if (powerRatio <= 50)
+        {
+            chsnprintf(str, 11, "\x10%3d     "
+                                "\xd0",
+                       (uint16_t)set);
+        }
+        else if (powerRatio <= 75)
+        {
+            chsnprintf(str, 11, "\x10%3d    "
+                                "\xd0\xd0",
+                       (uint16_t)set);
+        }
+        else
+        {
+            chsnprintf(str, 11, "\x10%3d   "
+                                "\xd0\xd0\xd0",
+                       (uint16_t)set);
+        }
+
         ssd1803_writeByteArray((uint8_t *)str, 10);
     }
 }

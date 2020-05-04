@@ -60,6 +60,7 @@ THD_FUNCTION(usbPdThread, arg)
         uint32_t k = 0;
         while (k < 500)
         {
+            chThdSleepMilliseconds(1);
             ALARM_MANAGEMENT(NULL);
             if (PDO_FROM_SRC_Valid)
             {
@@ -76,28 +77,65 @@ THD_FUNCTION(usbPdThread, arg)
         chThdSleepMilliseconds(100);
     }
 
-    chThdSleepMilliseconds(1000);
-
     volatile uint8_t pdo = FindHighestSrcPower();
 
-    chThdSleepMilliseconds(1000);
+    // chEvtWaitAny(PD_ALERT_EVENT);
 
-    Send_Soft_reset_Message();
+    // uint32_t k = 0;
+    // while (k < 500)
+    // {
+    //     ALARM_MANAGEMENT(NULL);
+    //     if (PDO_FROM_SRC_Valid)
+    //     {
+    //         break;
+    //     }
+    //     k++;
+    // }
+
+    while (true)
+    {
+        Send_Soft_reset_Message();
+
+        chEvtWaitAny(PD_ALERT_EVENT);
+
+        uint32_t k = 0;
+        while (k < 500)
+        {
+            chThdSleepMilliseconds(1);
+            ALARM_MANAGEMENT(NULL);
+            if (PDO_FROM_SRC_Valid)
+            {
+                break;
+            }
+            k++;
+        }
+
+        if (PDO_FROM_SRC_Valid)
+        {
+            break;
+        }
+
+        chThdSleepMilliseconds(100);
+    }
 
     Read_SNK_PDO();
     Read_RDO();
 
     volatile uint32_t current = getPdoCurrent(pdo);
     volatile uint32_t voltage = getPdoVoltage(pdo);
-    heater.power_max = (current / 1000) * (voltage / 1000);
 
     chBSemWait(&heater.bsem);
-    volatile uint32_t max_current = (uint32_t)((double)voltage / heater.resistance);
-    volatile double pwm_max = heater.power_safety_margin * 10000 * current / max_current;
 
-    if (pwm_max > 10000)
+    heater.voltage = voltage / 1000;
+    heater.current = current / 1000;
+    heater.power_max = heater.current * heater.voltage;
+
+    volatile uint32_t max_current = (uint32_t)((double)voltage / heater.resistance);
+    volatile double pwm_max = heater.power_safety_margin * PWM_MAX_PERCENTAGE * current / max_current;
+
+    if (pwm_max > PWM_MAX_PERCENTAGE)
     {
-        heater.pwm_max = 10000;
+        heater.pwm_max = PWM_MAX_PERCENTAGE;
     }
     else
     {

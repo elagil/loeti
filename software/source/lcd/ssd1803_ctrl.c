@@ -278,15 +278,15 @@ void ssd1803_initialize(void)
     {
         chThdSleepMilliseconds(10);
     }
-    //ssd1803_rom_selection(&instruction);
-    //writeInstruction(&instruction);
+    ssd1803_rom_selection(&instruction);
+    writeInstruction(&instruction);
 
     while (ssd1803_busy())
     {
         chThdSleepMilliseconds(10);
     }
-    // ssd1803_rom_selection_set(&instruction, &ssd1803_reg);
-    //writeInstruction(&instruction);
+    ssd1803_rom_selection_set(&instruction, &ssd1803_reg);
+    writeInstruction(&instruction);
 
     while (ssd1803_busy())
     {

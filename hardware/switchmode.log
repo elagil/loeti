@@ -1,23 +1,23 @@
 Circuit: * C:\Users\x\repo\development\loeti\hardware\switchmode.asc
 
-Limiting rise time of source v2 to 2.5e-006
-Limiting fall time of source v2 to 2.5e-006
+Limiting rise time of source v2 to 5e-005
+Limiting fall time of source v2 to 5e-005
 Direct Newton iteration for .op point succeeded.
 
-Date: Sat May 02 22:10:30 2020
-Total elapsed time: 0.753 seconds.
+Date: Sun May 03 21:53:37 2020
+Total elapsed time: 0.104 seconds.
 
 tnom = 27
 temp = 27
 method = modified trap
-totiter = 217492
-traniter = 217456
-tranpoints = 60627
-accept = 43334
-rejected = 17293
+totiter = 11832
+traniter = 11796
+tranpoints = 3568
+accept = 2839
+rejected = 729
 matrix size = 21
 fillins = 20
 solver = Normal
 Matrix Compiler1: 2.79 KB object code size  0.5/0.3/[0.2]
-Matrix Compiler2: 2.15 KB object code size  0.2/0.3/[0.2]
+Matrix Compiler2: 2.15 KB object code size  0.2/0.4/[0.2]
 
