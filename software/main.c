@@ -47,7 +47,7 @@ int main(void)
   chBSemObjectInit(&dma_lock, false);
 
   chEvtObjectInit(&switch_event_source);
-  chEvtObjectInit(&temp_event);
+  chEvtObjectInit(&temp_event_source);
   chEvtObjectInit(&power_event_source);
 
   palClearLine(LINE_PD_RST);
@@ -71,12 +71,12 @@ int main(void)
   /*
    * Creates the heater and control loop thread.
    */
-  thread_t *heaterThread_p = chThdCreateStatic(waHeaterThread, sizeof(waHeaterThread), NORMALPRIO, heaterThread, NULL);
+  chThdCreateStatic(waHeaterThread, sizeof(waHeaterThread), NORMALPRIO, heaterThread, NULL);
 
   /*
    * Creates the temperature ADC read thread.
    */
-  chThdCreateStatic(waAdcThread, sizeof(waAdcThread), NORMALPRIO, adcThread, (void *)heaterThread_p);
+  chThdCreateStatic(waAdcThread, sizeof(waAdcThread), NORMALPRIO, adcThread, NULL);
 
   while (true)
   {

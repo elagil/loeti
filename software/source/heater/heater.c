@@ -4,15 +4,14 @@
 #include "heater.h"
 #include "events.h"
 
-#define LOOP_TIME 200
-
 // default heater values, suitable for T245 handles and tips
 heater_t heater = {
     .power_safety_margin = 1,
     .resistance = 2.6,
     .min_temperature = 150,
-    .max_temperature = 370,
+    .max_temperature = 360,
     .set_temperature = 300,
+    .local_temperature = 25,
     .p = 80,
     .i = 0.025,
     .d = 0,
@@ -49,6 +48,8 @@ uint16_t controlLoop(void)
 {
     chBSemWait(&heater.bsem);
 
+    uint16_t ratio = 0;
+
     if ((heater.set_temperature <= heater.max_temperature) && (heater.is_temperature <= heater.max_temperature))
     {
         // Safety feature, for not letting heater temperature exceed maximum limit
@@ -74,8 +75,7 @@ uint16_t controlLoop(void)
         {
             heater.pwm = 0;
         }
-        chBSemSignal(&heater.bsem);
-        return (uint16_t)heater.pwm;
+        ratio = (uint16_t)heater.pwm;
     }
     else
     {
@@ -83,9 +83,11 @@ uint16_t controlLoop(void)
         heater.error = 0;
         heater.integratedError = 0;
         heater.pwm = 0;
-        chBSemSignal(&heater.bsem);
-        return 0;
+        ratio = 0;
     }
+
+    chBSemSignal(&heater.bsem);
+    return ratio;
 }
 
 THD_FUNCTION(heaterThread, arg)
@@ -94,21 +96,20 @@ THD_FUNCTION(heaterThread, arg)
     chRegSetThreadName("heater");
 
     event_listener_t power_event_listener;
+    event_listener_t temp_event_listener;
+
     chEvtRegisterMask(&power_event_source, &power_event_listener, POWER_EVENT);
+    chEvtRegisterMask(&temp_event_source, &temp_event_listener, TEMP_EVENT);
 
     chEvtWaitAny(POWER_EVENT);
     pwmStart(&PWMD1, &pwmcfg);
 
     while (true)
     {
-        thread_t *tp = chMsgWait();
-        msg_t msg = chMsgGet(tp);
-        (void)msg;
+        chEvtWaitAny(TEMP_EVENT);
 
         pwmEnableChannel(&PWMD1, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD1, controlLoop()));
         chThdSleepMilliseconds(LOOP_TIME);
         pwmDisableChannel(&PWMD1, 0);
-
-        chMsgRelease(tp, MSG_OK);
     }
 }

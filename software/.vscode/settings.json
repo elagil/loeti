@@ -6,6 +6,7 @@
         "tc_adc.h": "c",
         "heater.h": "c",
         "ch.h": "c",
-        "usb_pd.h": "c"
+        "usb_pd.h": "c",
+        "events.h": "c"
     }
 }

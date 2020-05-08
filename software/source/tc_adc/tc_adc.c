@@ -7,7 +7,7 @@
 #include "spiHelper.h"
 #include "events.h"
 
-event_source_t temp_event;
+event_source_t temp_event_source;
 
 #define TC_ADC_LEN 2
 
@@ -76,18 +76,32 @@ event_source_t temp_event;
 #define NOP_INVALID_ALT1 2
 #define NOP_INVALID_ALT2 3
 
-// Default settings as per the datasheet
-#define DEFAULT_ADC_SETTINGS (NOP_VALID << NOP_POS |          \
-                              PULL_UP_ENABLE << PULL_UP_POS | \
-                              TS_MODE_ADC << TS_MODE_POS |    \
-                              DR_475_SPS << DR_POS |          \
-                              MODE_SS << MODE_POS |           \
-                              PGA_256mV << PGA_POS |          \
-                              MUX_P2_NG << MUX_POS |          \
-                              SS_START << SS_POS)
+// Read external TC
+#define TC_ADC_SETTINGS (NOP_VALID << NOP_POS |          \
+                         PULL_UP_ENABLE << PULL_UP_POS | \
+                         TS_MODE_ADC << TS_MODE_POS |    \
+                         DR_475_SPS << DR_POS |          \
+                         MODE_SS << MODE_POS |           \
+                         PGA_256mV << PGA_POS |          \
+                         MUX_P2_NG << MUX_POS |          \
+                         SS_START << SS_POS)
+
+// Read local temperature
+#define LOCAL_ADC_SETTINGS (NOP_VALID << NOP_POS |            \
+                            PULL_UP_ENABLE << PULL_UP_POS |   \
+                            TS_MODE_INTERNAL << TS_MODE_POS | \
+                            DR_475_SPS << DR_POS |            \
+                            MODE_SS << MODE_POS |             \
+                            PGA_256mV << PGA_POS |            \
+                            MUX_P2_NG << MUX_POS |            \
+                            SS_START << SS_POS)
 
 // Do not change ADC settings, by setting invalid flag
 #define UNCHANGED_ADC_SETTINGS (NOP_INVALID << NOP_POS)
+
+#define TC_SLOPE 0.2706
+#define TC_OFFSET 5
+#define TC_READ_DELAY 5
 
 #define exchangeSpiAdc(txbuf, rxbuf) spiExchangeHelper(&SPID1, &tc_adc_spicfg, TC_ADC_LEN, txbuf, rxbuf)
 
@@ -114,49 +128,64 @@ void calcBuffer(uint8_t *txbuf, uint16_t config)
 
 THD_FUNCTION(adcThread, arg)
 {
-    thread_t *heaterThread_p = (thread_t *)arg;
-
+    (void)arg;
     event_listener_t power_event_listener;
 
     chRegSetThreadName("tc_adc");
 
     chEvtRegisterMask(&power_event_source, &power_event_listener, POWER_EVENT);
 
-    uint8_t conf_acquire[TC_ADC_LEN];
+    uint8_t conf_acquire_local[TC_ADC_LEN];
+    uint8_t conf_acquire_tc[TC_ADC_LEN];
     uint8_t conf_read[TC_ADC_LEN];
 
-    calcBuffer(conf_acquire, DEFAULT_ADC_SETTINGS);
+    calcBuffer(conf_acquire_local, LOCAL_ADC_SETTINGS);
+    calcBuffer(conf_acquire_tc, TC_ADC_SETTINGS);
     calcBuffer(conf_read, UNCHANGED_ADC_SETTINGS);
 
     chEvtWaitAny(POWER_EVENT);
 
-    uint16_t val;
-    uint16_t raw_is_temperature;
+    uint16_t raw;
+    int16_t converted;
 
     // initial conversion
-    exchangeSpiAdc(conf_acquire, (uint8_t *)&val);
+    exchangeSpiAdc(conf_acquire_tc, (uint8_t *)&raw);
 
     chThdSleepMilliseconds(10);
 
     while (true)
     {
         // read conversion
-        exchangeSpiAdc(conf_read, (uint8_t *)&val);
+        exchangeSpiAdc(conf_read, (uint8_t *)&raw);
+        converted = REG_TO_TEMP(raw);
 
         chBSemWait(&heater.bsem);
-        raw_is_temperature = REG_TO_TEMP(val);
-        heater.is_temperature = raw_is_temperature * 0.27057471 + 47.4137931;
+        // calculate actual heater temperature, including cold junction compensation
+        heater.is_temperature = converted * TC_SLOPE + TC_OFFSET + heater.local_temperature;
         chBSemSignal(&heater.bsem);
 
-        chEvtBroadcast(&temp_event);
+        chEvtBroadcast(&temp_event_source);
 
-        chMsgSend(heaterThread_p, (msg_t)val);
+        chThdSleepMilliseconds(LOOP_TIME / 2);
 
-        chThdSleepMilliseconds(5);
+        // Measure local temperature while heater is working
+        exchangeSpiAdc(conf_acquire_local, (uint8_t *)&raw);
+        chThdSleepMilliseconds(TC_READ_DELAY);
 
-        // start conversion after heater switches off
-        exchangeSpiAdc(conf_acquire, (uint8_t *)&val);
+        exchangeSpiAdc(conf_read, (uint8_t *)&raw);
+        converted = REG_TO_TEMP(raw);
 
-        chThdSleepMilliseconds(5);
+        chBSemWait(&heater.bsem);
+        heater.local_temperature = (converted >> 2) * 0.03125;
+        chBSemSignal(&heater.bsem);
+
+        chThdSleepMilliseconds(LOOP_TIME / 2 - TC_READ_DELAY);
+
+        chThdSleepMilliseconds(TC_READ_DELAY);
+
+        // start new conversion after heater switched off
+        exchangeSpiAdc(conf_acquire_tc, (uint8_t *)&raw);
+
+        chThdSleepMilliseconds(TC_READ_DELAY);
     }
 }

@@ -3,6 +3,7 @@
 
 #include "ch.h"
 
+#define LOOP_TIME 200
 #define HEATER_THREAD_STACK_SIZE 128
 
 extern THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);
@@ -22,6 +23,7 @@ typedef struct
     double max_temperature;     //<<< Maximum heater temperature
     double set_temperature;     //<<< Desired heater temperature
     double is_temperature;      //<<< Actual heater temperature
+    double local_temperature;   //<<< Local temperature of station
     double integratedError;     //<<< Error from I-component of control loop
     double error;               //<<< Error from P-component of control loop
     double power_max;           //<<< Maximum power that the supply can deliver

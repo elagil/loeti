@@ -14,9 +14,6 @@
 #include "ssd1803_set.h"
 #include "ssd1803_def.h"
 
-#define TEMP_EVENT EVENT_MASK(0)
-#define POWER_EVENT EVENT_MASK(0)
-
 THD_WORKING_AREA(waLcdThread, LCD_THREAD_STACK_SIZE);
 
 THD_FUNCTION(lcdThread, arg)
@@ -33,7 +30,7 @@ THD_FUNCTION(lcdThread, arg)
 
     chRegSetThreadName("lcd");
 
-    chEvtRegisterMask(&temp_event, &temp_event_listener, TEMP_EVENT);
+    chEvtRegisterMask(&temp_event_source, &temp_event_listener, TEMP_EVENT);
     chEvtRegisterMask(&power_event_source, &power_event_listener, POWER_EVENT);
 
     chEvtWaitAny(POWER_EVENT);
@@ -87,19 +84,19 @@ THD_FUNCTION(lcdThread, arg)
         else if (powerRatio <= 50)
         {
             chsnprintf(str, 11, "\x10%3d     "
-                                "\xd0",
+                                "\x93",
                        (uint16_t)set);
         }
         else if (powerRatio <= 75)
         {
             chsnprintf(str, 11, "\x10%3d    "
-                                "\xd0\xd0",
+                                "\x93\x93",
                        (uint16_t)set);
         }
         else
         {
             chsnprintf(str, 11, "\x10%3d   "
-                                "\xd0\xd0\xd0",
+                                "\x93\x93\x93",
                        (uint16_t)set);
         }
 

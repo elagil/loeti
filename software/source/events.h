@@ -4,7 +4,9 @@
 #define POWER_EVENT EVENT_MASK(0)
 #define SWITCH_EVENT EVENT_MASK(1)
 #define PD_ALERT_EVENT EVENT_MASK(2)
+#define TEMP_EVENT EVENT_MASK(3)
 
+extern event_source_t temp_event_source;
 extern event_source_t power_event_source;
 extern event_source_t switch_event_source;
 
