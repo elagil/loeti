@@ -5,23 +5,18 @@
 #include "events.h"
 
 // default heater values, suitable for T245 handles and tips
+
 heater_t heater = {
-    .power_safety_margin = 1,
-    .resistance = 2.6,
-    .min_temperature = 150,
-    .max_temperature = 360,
-    .set_temperature = 300,
-    .local_temperature = 25,
-    .p = 80,
-    .i = 0.025,
-    .d = 0,
-    .error = 0,
-    .integratedError = 0,
-    .power_max = 0,
-    .pwm = 0,
-    .pwm_max = 0,
-    .voltage = 0,
-    .current = 0};
+    .power = {
+        .power_safety_margin = 1,
+        .resistance = 2.6,
+        .voltage = 0,
+        .current = 0,
+        .power_max = 0,
+        .pwm = 0,
+        .pwm_max = 0},
+    .control = {.p = 80, .i = 0.025, .d = 0, .error = 0, .integratedError = 0},
+    .temperatures = {.min = 150, .max = 360, .set = 300, .local = 25}};
 
 #define POWER_EVENT EVENT_MASK(0)
 
@@ -50,39 +45,39 @@ uint16_t controlLoop(void)
 
     uint16_t ratio = 0;
 
-    if ((heater.set_temperature <= heater.max_temperature) && (heater.is_temperature <= heater.max_temperature))
+    if ((heater.temperatures.set <= heater.temperatures.max) && (heater.temperatures.is_temperature <= heater.temperatures.max))
     {
         // Safety feature, for not letting heater temperature exceed maximum limit
 
         // Calculation of temperature error
-        heater.error = heater.set_temperature - heater.is_temperature;
+        heater.control.error = heater.temperatures.set - heater.temperatures.is_temperature;
 
-        if ((heater.pwm < heater.pwm_max) && (heater.pwm > 0))
+        if ((heater.power.pwm < heater.power.pwm_max) && (heater.power.pwm > 0))
         {
             // anti windup and integration of error
-            heater.integratedError += heater.error;
+            heater.control.integratedError += heater.control.error;
         }
 
         // Control equation
-        heater.pwm = heater.p * heater.error + heater.i * heater.integratedError * LOOP_TIME;
+        heater.power.pwm = heater.control.p * heater.control.error + heater.control.i * heater.control.integratedError * LOOP_TIME;
 
         // Clamping of PWM ratio
-        if (heater.pwm > heater.pwm_max)
+        if (heater.power.pwm > heater.power.pwm_max)
         {
-            heater.pwm = heater.pwm_max;
+            heater.power.pwm = heater.power.pwm_max;
         }
-        else if (heater.pwm < 1)
+        else if (heater.power.pwm < 1)
         {
-            heater.pwm = 0;
+            heater.power.pwm = 0;
         }
-        ratio = (uint16_t)heater.pwm;
+        ratio = (uint16_t)heater.power.pwm;
     }
     else
     {
         // Reset control after disconnected tool or other error
-        heater.error = 0;
-        heater.integratedError = 0;
-        heater.pwm = 0;
+        heater.control.error = 0;
+        heater.control.integratedError = 0;
+        heater.power.pwm = 0;
         ratio = 0;
     }
 

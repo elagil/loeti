@@ -50,12 +50,12 @@ THD_FUNCTION(lcdThread, arg)
         chEvtWaitAny(TEMP_EVENT);
 
         chBSemWait(&heater.bsem);
-        double is = heater.is_temperature;
-        double set = heater.set_temperature;
-        double max = heater.max_temperature;
-        double voltage = heater.voltage;
-        double current = heater.current;
-        double powerRatio = 100 * heater.pwm / heater.pwm_max;
+        double is = heater.temperatures.is_temperature;
+        double set = heater.temperatures.set;
+        double max = heater.temperatures.max;
+        double voltage = heater.power.voltage;
+        double current = heater.power.current;
+        double powerRatio = 100 * heater.power.pwm / heater.power.pwm_max;
         chBSemSignal(&heater.bsem);
 
         ssd1803_move_to_line(0);

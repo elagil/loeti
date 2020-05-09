@@ -29,21 +29,21 @@ THD_FUNCTION(uiThread, arg)
 
                 if (!switches.current.id.sw1)
                 {
-                    heater.set_temperature += 10;
+                    heater.temperatures.set += 10;
                 }
                 else if (!switches.current.id.sw0)
                 {
-                    heater.set_temperature -= 10;
+                    heater.temperatures.set -= 10;
                 }
 
-                if (heater.set_temperature > heater.max_temperature)
+                if (heater.temperatures.set > heater.temperatures.max)
                 {
-                    heater.set_temperature = heater.max_temperature;
+                    heater.temperatures.set = heater.temperatures.max;
                 }
 
-                if (heater.set_temperature < heater.min_temperature)
+                if (heater.temperatures.set < heater.temperatures.min)
                 {
-                    heater.set_temperature = heater.min_temperature;
+                    heater.temperatures.set = heater.temperatures.min;
                 }
 
                 chBSemSignal(&heater.bsem);

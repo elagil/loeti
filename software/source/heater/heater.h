@@ -19,20 +19,34 @@ typedef struct
     double resistance;          //<<< Heater element resistance
     double voltage;             //<<< Negotiated voltage
     double current;             //<<< Negotiated current
-    double min_temperature;     //<<< Minimum heater temperature
-    double max_temperature;     //<<< Maximum heater temperature
-    double set_temperature;     //<<< Desired heater temperature
-    double is_temperature;      //<<< Actual heater temperature
-    double local_temperature;   //<<< Local temperature of station
-    double integratedError;     //<<< Error from I-component of control loop
-    double error;               //<<< Error from P-component of control loop
     double power_max;           //<<< Maximum power that the supply can deliver
     double pwm;                 //<<< Current PWM ratio
     double pwm_max;             //<<< Maximum PWM ratio for not exceeding maximum supply power
-    double p;                   //<<< Contol loop P variable
-    double i;                   //<<< Contol loop I variable
-    double d;                   //<<< Contol loop D variable (currently unused)
-    binary_semaphore_t bsem;    //<<< Locking semaphore
+} heater_power_t;
+
+typedef struct
+{
+    double min;            //<<< Minimum heater temperature
+    double max;            //<<< Maximum heater temperature
+    double set;            //<<< Desired heater temperature
+    double is_temperature; //<<< Actual heater temperature
+    double local;          //<<< Local temperature of station
+} heater_temperatures_t;
+
+typedef struct
+{
+    double integratedError; //<<< Error from I-component of control loop
+    double error;           //<<< Error from P-component of control loop
+    double p;               //<<< Contol loop P variable
+    double i;               //<<< Contol loop I variable
+    double d;               //<<< Contol loop D variable (currently unused)
+} heater_control_t;
+typedef struct
+{
+    heater_power_t power;
+    heater_temperatures_t temperatures;
+    heater_control_t control;
+    binary_semaphore_t bsem; //<<< Locking semaphore
 } heater_t;
 
 extern heater_t heater;

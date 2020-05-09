@@ -126,20 +126,20 @@ THD_FUNCTION(usbPdThread, arg)
 
     chBSemWait(&heater.bsem);
 
-    heater.voltage = voltage / 1000;
-    heater.current = current / 1000;
-    heater.power_max = heater.current * heater.voltage;
+    heater.power.voltage = voltage / 1000;
+    heater.power.current = current / 1000;
+    heater.power.power_max = heater.power.current * heater.power.voltage;
 
-    volatile uint32_t max_current = (uint32_t)((double)voltage / heater.resistance);
-    volatile double pwm_max = heater.power_safety_margin * PWM_MAX_PERCENTAGE * current / max_current;
+    volatile uint32_t max_current = (uint32_t)((double)voltage / heater.power.resistance);
+    volatile double pwm_max = heater.power.power_safety_margin * PWM_MAX_PERCENTAGE * current / max_current;
 
     if (pwm_max > PWM_MAX_PERCENTAGE)
     {
-        heater.pwm_max = PWM_MAX_PERCENTAGE;
+        heater.power.pwm_max = PWM_MAX_PERCENTAGE;
     }
     else
     {
-        heater.pwm_max = pwm_max;
+        heater.power.pwm_max = pwm_max;
     }
 
     chBSemSignal(&heater.bsem);

@@ -161,7 +161,7 @@ THD_FUNCTION(adcThread, arg)
 
         chBSemWait(&heater.bsem);
         // calculate actual heater temperature, including cold junction compensation
-        heater.is_temperature = converted * TC_SLOPE + TC_OFFSET + heater.local_temperature;
+        heater.temperatures.is_temperature = converted * TC_SLOPE + TC_OFFSET + heater.temperatures.local;
         chBSemSignal(&heater.bsem);
 
         chEvtBroadcast(&temp_event_source);
@@ -176,7 +176,7 @@ THD_FUNCTION(adcThread, arg)
         converted = REG_TO_TEMP(raw);
 
         chBSemWait(&heater.bsem);
-        heater.local_temperature = (converted >> 2) * 0.03125;
+        heater.temperatures.local = (converted >> 2) * 0.03125;
         chBSemSignal(&heater.bsem);
 
         chThdSleepMilliseconds(LOOP_TIME / 2 - TC_READ_DELAY);
