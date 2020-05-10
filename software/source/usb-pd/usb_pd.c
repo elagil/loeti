@@ -5,6 +5,8 @@
 #include "USB_PD_core.h"
 #include "events.h"
 
+#define USB_PD_TIMEOUT 100
+
 event_source_t power_event_source;
 event_source_t alert_event_source;
 event_listener_t alert_event_listener;
@@ -23,13 +25,43 @@ extern USB_PD_SRC_PDOTypeDef PDO_FROM_SRC[7];
 
 THD_WORKING_AREA(waUsbPdThread, USB_PD_THREAD_STACK_SIZE);
 
-void toggleAlarmManagement(void *arg)
+static void toggleAlarmManagement(void *arg)
 {
     (void)arg;
     chSysLockFromISR();
     /* Invocation of some I-Class system APIs, never preemptable.*/
     chEvtBroadcastI(&alert_event_source);
     chSysUnlockFromISR();
+}
+
+/**
+ * @brief Exchange information with power source
+ * @detail Soft reset the link, in order to force the source to send link information
+ * Also requests source power profiles. 
+ * 
+ * After the alert pin is toggled, as a result of soft reset, the alarm management can handle messages
+ */
+static void exchangeSrc(void)
+{
+    while (true)
+    {
+        Send_Soft_reset_Message();
+
+        if (chEvtWaitAnyTimeout(PD_ALERT_EVENT, TIME_MS2I(USB_PD_TIMEOUT)))
+        {
+            uint32_t k = 0;
+            while (++k < 500)
+            {
+                ALARM_MANAGEMENT(NULL);
+                if (PDO_FROM_SRC_Valid)
+                {
+                    return;
+                }
+            }
+        }
+
+        chThdSleepMilliseconds(USB_PD_TIMEOUT);
+    }
 }
 
 THD_FUNCTION(usbPdThread, arg)
@@ -51,88 +83,35 @@ THD_FUNCTION(usbPdThread, arg)
     Read_SNK_PDO();
     Read_RDO();
 
-    while (true)
-    {
-        Send_Soft_reset_Message();
+    // Get power profiles from source
+    exchangeSrc();
 
-        chEvtWaitAny(PD_ALERT_EVENT);
-
-        uint32_t k = 0;
-        while (k < 500)
-        {
-            chThdSleepMilliseconds(1);
-            ALARM_MANAGEMENT(NULL);
-            if (PDO_FROM_SRC_Valid)
-            {
-                break;
-            }
-            k++;
-        }
-
-        if (PDO_FROM_SRC_Valid)
-        {
-            break;
-        }
-
-        chThdSleepMilliseconds(100);
-    }
-
+    // Select source profile with highest power output
     volatile uint8_t pdo = FindHighestSrcPower();
 
-    // chEvtWaitAny(PD_ALERT_EVENT);
+    // Wait for source to accept selected profile
+    exchangeSrc();
 
-    // uint32_t k = 0;
-    // while (k < 500)
-    // {
-    //     ALARM_MANAGEMENT(NULL);
-    //     if (PDO_FROM_SRC_Valid)
-    //     {
-    //         break;
-    //     }
-    //     k++;
-    // }
-
-    while (true)
-    {
-        Send_Soft_reset_Message();
-
-        chEvtWaitAny(PD_ALERT_EVENT);
-
-        uint32_t k = 0;
-        while (k < 500)
-        {
-            chThdSleepMilliseconds(1);
-            ALARM_MANAGEMENT(NULL);
-            if (PDO_FROM_SRC_Valid)
-            {
-                break;
-            }
-            k++;
-        }
-
-        if (PDO_FROM_SRC_Valid)
-        {
-            break;
-        }
-
-        chThdSleepMilliseconds(100);
-    }
-
-    Read_SNK_PDO();
-    Read_RDO();
-
+    // Calculate provided power from source voltage and current
     volatile uint32_t current = getPdoCurrent(pdo);
     volatile uint32_t voltage = getPdoVoltage(pdo);
 
     chBSemWait(&heater.bsem);
 
+    // Convert mV to V and mA to A
     heater.power.voltage = voltage / 1000;
     heater.power.current = current / 1000;
-    heater.power.power_max = heater.power.current * heater.power.voltage;
+    heater.power.max = heater.power.current * heater.power.voltage;
 
+    // Calculate maximum possible PWM ratio, for not exceeding source current
     volatile uint32_t max_current = (uint32_t)((double)voltage / heater.power.resistance);
     volatile double pwm_max = heater.power.power_safety_margin * PWM_MAX_PERCENTAGE * current / max_current;
 
+    // calculate I component of PID loop, based on available power. This prevents overshoot
+    // Higher supply power leads to higher I component, because less time is spent integrating
+    heater.control.i = heater.control.i_per_W * heater.power.max;
+
+    // Clamp PWM ratio to maximum possible values
     if (pwm_max > PWM_MAX_PERCENTAGE)
     {
         heater.power.pwm_max = PWM_MAX_PERCENTAGE;

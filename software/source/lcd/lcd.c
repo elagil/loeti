@@ -16,6 +16,8 @@
 
 THD_WORKING_AREA(waLcdThread, LCD_THREAD_STACK_SIZE);
 
+#define LINE_LENGTH 10
+
 THD_FUNCTION(lcdThread, arg)
 {
     (void)arg;
@@ -53,53 +55,52 @@ THD_FUNCTION(lcdThread, arg)
         double is = heater.temperatures.is_temperature;
         double set = heater.temperatures.set;
         double max = heater.temperatures.max;
-        double voltage = heater.power.voltage;
-        double current = heater.power.current;
+        double power = heater.power.max;
         double powerRatio = 100 * heater.power.pwm / heater.power.pwm_max;
         chBSemSignal(&heater.bsem);
 
         ssd1803_move_to_line(0);
-        chsnprintf(str, 11, "%2dV   %1.1fA", (uint16_t)voltage, current);
-        ssd1803_writeByteArray((uint8_t *)str, 10);
+        chsnprintf(str, LINE_LENGTH + 1, "     %3d W", (uint16_t)power);
+        ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
 
         ssd1803_move_to_line(1);
         if (is > max)
         {
-            chsnprintf(str, 11, "    ---   ");
-            ssd1803_writeByteArray((uint8_t *)str, 10);
+            chsnprintf(str, LINE_LENGTH + 1, "    ---   ");
+            ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
         }
         else
         {
-            chsnprintf(str, 11, "    %3d   ", (uint16_t)is);
-            ssd1803_writeByteArray((uint8_t *)str, 10);
+            chsnprintf(str, LINE_LENGTH + 1, "    %3d   ", (uint16_t)is);
+            ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
         }
 
         ssd1803_move_to_line(2);
         if (powerRatio <= 25)
         {
-            chsnprintf(str, 11, "\x10%3d     "
-                                " ",
+            chsnprintf(str, LINE_LENGTH + 1, "\x10%3d     "
+                                             " ",
                        (uint16_t)set);
         }
         else if (powerRatio <= 50)
         {
-            chsnprintf(str, 11, "\x10%3d     "
-                                "\x93",
+            chsnprintf(str, LINE_LENGTH + 1, "\x10%3d     "
+                                             "\x93",
                        (uint16_t)set);
         }
         else if (powerRatio <= 75)
         {
-            chsnprintf(str, 11, "\x10%3d    "
-                                "\x93\x93",
+            chsnprintf(str, LINE_LENGTH + 1, "\x10%3d    "
+                                             "\x93\x93",
                        (uint16_t)set);
         }
         else
         {
-            chsnprintf(str, 11, "\x10%3d   "
-                                "\x93\x93\x93",
+            chsnprintf(str, LINE_LENGTH + 1, "\x10%3d   "
+                                             "\x93\x93\x93",
                        (uint16_t)set);
         }
 
-        ssd1803_writeByteArray((uint8_t *)str, 10);
+        ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
     }
 }

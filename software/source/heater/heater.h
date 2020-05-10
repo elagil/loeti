@@ -12,14 +12,13 @@ extern THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);
  * Maximum ratio that can be set for the heater PWM
  */
 #define PWM_MAX_PERCENTAGE 10000
-
 typedef struct
 {
     double power_safety_margin; //<<< A number < 1, indicating the maximum amount of power to draw from the supply
     double resistance;          //<<< Heater element resistance
     double voltage;             //<<< Negotiated voltage
     double current;             //<<< Negotiated current
-    double power_max;           //<<< Maximum power that the supply can deliver
+    double max;                 //<<< Maximum power that the supply can deliver
     double pwm;                 //<<< Current PWM ratio
     double pwm_max;             //<<< Maximum PWM ratio for not exceeding maximum supply power
 } heater_power_t;
@@ -40,9 +39,11 @@ typedef struct
     double p;               //<<< Contol loop P variable
     double i;               //<<< Contol loop I variable
     double d;               //<<< Contol loop D variable (currently unused)
+    double i_per_W;         //<<< Contol loop I variable, per Watt
 } heater_control_t;
 typedef struct
 {
+    bool connected; //<<< True, if heater is connected to the station
     heater_power_t power;
     heater_temperatures_t temperatures;
     heater_control_t control;

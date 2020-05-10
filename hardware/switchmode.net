@@ -1,0 +1,21 @@
+* C:\Users\x\repo\development\loeti\hardware\switchmode.asc
+Q1 N001 N002 N003 0 BC817-40
+Q2 0 N002 N003 0 BC807-40
+R1 N004 N003 20
+M1 N006 N004 N001 N001 Si4425DY
+R2 N006 0 3
+C1 N001 0 470µ
+V1 N001 0 20 Rser=0.5
+V2 N005 0 PULSE(0 3.3 0 0 0 20u 50u)
+Q3 N002 P001 0 0 BC817-40
+R3 N001 N002 1k
+R5 P001 N005 1k
+.model NPN NPN
+.model PNP PNP
+.lib C:\Users\x\Documents\LTspiceXVII\lib\cmp\standard.bjt
+.model NMOS NMOS
+.model PMOS PMOS
+.lib C:\Users\x\Documents\LTspiceXVII\lib\cmp\standard.mos
+.tran 10m
+.backanno
+.end

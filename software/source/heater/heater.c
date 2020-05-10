@@ -12,10 +12,10 @@ heater_t heater = {
         .resistance = 2.6,
         .voltage = 0,
         .current = 0,
-        .power_max = 0,
+        .max = 0,
         .pwm = 0,
         .pwm_max = 0},
-    .control = {.p = 80, .i = 0.025, .d = 0, .error = 0, .integratedError = 0},
+    .control = {.p = 80, .i_per_W = 0.0004, .i = 0, .d = 0, .error = 0, .integratedError = 0},
     .temperatures = {.min = 150, .max = 360, .set = 300, .local = 25}};
 
 #define POWER_EVENT EVENT_MASK(0)
@@ -45,7 +45,7 @@ uint16_t controlLoop(void)
 
     uint16_t ratio = 0;
 
-    if ((heater.temperatures.set <= heater.temperatures.max) && (heater.temperatures.is_temperature <= heater.temperatures.max))
+    if (heater.connected && (heater.temperatures.set <= heater.temperatures.max) && (heater.temperatures.is_temperature <= heater.temperatures.max))
     {
         // Safety feature, for not letting heater temperature exceed maximum limit
 

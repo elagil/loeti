@@ -143,6 +143,7 @@ uint32_t Find_Matching_SRC_PDO(uint32_t Min_Power, uint32_t Min_V, uint32_t Max_
 uint32_t Request_SRC_PDO_NUMBER(uint8_t SRC_PDO_position);
 void Negotiate_5V(void);
 uint8_t FindHighestSrcPower(void);
+uint8_t FindHighestSrcCurrent(void);
 uint32_t getPdoCurrent(uint8_t pdo);
 uint32_t getPdoVoltage(uint8_t pdo);
 

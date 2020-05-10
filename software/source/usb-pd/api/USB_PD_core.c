@@ -134,7 +134,7 @@ void SW_reset_by_Reg(void)
 
 /************************   Send_Soft_reset_Message (void)  ***************************/
 /**
-* @brief Send Power delivery reset message).
+* @brief Send Power delivery reset message.
 * @retval none
 */
 
@@ -347,6 +347,8 @@ Arguments are:
 ************************************************************************************/
 void Update_PDO(uint8_t PDO_Number, uint32_t Voltage, uint32_t Current)
 {
+  USB_PD_ready();
+
   uint8_t reg;
 
   PDO_SNK[PDO_Number - 1].fix.Voltage = Voltage / 50;
@@ -366,6 +368,8 @@ Arguments are:
 
 void Update_Valid_PDO_Number(uint8_t Number_PDO)
 {
+  USB_PD_ready();
+
   if (Number_PDO >= 1 && Number_PDO <= 3)
   {
     PDO_SNK_NUMB = Number_PDO;
@@ -456,9 +460,9 @@ uint32_t Request_SRC_PDO_NUMBER(uint8_t SRC_PDO_position)
       PDO_V = PDO_FROM_SRC[SRC_PDO_position - 1].fix.Voltage * 50;
       PDO_I = PDO_FROM_SRC[SRC_PDO_position - 1].fix.Max_Operating_Current * 10;
 
-      Update_PDO(3, PDO_V, PDO_I);
+      Update_Valid_PDO_Number(2);
+      Update_PDO(2, PDO_V, PDO_I);
       PDO1_updated = 1;
-      Update_Valid_PDO_Number(3);
     }
     else
     {
@@ -477,7 +481,7 @@ uint8_t FindHighestSrcPower(void)
   static uint8_t i_max_power;
   uint32_t PDO_V;
   uint32_t PDO_I;
-  uint32_t PDO_P;
+  uint32_t PDO_P = 0;
 
   if (PDO_FROM_SRC_Num > 1)
   {
@@ -499,6 +503,28 @@ uint8_t FindHighestSrcPower(void)
   return (i_max_power + 1);
 }
 
+uint8_t FindHighestSrcCurrent(void)
+{
+  static uint8_t i_max_current;
+  uint32_t PDO_I = 0;
+
+  if (PDO_FROM_SRC_Num > 1)
+  {
+    for (uint8_t i = 1; i < PDO_FROM_SRC_Num; i++) // loop started from PDO2
+    {
+      uint32_t new_PDO_I = PDO_FROM_SRC[i].fix.Max_Operating_Current * 10;
+
+      if (new_PDO_I > PDO_I)
+      {
+        PDO_I = new_PDO_I;
+        i_max_current = i;
+      }
+    }
+  }
+
+  Request_SRC_PDO_NUMBER(i_max_current + 1);
+  return (i_max_current + 1);
+}
 uint32_t getPdoCurrent(uint8_t pdo)
 {
   if (pdo > 0)

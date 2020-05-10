@@ -10,6 +10,7 @@
 event_source_t temp_event_source;
 
 #define TC_ADC_LEN 2
+#define TC_DISCONNECT 32767
 
 // Extracts the upper or lower byte from the register (16 bit length)
 #define CONF_REG_LOWER_BYTE(reg) (reg & 0xff)
@@ -160,6 +161,17 @@ THD_FUNCTION(adcThread, arg)
         converted = REG_TO_TEMP(raw);
 
         chBSemWait(&heater.bsem);
+        if (converted == TC_DISCONNECT)
+        {
+
+            heater.connected = false;
+        }
+        else
+        {
+            heater.connected = true;
+        }
+        chBSemSignal(&heater.bsem);
+
         // calculate actual heater temperature, including cold junction compensation
         heater.temperatures.is_temperature = converted * TC_SLOPE + TC_OFFSET + heater.temperatures.local;
         chBSemSignal(&heater.bsem);
