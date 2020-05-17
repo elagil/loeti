@@ -21,39 +21,55 @@ THD_FUNCTION(uiThread, arg)
         switches.current.id.sw0 = palReadLine(LINE_SW0);
         switches.current.id.sw1 = palReadLine(LINE_SW1);
 
-        if (switches.current.raw != switches.previous.raw)
+        if (switches.current.raw < switches.previous.raw)
         {
             if (++debounce == DEBOUNCE)
             {
                 chBSemWait(&heater.bsem);
 
-                if (!switches.current.id.sw1)
+                if (!switches.current.id.sw0 && !switches.current.id.sw1)
                 {
-                    heater.temperatures.set += 10;
+                    heater.sleep = true;
+                }
+                else if (!switches.current.id.sw1)
+                {
+                    if (heater.sleep)
+                    {
+                        heater.sleep = false;
+                    }
+                    else
+                    {
+                        heater.temperature_control.set += TEMPERATURE_SET_INTERVAL;
+                    }
                 }
                 else if (!switches.current.id.sw0)
                 {
-                    heater.temperatures.set -= 10;
+                    if (heater.sleep)
+                    {
+                        heater.sleep = false;
+                    }
+                    else
+                    {
+                        heater.temperature_control.set -= TEMPERATURE_SET_INTERVAL;
+                    }
                 }
 
-                if (heater.temperatures.set > heater.temperatures.max)
+                if (heater.temperature_control.set > heater.temperatures.max)
                 {
-                    heater.temperatures.set = heater.temperatures.max;
+                    heater.temperature_control.set = heater.temperatures.max;
                 }
 
-                if (heater.temperatures.set < heater.temperatures.min)
+                if (heater.temperature_control.set < heater.temperatures.min)
                 {
-                    heater.temperatures.set = heater.temperatures.min;
+                    heater.temperature_control.set = heater.temperatures.min;
                 }
 
                 chBSemSignal(&heater.bsem);
-
-                // chEvtBroadcast(&switch_event_source);
-                switches.previous.raw = switches.current.raw;
             }
         }
         else
         {
+            switches.previous.raw = switches.current.raw;
             debounce = 0;
         }
 

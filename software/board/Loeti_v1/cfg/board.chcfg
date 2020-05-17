@@ -34,7 +34,7 @@
         Mode="Input"
         Alternate="0" />
       <pin2
-        ID="POT"
+        ID="CUR"
         Type="PushPull"
         Level="High"
         Speed="High"
@@ -74,12 +74,12 @@
         Mode="Output"
         Alternate="0" />
       <pin7
-        ID="SEn"
+        ID="VOL"
         Type="PushPull"
         Level="High"
-        Speed="Maximum"
+        Speed="High"
         Resistor="Floating"
-        Mode="Output"
+        Mode="Input"
         Alternate="0" />
       <pin8
         ID="PWM"

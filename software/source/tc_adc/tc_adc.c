@@ -9,6 +9,7 @@
 
 event_source_t temp_event_source;
 
+#define TC_CONNECT_DEBOUNCE 5
 #define TC_ADC_LEN 2
 #define TC_DISCONNECT 32767
 
@@ -131,10 +132,12 @@ THD_FUNCTION(adcThread, arg)
 {
     (void)arg;
     event_listener_t power_event_listener;
+    event_listener_t pwm_event_listener;
 
     chRegSetThreadName("tc_adc");
 
     chEvtRegisterMask(&power_event_source, &power_event_listener, POWER_EVENT);
+    chEvtRegisterMask(&pwm_event_source, &pwm_event_listener, PWM_EVENT);
 
     uint8_t conf_acquire_local[TC_ADC_LEN];
     uint8_t conf_acquire_tc[TC_ADC_LEN];
@@ -154,6 +157,7 @@ THD_FUNCTION(adcThread, arg)
 
     chThdSleepMilliseconds(10);
 
+    uint32_t debounce = 0;
     while (true)
     {
         // read conversion
@@ -163,22 +167,23 @@ THD_FUNCTION(adcThread, arg)
         chBSemWait(&heater.bsem);
         if (converted == TC_DISCONNECT)
         {
-
+            debounce = 0;
             heater.connected = false;
         }
         else
         {
-            heater.connected = true;
+            if (++debounce == TC_CONNECT_DEBOUNCE)
+            {
+                heater.connected = true;
+            }
         }
-        chBSemSignal(&heater.bsem);
-
         // calculate actual heater temperature, including cold junction compensation
-        heater.temperatures.is_temperature = converted * TC_SLOPE + TC_OFFSET + heater.temperatures.local;
+        heater.temperature_control.is = converted * TC_SLOPE + TC_OFFSET + heater.temperatures.local;
         chBSemSignal(&heater.bsem);
 
         chEvtBroadcast(&temp_event_source);
 
-        chThdSleepMilliseconds(LOOP_TIME / 2);
+        chThdSleepMilliseconds(LOOP_TIME_TEMPERATURE_MS / 2);
 
         // Measure local temperature while heater is working
         exchangeSpiAdc(conf_acquire_local, (uint8_t *)&raw);
@@ -191,7 +196,8 @@ THD_FUNCTION(adcThread, arg)
         heater.temperatures.local = (converted >> 2) * 0.03125;
         chBSemSignal(&heater.bsem);
 
-        chThdSleepMilliseconds(LOOP_TIME / 2 - TC_READ_DELAY);
+        // Wait for PWM to stop
+        chEvtWaitAny(PWM_EVENT);
 
         chThdSleepMilliseconds(TC_READ_DELAY);
 

@@ -1,23 +1,42 @@
 Circuit: * C:\Users\x\repo\development\loeti\hardware\switchmode.asc
 
-Limiting rise time of source v2 to 2e-006
-Limiting fall time of source v2 to 2e-006
-Direct Newton iteration for .op point succeeded.
+Limiting rise time of source v2 to 2.5e-006
+Limiting fall time of source v2 to 2.5e-006
+Direct Newton iteration failed to find .op point.  (Use ".option noopiter" to skip.)
+Starting Gmin stepping
+Gmin = 10
+Gmin = 1.07374
+Gmin = 0.115292
+Gmin = 0.0123794
+Gmin = 0.00132923
+Gmin = 0.000142725
+Gmin = 1.5325e-005
+Gmin = 1.6455e-006
+Gmin = 1.76685e-007
+Gmin = 1.89714e-008
+Gmin = 2.03704e-009
+Gmin = 2.18725e-010
+Gmin = 2.34854e-011
+Gmin = 2.52173e-012
+Gmin = 2.70769e-013
+Gmin = 0
+Gmin stepping succeeded in finding the operating point.
 
-Date: Sun May 10 12:30:04 2020
-Total elapsed time: 0.901 seconds.
+
+Date: Sun May 17 14:17:25 2020
+Total elapsed time: 0.817 seconds.
 
 tnom = 27
 temp = 27
 method = modified trap
-totiter = 221237
-traniter = 221201
-tranpoints = 61574
-accept = 44213
-rejected = 17361
-matrix size = 21
-fillins = 20
+totiter = 213304
+traniter = 212786
+tranpoints = 59043
+accept = 42902
+rejected = 16141
+matrix size = 24
+fillins = 14
 solver = Normal
-Matrix Compiler1: 2.79 KB object code size  0.5/0.3/[0.2]
-Matrix Compiler2: 2.15 KB object code size  0.2/0.4/[0.2]
+Matrix Compiler1: 2.42 KB object code size  0.5/0.3/[0.3]
+Matrix Compiler2: 2.25 KB object code size  0.3/0.4/[0.2]
 

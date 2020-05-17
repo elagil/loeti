@@ -46,59 +46,103 @@ THD_FUNCTION(lcdThread, arg)
     ssd1803_initialize();
 
     char str[10];
+    uint8_t waiting = 0;
 
     while (true)
     {
         chEvtWaitAny(TEMP_EVENT);
 
         chBSemWait(&heater.bsem);
-        double is = heater.temperatures.is_temperature;
-        double set = heater.temperatures.set;
+        bool connected = heater.connected;
+        double is = heater.temperature_control.is;
+        double set = heater.temperature_control.set;
         double max = heater.temperatures.max;
-        double power = heater.power.max;
-        double powerRatio = 100 * heater.power.pwm / heater.power.pwm_max;
+        double power = heater.power.power_negotiated;
+        double currentRatio = 100 * (heater.current_control.is / heater.power.current_negotiated);
         chBSemSignal(&heater.bsem);
 
         ssd1803_move_to_line(0);
-        chsnprintf(str, LINE_LENGTH + 1, "     %3d W", (uint16_t)power);
+        chsnprintf(str, LINE_LENGTH + 1, "      %3dW", (uint16_t)power);
         ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
 
         ssd1803_move_to_line(1);
-        if (is > max)
+        if (connected && (is < max) && (is > 0))
         {
-            chsnprintf(str, LINE_LENGTH + 1, "    ---   ");
-            ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
+            waiting = 0;
+            chsnprintf(str, LINE_LENGTH + 1, "    %3d   ", (uint16_t)(is + 0.5));
         }
         else
         {
-            chsnprintf(str, LINE_LENGTH + 1, "    %3d   ", (uint16_t)is);
-            ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
+            switch (waiting)
+            {
+            case 0:
+                chsnprintf(str, LINE_LENGTH + 1, "          ");
+                break;
+
+            case 1:
+                chsnprintf(str, LINE_LENGTH + 1, "    \xdd     ");
+                break;
+
+            case 2:
+                chsnprintf(str, LINE_LENGTH + 1, "    \xdd\xdd    ");
+                break;
+
+            case 3:
+                chsnprintf(str, LINE_LENGTH + 1, "    \xdd\xdd\xdd   ");
+                break;
+
+            case 4:
+                chsnprintf(str, LINE_LENGTH + 1, "     \xdd\xdd   ");
+                break;
+
+            case 5:
+                chsnprintf(str, LINE_LENGTH + 1, "      \xdd   ");
+                break;
+
+            default:
+                break;
+            }
+            if (++waiting >= 6)
+            {
+                waiting = 0;
+            }
         }
+        ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
 
         ssd1803_move_to_line(2);
-        if (powerRatio <= 25)
+        if (heater.sleep)
         {
-            chsnprintf(str, LINE_LENGTH + 1, "\x10%3d     "
-                                             " ",
-                       (uint16_t)set);
-        }
-        else if (powerRatio <= 50)
-        {
-            chsnprintf(str, LINE_LENGTH + 1, "\x10%3d     "
-                                             "\x93",
-                       (uint16_t)set);
-        }
-        else if (powerRatio <= 75)
-        {
-            chsnprintf(str, LINE_LENGTH + 1, "\x10%3d    "
-                                             "\x93\x93",
+            chsnprintf(str, LINE_LENGTH + 1, "\x10%3d "
+                                             "SLEEP",
                        (uint16_t)set);
         }
         else
         {
-            chsnprintf(str, LINE_LENGTH + 1, "\x10%3d   "
-                                             "\x93\x93\x93",
-                       (uint16_t)set);
+
+            if (currentRatio <= 25)
+            {
+                chsnprintf(str, LINE_LENGTH + 1, "\x10%3d     "
+                                                 " ",
+                           (uint16_t)set);
+            }
+            else if (currentRatio <= 50)
+            {
+                chsnprintf(str, LINE_LENGTH + 1, "\x10%3d     "
+                                                 "\x93",
+                           (uint16_t)set);
+            }
+            else if (currentRatio <= 75)
+            {
+                chsnprintf(str, LINE_LENGTH + 1, "\x10%3d    "
+                                                 "\x93\x93",
+                           (uint16_t)set);
+            }
+            else
+            {
+                chsnprintf(str, LINE_LENGTH + 1, "\x10%3d   "
+                                                 "\x93\x93\x93",
+                           (uint16_t)set);
+            }
         }
 
         ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);

@@ -5,7 +5,8 @@
 #include "USB_PD_core.h"
 #include "events.h"
 
-#define USB_PD_TIMEOUT 100
+#define USB_PD_TIMEOUT 50
+#define USB_PD_TIMEOUT_TICKS TIME_MS2I(USB_PD_TIMEOUT)
 
 event_source_t power_event_source;
 event_source_t alert_event_source;
@@ -43,19 +44,28 @@ static void toggleAlarmManagement(void *arg)
  */
 static void exchangeSrc(void)
 {
+
     while (true)
     {
         Send_Soft_reset_Message();
 
-        if (chEvtWaitAnyTimeout(PD_ALERT_EVENT, TIME_MS2I(USB_PD_TIMEOUT)))
+        if (chEvtWaitAnyTimeout(PD_ALERT_EVENT, USB_PD_TIMEOUT_TICKS))
         {
-            uint32_t k = 0;
-            while (++k < 500)
+
+            systime_t start_time = chVTGetSystemTime();
+
+            while (true)
             {
+                // catch alarm
                 ALARM_MANAGEMENT(NULL);
+
                 if (PDO_FROM_SRC_Valid)
                 {
                     return;
+                }
+                else if (chVTTimeElapsedSinceX(start_time) >= USB_PD_TIMEOUT_TICKS)
+                {
+                    break;
                 }
             }
         }
@@ -99,27 +109,13 @@ THD_FUNCTION(usbPdThread, arg)
     chBSemWait(&heater.bsem);
 
     // Convert mV to V and mA to A
-    heater.power.voltage = voltage / 1000;
-    heater.power.current = current / 1000;
-    heater.power.max = heater.power.current * heater.power.voltage;
-
-    // Calculate maximum possible PWM ratio, for not exceeding source current
-    volatile uint32_t max_current = (uint32_t)((double)voltage / heater.power.resistance);
-    volatile double pwm_max = heater.power.power_safety_margin * PWM_MAX_PERCENTAGE * current / max_current;
+    heater.power.voltage_negotiated = voltage / 1000;
+    heater.power.current_negotiated = current / 1000;
+    heater.power.power_negotiated = heater.power.current_negotiated * heater.power.voltage_negotiated;
 
     // calculate I component of PID loop, based on available power. This prevents overshoot
     // Higher supply power leads to higher I component, because less time is spent integrating
-    heater.control.i = heater.control.i_per_W * heater.power.max;
-
-    // Clamp PWM ratio to maximum possible values
-    if (pwm_max > PWM_MAX_PERCENTAGE)
-    {
-        heater.power.pwm_max = PWM_MAX_PERCENTAGE;
-    }
-    else
-    {
-        heater.power.pwm_max = pwm_max;
-    }
+    heater.temperature_control.i = heater.temperature_control.i_per_W * heater.power.power_negotiated;
 
     chBSemSignal(&heater.bsem);
 
