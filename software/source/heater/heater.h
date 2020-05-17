@@ -44,7 +44,6 @@ typedef struct
     double p;               //<<< Contol loop P variable
     double i;               //<<< Contol loop I variable
     double d;               //<<< Contol loop D variable (currently unused)
-    double i_per_W;         //<<< Contol loop I variable, per Watt
 } pid_t;
 typedef struct
 {

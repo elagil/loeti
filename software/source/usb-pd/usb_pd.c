@@ -113,10 +113,6 @@ THD_FUNCTION(usbPdThread, arg)
     heater.power.current_negotiated = current / 1000;
     heater.power.power_negotiated = heater.power.current_negotiated * heater.power.voltage_negotiated;
 
-    // calculate I component of PID loop, based on available power. This prevents overshoot
-    // Higher supply power leads to higher I component, because less time is spent integrating
-    heater.temperature_control.i = heater.temperature_control.i_per_W * heater.power.power_negotiated;
-
     chBSemSignal(&heater.bsem);
 
     chEvtBroadcast(&power_event_source);

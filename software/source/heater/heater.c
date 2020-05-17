@@ -29,8 +29,8 @@ heater_t heater = {
         .current_meas = 0,
         .pwm = 0,
         .pwm_max = 0},
-    .current_control = {.set = 1, .p = 0, .i_per_W = 0, .i = HEATER_CURRENT_I, .d = 0, .error = 0, .integratedError = 0},
-    .temperature_control = {.set = 300, .p = 0.1, .i_per_W = 0.003, .i = 0, .d = 0, .error = 0, .integratedError = 0},
+    .current_control = {.set = 1, .p = 0, .i = HEATER_CURRENT_I, .d = 0, .error = 0, .integratedError = 0},
+    .temperature_control = {.set = 300, .p = 0.1, .i = 0.25, .d = 0, .error = 0, .integratedError = 0},
     .temperatures = {.min = 150, .max = 380, .local = 25}};
 
 #define POWER_EVENT EVENT_MASK(0)

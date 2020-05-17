@@ -9,7 +9,7 @@
 
 event_source_t temp_event_source;
 
-#define TC_CONNECT_DEBOUNCE 5
+#define TC_CONNECT_DEBOUNCE_MS 1000
 #define TC_ADC_LEN 2
 #define TC_DISCONNECT 32767
 
@@ -172,7 +172,7 @@ THD_FUNCTION(adcThread, arg)
         }
         else
         {
-            if (++debounce == TC_CONNECT_DEBOUNCE)
+            if (++debounce == TC_CONNECT_DEBOUNCE_MS / LOOP_TIME_TEMPERATURE_MS)
             {
                 heater.connected = true;
             }
