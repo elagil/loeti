@@ -6,9 +6,13 @@
 
 #define MS2S(x) ((double)x / 1000.0)
 
-#define HEATER_RESISTANCE 3.0
+#define HEATER_RESISTANCE 2.75
+#define HEATER_CURRENT_P 0
 #define HEATER_CURRENT_I_SCALE 0.5
 #define HEATER_CURRENT_I (HEATER_CURRENT_I_SCALE * HEATER_RESISTANCE / (2 * MS2S(LOOP_TIME_CURRENT_MS)))
+
+#define HEATER_TEMPERATURE_P 0.1
+#define HEATER_TEMPERATURE_I (0 / (MS2S(LOOP_TIME_TEMPERATURE_MS)))
 
 #define VOLTAGE_SENSE_RATIO 11
 #define CURRENT_SENSE_RATIO 2.5
@@ -21,7 +25,7 @@ event_source_t pwm_event_source;
 // default heater values, suitable for T245 handles and tips
 heater_t heater = {
     .power = {
-        .current_safety_margin = 1,
+        .current_safety_margin = 0.975,
         .voltage_negotiated = 0,
         .current_negotiated = 0,
         .power_negotiated = 0,
@@ -29,8 +33,8 @@ heater_t heater = {
         .current_meas = 0,
         .pwm = 0,
         .pwm_max = 0},
-    .current_control = {.set = 1, .p = 0, .i = HEATER_CURRENT_I, .d = 0, .error = 0, .integratedError = 0},
-    .temperature_control = {.set = 300, .p = 0.1, .i = 0.25, .d = 0, .error = 0, .integratedError = 0},
+    .current_control = {.set = 0, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
+    .temperature_control = {.set = 300, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .error = 0, .integratedError = 0},
     .temperatures = {.min = 150, .max = 380, .local = 25}};
 
 #define POWER_EVENT EVENT_MASK(0)
@@ -58,35 +62,31 @@ void temperatureControlLoop(void)
 {
     chBSemWait(&heater.bsem);
 
-    if (heater.connected && !heater.sleep)
-    { // Heater connected, so heating can occur.
-        if ((heater.temperature_control.set <= heater.temperatures.max) && (heater.temperature_control.is <= heater.temperatures.max))
-        { // Safety feature, for not letting heater temperature exceed maximum limit
+    if (
+        heater.connected &&
+        !heater.sleep &&
+        (heater.temperature_control.set <= heater.temperatures.max) &&
+        (heater.temperature_control.is <= heater.temperatures.max))
+    {
+        // Calculation of temperature error
+        heater.temperature_control.error = heater.temperature_control.set - heater.temperature_control.is;
 
-            // Calculation of temperature error
-            heater.temperature_control.error = heater.temperature_control.set - heater.temperature_control.is;
-
-            if ((heater.current_control.set < heater.power.current_negotiated) && (heater.current_control.set > 0))
-            {
-                // anti windup and integration of error
-                heater.temperature_control.integratedError += heater.temperature_control.error * MS2S(LOOP_TIME_TEMPERATURE_MS);
-            }
-
-            // Control equation
-            heater.current_control.set = heater.temperature_control.p * heater.temperature_control.error + heater.temperature_control.i * MS2S(LOOP_TIME_TEMPERATURE_MS) * heater.temperature_control.integratedError;
-
-            // Clamping of power supply current
-            if (heater.current_control.set > heater.power.current_negotiated * heater.power.current_safety_margin)
-            {
-                heater.current_control.set = heater.power.current_negotiated * heater.power.current_safety_margin;
-            }
-            else if (heater.current_control.set <= 0)
-            {
-                heater.current_control.set = 0;
-            }
+        if ((heater.current_control.set < heater.power.current_negotiated) && (heater.current_control.set >= 0))
+        {
+            // anti windup and integration of error
+            heater.temperature_control.integratedError += heater.temperature_control.error * MS2S(LOOP_TIME_TEMPERATURE_MS);
         }
-        else
-        { // Shutdown heating if heater exceeds limits
+
+        // Control equation
+        heater.current_control.set = heater.temperature_control.p * heater.temperature_control.error + heater.temperature_control.i * heater.temperature_control.integratedError;
+
+        // Clamp to available power supply current
+        if (heater.current_control.set > heater.power.current_negotiated * heater.power.current_safety_margin)
+        {
+            heater.current_control.set = heater.power.current_negotiated * heater.power.current_safety_margin;
+        }
+        else if (heater.current_control.set < 0)
+        {
             heater.current_control.set = 0;
         }
     }
@@ -108,35 +108,30 @@ void currentControlLoop(void)
 {
     chBSemWait(&heater.bsem);
 
-    if (heater.connected)
-    { // Heater connected, so heating can occur.
-        if ((heater.temperature_control.set <= heater.temperatures.max) && (heater.temperature_control.is <= heater.temperatures.max))
-        { // Safety feature, for not letting heater temperature exceed maximum limit
+    if (
+        heater.connected &&
+        !heater.sleep &&
+        (heater.temperature_control.set <= heater.temperatures.max) &&
+        (heater.temperature_control.is <= heater.temperatures.max))
+    { // Calculation of current error
+        heater.current_control.error = heater.current_control.set - heater.current_control.is;
 
-            // Calculation of current error
-            heater.current_control.error = heater.current_control.set - heater.current_control.is;
-
-            if ((heater.power.pwm < PWM_MAX_PERCENTAGE) && (heater.power.pwm >= 0))
-            {
-                // anti windup and integration of error
-                heater.current_control.integratedError += heater.current_control.error * MS2S(LOOP_TIME_CURRENT_MS);
-            }
-
-            // Control equation, convert voltage to PWM ratio
-            heater.power.pwm = (double)PWM_MAX_PERCENTAGE * (heater.current_control.p * heater.current_control.error + heater.current_control.i * heater.current_control.integratedError) / heater.power.voltage_negotiated;
-
-            // Clamping of PWM ratio
-            if (heater.power.pwm > PWM_MAX_PERCENTAGE)
-            {
-                heater.power.pwm = PWM_MAX_PERCENTAGE;
-            }
-            else if (heater.power.pwm < 1)
-            {
-                heater.power.pwm = 0;
-            }
+        if ((heater.power.pwm < PWM_MAX_PERCENTAGE) && (heater.power.pwm >= 0))
+        {
+            // anti windup and integration of error
+            heater.current_control.integratedError += heater.current_control.error * MS2S(LOOP_TIME_CURRENT_MS);
         }
-        else
-        { // Shutdown heating if heater exceeds limits
+
+        // Control equation, convert voltage to PWM ratio
+        heater.power.pwm = (double)PWM_MAX_PERCENTAGE * (heater.current_control.p * heater.current_control.error + heater.current_control.i * heater.current_control.integratedError) / heater.power.voltage_negotiated;
+
+        // Clamping of PWM ratio
+        if (heater.power.pwm > PWM_MAX_PERCENTAGE)
+        {
+            heater.power.pwm = PWM_MAX_PERCENTAGE;
+        }
+        else if (heater.power.pwm <= 0)
+        {
             heater.power.pwm = 0;
         }
     }
@@ -200,10 +195,9 @@ THD_FUNCTION(heaterThread, arg)
             uint16_t ratio = heater.power.pwm;
             chBSemSignal(&heater.bsem);
 
-            systime_t pwm_start_time = chVTGetSystemTimeX();
             pwmEnableChannel(&PWMD1, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD1, ratio));
 
-            chThdSleepUntil(pwm_start_time + TIME_MS2I(LOOP_TIME_CURRENT_MS / 2));
+            chThdSleepMilliseconds(LOOP_TIME_CURRENT_MS / 2);
 
             // Measure heater current
             adcConvert(&ADCD1, &adcgrpcfg1, fields, ADC_GRP1_BUF_DEPTH);
@@ -213,7 +207,7 @@ THD_FUNCTION(heaterThread, arg)
             heater.current_control.is = CURRENT_SENSE_RATIO * ADC_TO_VOLT(fields[0]);
             chBSemSignal(&heater.bsem);
 
-            chThdSleepUntil(pwm_start_time + TIME_MS2I(LOOP_TIME_CURRENT_MS));
+            chThdSleepMilliseconds(LOOP_TIME_CURRENT_MS / 2);
         }
 
         pwmDisableChannel(&PWMD1, 0);

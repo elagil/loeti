@@ -81,6 +81,6 @@ int main(void)
 
   while (true)
   {
-    chEvtWaitAny(SWITCH_EVENT);
+    chThdSleepMilliseconds(1000);
   }
 }

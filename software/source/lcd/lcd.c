@@ -57,12 +57,16 @@ THD_FUNCTION(lcdThread, arg)
         double is = heater.temperature_control.is;
         double set = heater.temperature_control.set;
         double max = heater.temperatures.max;
-        double power = heater.power.power_negotiated;
+        //double power = heater.power.power_negotiated;
+        //double current_set = heater.current_control.set;
+        double current = heater.current_control.is;
+        double voltage = heater.power.voltage_meas;
         double currentRatio = 100 * (heater.current_control.is / heater.power.current_negotiated);
         chBSemSignal(&heater.bsem);
 
         ssd1803_move_to_line(0);
-        chsnprintf(str, LINE_LENGTH + 1, "      %3dW", (uint16_t)power);
+        chsnprintf(str, LINE_LENGTH + 1, "      %3dW", (uint16_t)(current * voltage));
+        //chsnprintf(str, LINE_LENGTH + 1, "%4d  %4d", (uint16_t)(current_set * 1000), (uint16_t)(current * 1000));
         ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
 
         ssd1803_move_to_line(1);

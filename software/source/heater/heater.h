@@ -43,16 +43,15 @@ typedef struct
     double error;           //<<< Error from P-component of control loop
     double p;               //<<< Contol loop P variable
     double i;               //<<< Contol loop I variable
-    double d;               //<<< Contol loop D variable (currently unused)
-} pid_t;
+} pi_t;
 typedef struct
 {
     bool sleep;     //<<< True, if heater is in sleep mode
     bool connected; //<<< True, if heater is connected to the station
     heater_power_t power;
     heater_temperatures_t temperatures;
-    pid_t temperature_control;
-    pid_t current_control;
+    pi_t temperature_control;
+    pi_t current_control;
     binary_semaphore_t bsem; //<<< Locking semaphore
 } heater_t;
 

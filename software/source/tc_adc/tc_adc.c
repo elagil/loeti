@@ -82,7 +82,7 @@ event_source_t temp_event_source;
 #define TC_ADC_SETTINGS (NOP_VALID << NOP_POS |          \
                          PULL_UP_ENABLE << PULL_UP_POS | \
                          TS_MODE_ADC << TS_MODE_POS |    \
-                         DR_475_SPS << DR_POS |          \
+                         DR_860_SPS << DR_POS |          \
                          MODE_SS << MODE_POS |           \
                          PGA_256mV << PGA_POS |          \
                          MUX_P2_NG << MUX_POS |          \
@@ -92,10 +92,8 @@ event_source_t temp_event_source;
 #define LOCAL_ADC_SETTINGS (NOP_VALID << NOP_POS |            \
                             PULL_UP_ENABLE << PULL_UP_POS |   \
                             TS_MODE_INTERNAL << TS_MODE_POS | \
-                            DR_475_SPS << DR_POS |            \
+                            DR_860_SPS << DR_POS |            \
                             MODE_SS << MODE_POS |             \
-                            PGA_256mV << PGA_POS |            \
-                            MUX_P2_NG << MUX_POS |            \
                             SS_START << SS_POS)
 
 // Do not change ADC settings, by setting invalid flag
@@ -103,7 +101,8 @@ event_source_t temp_event_source;
 
 #define TC_SLOPE 0.2706
 #define TC_OFFSET 5
-#define TC_READ_DELAY 5
+#define TC_READ_DEAD_TIME 5
+#define TC_READ_DELAY 2
 
 #define exchangeSpiAdc(txbuf, rxbuf) spiExchangeHelper(&SPID1, &tc_adc_spicfg, TC_ADC_LEN, txbuf, rxbuf)
 
@@ -155,7 +154,7 @@ THD_FUNCTION(adcThread, arg)
     // initial conversion
     exchangeSpiAdc(conf_acquire_tc, (uint8_t *)&raw);
 
-    chThdSleepMilliseconds(10);
+    chThdSleepMilliseconds(TC_READ_DELAY);
 
     uint32_t debounce = 0;
     while (true)
@@ -172,13 +171,14 @@ THD_FUNCTION(adcThread, arg)
         }
         else
         {
-            if (++debounce == TC_CONNECT_DEBOUNCE_MS / LOOP_TIME_TEMPERATURE_MS)
+            if (++debounce >= TC_CONNECT_DEBOUNCE_MS / LOOP_TIME_TEMPERATURE_MS)
             {
                 heater.connected = true;
             }
         }
         // calculate actual heater temperature, including cold junction compensation
         heater.temperature_control.is = converted * TC_SLOPE + TC_OFFSET + heater.temperatures.local;
+
         chBSemSignal(&heater.bsem);
 
         chEvtBroadcast(&temp_event_source);
@@ -199,7 +199,7 @@ THD_FUNCTION(adcThread, arg)
         // Wait for PWM to stop
         chEvtWaitAny(PWM_EVENT);
 
-        chThdSleepMilliseconds(TC_READ_DELAY);
+        chThdSleepMilliseconds(TC_READ_DEAD_TIME);
 
         // start new conversion after heater switched off
         exchangeSpiAdc(conf_acquire_tc, (uint8_t *)&raw);
