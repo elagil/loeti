@@ -127,6 +127,9 @@ void calcBuffer(uint8_t *txbuf, uint16_t config)
     *(txbuf + 1) = CONF_REG_LOWER_BYTE(config);
 }
 
+uint32_t temp_log_idx;
+volatile uint16_t temp_log[384];
+
 THD_FUNCTION(adcThread, arg)
 {
     (void)arg;

@@ -11,8 +11,8 @@
 #define HEATER_CURRENT_I_SCALE 0.5
 #define HEATER_CURRENT_I (HEATER_CURRENT_I_SCALE * HEATER_RESISTANCE / (2 * MS2S(LOOP_TIME_CURRENT_MS)))
 
-#define HEATER_TEMPERATURE_P 0.1
-#define HEATER_TEMPERATURE_I (0 / (MS2S(LOOP_TIME_TEMPERATURE_MS)))
+#define HEATER_TEMPERATURE_P 0.05
+#define HEATER_TEMPERATURE_I (0.0025 / (MS2S(LOOP_TIME_TEMPERATURE_MS)))
 
 #define VOLTAGE_SENSE_RATIO 11
 #define CURRENT_SENSE_RATIO 2.5
@@ -25,7 +25,6 @@ event_source_t pwm_event_source;
 // default heater values, suitable for T245 handles and tips
 heater_t heater = {
     .power = {
-        .current_safety_margin = 0.975,
         .voltage_negotiated = 0,
         .current_negotiated = 0,
         .power_negotiated = 0,
@@ -81,9 +80,9 @@ void temperatureControlLoop(void)
         heater.current_control.set = heater.temperature_control.p * heater.temperature_control.error + heater.temperature_control.i * heater.temperature_control.integratedError;
 
         // Clamp to available power supply current
-        if (heater.current_control.set > heater.power.current_negotiated * heater.power.current_safety_margin)
+        if (heater.current_control.set > heater.power.current_negotiated)
         {
-            heater.current_control.set = heater.power.current_negotiated * heater.power.current_safety_margin;
+            heater.current_control.set = heater.power.current_negotiated;
         }
         else if (heater.current_control.set < 0)
         {

@@ -18,14 +18,13 @@ extern THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);
 #define PWM_MAX_PERCENTAGE 10000
 typedef struct
 {
-    double current_safety_margin; //<<< A number < 1, indicating the maximum amount of power to draw from the supply
-    double voltage_negotiated;    //<<< Negotiated voltage
-    double current_negotiated;    //<<< Negotiated current
-    double voltage_meas;          //<<< Measured voltage
-    double current_meas;          //<<< Measured current
-    double power_negotiated;      //<<< Maximum power that the supply can deliver
-    double pwm;                   //<<< Current PWM ratio
-    double pwm_max;               //<<< Maximum PWM ratio for not exceeding maximum supply power
+    double voltage_negotiated; //<<< Negotiated voltage
+    double current_negotiated; //<<< Negotiated current
+    double voltage_meas;       //<<< Measured voltage
+    double current_meas;       //<<< Measured current
+    double power_negotiated;   //<<< Maximum power that the supply can deliver
+    double pwm;                //<<< Current PWM ratio
+    double pwm_max;            //<<< Maximum PWM ratio for not exceeding maximum supply power
 } heater_power_t;
 
 typedef struct
