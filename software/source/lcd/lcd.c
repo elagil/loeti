@@ -57,16 +57,13 @@ THD_FUNCTION(lcdThread, arg)
         double is = heater.temperature_control.is;
         double set = heater.temperature_control.set;
         double max = heater.temperatures.max;
-        //double power = heater.power.power_negotiated;
-        //double current_set = heater.current_control.set;
         double current = heater.current_control.is;
         double voltage = heater.power.voltage_meas;
-        double currentRatio = 100 * (heater.current_control.is / heater.power.current_negotiated);
+        double power = (current * voltage) / heater.power.power_negotiated;
         chBSemSignal(&heater.bsem);
 
         ssd1803_move_to_line(0);
-        chsnprintf(str, LINE_LENGTH + 1, "      %3dW", (uint16_t)(current * voltage));
-        //chsnprintf(str, LINE_LENGTH + 1, "%4d  %4d", (uint16_t)(current_set * 1000), (uint16_t)(current * 1000));
+        chsnprintf(str, LINE_LENGTH + 1, "      %3dW", (uint16_t)(current * voltage + 0.5));
         ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
 
         ssd1803_move_to_line(1);
@@ -123,19 +120,19 @@ THD_FUNCTION(lcdThread, arg)
         else
         {
 
-            if (currentRatio <= 25)
+            if (power <= 0.25)
             {
                 chsnprintf(str, LINE_LENGTH + 1, "\x10%3d     "
                                                  " ",
                            (uint16_t)set);
             }
-            else if (currentRatio <= 50)
+            else if (power <= 0.50)
             {
                 chsnprintf(str, LINE_LENGTH + 1, "\x10%3d     "
                                                  "\x93",
                            (uint16_t)set);
             }
-            else if (currentRatio <= 75)
+            else if (power <= 0.75)
             {
                 chsnprintf(str, LINE_LENGTH + 1, "\x10%3d    "
                                                  "\x93\x93",

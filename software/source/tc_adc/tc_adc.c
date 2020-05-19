@@ -101,8 +101,8 @@ event_source_t temp_event_source;
 
 #define TC_SLOPE 0.2706
 #define TC_OFFSET 5
-#define TC_READ_DEAD_TIME 5
-#define TC_READ_DELAY 2
+#define TC_READ_DEAD_TIME_US 500 // wait for anti alias low pass in thermocouple amplifier
+#define TC_READ_DELAY_US 1200
 
 #define exchangeSpiAdc(txbuf, rxbuf) spiExchangeHelper(&SPID1, &tc_adc_spicfg, TC_ADC_LEN, txbuf, rxbuf)
 
@@ -157,7 +157,7 @@ THD_FUNCTION(adcThread, arg)
     // initial conversion
     exchangeSpiAdc(conf_acquire_tc, (uint8_t *)&raw);
 
-    chThdSleepMilliseconds(TC_READ_DELAY);
+    chThdSleepMicroseconds(TC_READ_DELAY_US);
 
     uint32_t debounce = 0;
     while (true)
@@ -190,7 +190,7 @@ THD_FUNCTION(adcThread, arg)
 
         // Measure local temperature while heater is working
         exchangeSpiAdc(conf_acquire_local, (uint8_t *)&raw);
-        chThdSleepMilliseconds(TC_READ_DELAY);
+        chThdSleepMicroseconds(TC_READ_DELAY_US);
 
         exchangeSpiAdc(conf_read, (uint8_t *)&raw);
         converted = REG_TO_TEMP(raw);
@@ -202,11 +202,11 @@ THD_FUNCTION(adcThread, arg)
         // Wait for PWM to stop
         chEvtWaitAny(PWM_EVENT);
 
-        chThdSleepMilliseconds(TC_READ_DEAD_TIME);
+        chThdSleepMicroseconds(TC_READ_DEAD_TIME_US);
 
         // start new conversion after heater switched off
         exchangeSpiAdc(conf_acquire_tc, (uint8_t *)&raw);
 
-        chThdSleepMilliseconds(TC_READ_DELAY);
+        chThdSleepMicroseconds(TC_READ_DELAY_US);
     }
 }
