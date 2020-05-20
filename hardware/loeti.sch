@@ -2084,7 +2084,7 @@ L Device:R R19
 U 1 1 5ECE9F9A
 P 11300 9000
 F 0 "R19" H 11369 9046 50  0000 L CNN
-F 1 "1k" H 11369 8955 50  0000 L CNN
+F 1 "10k" H 11369 8955 50  0000 L CNN
 F 2 "Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder" V 11230 9000 50  0001 C CNN
 F 3 "~" H 11300 9000 50  0001 C CNN
 	1    11300 9000
@@ -2138,7 +2138,7 @@ F 3 "" H 13400 8550 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text Notes 10700 8900 0    50   ~ 0
-1.6 kHz low-pass
+159 Hz low-pass
 Wire Notes Line
 	10250 7850 15900 7850
 Wire Notes Line
@@ -2181,4 +2181,6 @@ Wire Wire Line
 	8850 3050 8750 3050
 Text GLabel 4300 4200 2    50   Input ~ 0
 VOLT
+Text Notes 11300 4800 0    50   ~ 0
+1690 Hz low Pass
 $EndSCHEMATC
