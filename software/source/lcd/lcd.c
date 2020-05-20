@@ -64,6 +64,7 @@ THD_FUNCTION(lcdThread, arg)
 
         ssd1803_move_to_line(0);
         chsnprintf(str, LINE_LENGTH + 1, "      %3dW", (uint16_t)(current * voltage + 0.5));
+        //chsnprintf(str, LINE_LENGTH + 1, "    %4dmA", (uint16_t)(current * 1000));
         ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
 
         ssd1803_move_to_line(1);

@@ -6,12 +6,12 @@
 
 #define MS2S(x) ((double)x / 1000.0)
 
-#define HEATER_RESISTANCE 2.75
+#define HEATER_RESISTANCE 3
 #define HEATER_CURRENT_P 0
 #define HEATER_CURRENT_I_SCALE 0.5
 #define HEATER_CURRENT_I (HEATER_CURRENT_I_SCALE * HEATER_RESISTANCE / (2 * MS2S(LOOP_TIME_CURRENT_MS)))
 
-#define HEATER_TEMPERATURE_P 0.04
+#define HEATER_TEMPERATURE_P 0.045
 #define HEATER_TEMPERATURE_I (0.0007 / (MS2S(LOOP_TIME_TEMPERATURE_MS)))
 
 #define VOLTAGE_SENSE_RATIO 11
@@ -31,8 +31,8 @@ heater_t heater = {
         .voltage_meas = 0,
         .current_meas = 0,
         .pwm = 0,
-        .pwm_max = 0},
-    .current_control = {.set = 0, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
+        .pwm_max = PWM_MAX_PERCENTAGE},
+    .current_control = {.set = 0.2, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
     .temperature_control = {.set = 300, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .error = 0, .integratedError = 0},
     .temperatures = {.min = 150, .max = 380, .local = 25}};
 
@@ -67,7 +67,7 @@ void temperatureControlLoop(void)
         (heater.temperature_control.set <= heater.temperatures.max) &&
         (heater.temperature_control.is <= heater.temperatures.max))
     {
-        // Calculation of temperature error
+        // Calculation of actual error
         heater.temperature_control.error = heater.temperature_control.set - heater.temperature_control.is;
 
         if ((heater.current_control.set < heater.power.current_negotiated) && (heater.current_control.set >= 0))
@@ -112,22 +112,22 @@ void currentControlLoop(void)
         !heater.sleep &&
         (heater.temperature_control.set <= heater.temperatures.max) &&
         (heater.temperature_control.is <= heater.temperatures.max))
-    { // Calculation of current error
+    {
+        // Calculation of actual error
         heater.current_control.error = heater.current_control.set - heater.current_control.is;
 
-        if ((heater.power.pwm < PWM_MAX_PERCENTAGE) && (heater.power.pwm >= 0))
+        if ((heater.power.pwm < heater.power.pwm_max) && (heater.power.pwm >= 0))
         {
             // anti windup and integration of error
             heater.current_control.integratedError += heater.current_control.error * MS2S(LOOP_TIME_CURRENT_MS);
         }
-
         // Control equation, convert voltage to PWM ratio
-        heater.power.pwm = (double)PWM_MAX_PERCENTAGE * (heater.current_control.p * heater.current_control.error + heater.current_control.i * heater.current_control.integratedError) / heater.power.voltage_negotiated;
+        heater.power.pwm = heater.power.pwm_max * (heater.current_control.p * heater.current_control.error + heater.current_control.i * heater.current_control.integratedError) / heater.power.voltage_negotiated;
 
         // Clamping of PWM ratio
-        if (heater.power.pwm > PWM_MAX_PERCENTAGE)
+        if (heater.power.pwm > heater.power.pwm_max)
         {
-            heater.power.pwm = PWM_MAX_PERCENTAGE;
+            heater.power.pwm = heater.power.pwm_max;
         }
         else if (heater.power.pwm <= 0)
         {
@@ -145,14 +145,14 @@ void currentControlLoop(void)
     chBSemSignal(&heater.bsem);
 }
 
-#define ADC_GRP1_NUM_CHANNELS 1
-#define ADC_GRP1_BUF_DEPTH 2
+#define ADC_GRP1_NUM_CHANNELS 2
+#define ADC_GRP1_BUF_DEPTH 1
 static adcsample_t fields[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
 
 /*
  * ADC conversion group.
  * Mode:        Linear buffer, 1 samples of 2 channels, SW triggered.
- * Channels:    IN10.
+ * Channels:    2, 7
  */
 static const ADCConversionGroup adcgrpcfg1 = {
     FALSE,
@@ -165,6 +165,7 @@ static const ADCConversionGroup adcgrpcfg1 = {
     ADC_CHSELR_CHSEL2 | ADC_CHSELR_CHSEL7 /* CHSELR */
 };
 
+volatile uint32_t overshoot = 0;
 THD_FUNCTION(heaterThread, arg)
 {
     (void)arg;

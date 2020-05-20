@@ -4,7 +4,7 @@
 #include "ch.h"
 
 #define TEMPERATURE_SET_INTERVAL 10
-#define LOOP_TIME_RATIO 20
+#define LOOP_TIME_RATIO 50
 #define LOOP_TIME_TEMPERATURE_MS 100
 #define LOOP_TIME_CURRENT_MS (LOOP_TIME_TEMPERATURE_MS / LOOP_TIME_RATIO)
 
@@ -20,11 +20,11 @@ typedef struct
 {
     double voltage_negotiated; //<<< Negotiated voltage
     double current_negotiated; //<<< Negotiated current
+    double power_negotiated;   //<<< Maximum power that the supply can deliver
     double voltage_meas;       //<<< Measured voltage
     double current_meas;       //<<< Measured current
-    double power_negotiated;   //<<< Maximum power that the supply can deliver
     double pwm;                //<<< Current PWM ratio
-    double pwm_max;            //<<< Maximum PWM ratio for not exceeding maximum supply power
+    double pwm_max;            //<<< Maximum PWM ratio that is settable
 } heater_power_t;
 
 typedef struct
