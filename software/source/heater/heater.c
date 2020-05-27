@@ -4,22 +4,6 @@
 #include "heater.h"
 #include "events.h"
 
-#define MS2S(x) ((double)x / 1000.0)
-
-#define HEATER_RESISTANCE 3
-#define HEATER_CURRENT_P 0
-#define HEATER_CURRENT_I_SCALE 0.5
-#define HEATER_CURRENT_I (HEATER_CURRENT_I_SCALE * HEATER_RESISTANCE / (2 * MS2S(LOOP_TIME_CURRENT_MS)))
-
-#define HEATER_TEMPERATURE_P 0.045
-#define HEATER_TEMPERATURE_I (0.0007 / (MS2S(LOOP_TIME_TEMPERATURE_MS)))
-
-#define VOLTAGE_SENSE_RATIO 11
-#define CURRENT_SENSE_RATIO 2.5
-#define ADC_REF_VOLTAGE 3.3
-#define ADC_FS_READING 4096
-#define ADC_TO_VOLT(x) ((double)x / (double)ADC_FS_READING * (double)ADC_REF_VOLTAGE)
-
 event_source_t pwm_event_source;
 
 // default heater values, suitable for T245 handles and tips
@@ -32,11 +16,9 @@ heater_t heater = {
         .current_meas = 0,
         .pwm = 0,
         .pwm_max = PWM_MAX_PERCENTAGE},
-    .current_control = {.set = 0.2, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
+    .current_control = {.set = 0, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
     .temperature_control = {.set = 300, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .error = 0, .integratedError = 0},
     .temperatures = {.min = 150, .max = 380, .local = 25}};
-
-#define POWER_EVENT EVENT_MASK(0)
 
 THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);
 
@@ -197,7 +179,7 @@ THD_FUNCTION(heaterThread, arg)
 
             pwmEnableChannel(&PWMD1, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD1, ratio));
 
-            chThdSleepMilliseconds(LOOP_TIME_CURRENT_MS / 2);
+            chThdSleepMilliseconds(LOOP_TIME_CURRENT_MS);
 
             // Measure heater current
             adcConvert(&ADCD1, &adcgrpcfg1, fields, ADC_GRP1_BUF_DEPTH);
@@ -206,8 +188,6 @@ THD_FUNCTION(heaterThread, arg)
             heater.power.voltage_meas = VOLTAGE_SENSE_RATIO * ADC_TO_VOLT(fields[1]);
             heater.current_control.is = CURRENT_SENSE_RATIO * ADC_TO_VOLT(fields[0]);
             chBSemSignal(&heater.bsem);
-
-            chThdSleepMilliseconds(LOOP_TIME_CURRENT_MS / 2);
         }
 
         pwmDisableChannel(&PWMD1, 0);

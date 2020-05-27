@@ -4,9 +4,29 @@
 #include "ch.h"
 
 #define TEMPERATURE_SET_INTERVAL 10
-#define LOOP_TIME_RATIO 50
+#define LOOP_TIME_RATIO 20
 #define LOOP_TIME_TEMPERATURE_MS 100
 #define LOOP_TIME_CURRENT_MS (LOOP_TIME_TEMPERATURE_MS / LOOP_TIME_RATIO)
+
+#if LOOP_TIME_CURRENT_MS < 5
+#error "Current loop too fast. 5 ms of settling time are required for low-pass filtering."
+#endif
+
+#define MS2S(x) ((double)x / 1000.0)
+
+#define HEATER_RESISTANCE 3
+#define HEATER_CURRENT_P 0
+#define HEATER_CURRENT_I_SCALE 0.5
+#define HEATER_CURRENT_I (HEATER_CURRENT_I_SCALE * HEATER_RESISTANCE / (2 * MS2S(LOOP_TIME_CURRENT_MS)))
+
+#define HEATER_TEMPERATURE_P 0.045
+#define HEATER_TEMPERATURE_I (0.0007 / (MS2S(LOOP_TIME_TEMPERATURE_MS)))
+
+#define VOLTAGE_SENSE_RATIO 11
+#define CURRENT_SENSE_RATIO 2.5
+#define ADC_REF_VOLTAGE 3.3
+#define ADC_FS_READING 4096
+#define ADC_TO_VOLT(x) ((double)x / (double)ADC_FS_READING * (double)ADC_REF_VOLTAGE)
 
 #define HEATER_THREAD_STACK_SIZE 128
 

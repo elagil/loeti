@@ -1,4 +1,4 @@
-17172510102108539
+17172512315818588
 Battery
 BatteryHolder_Bulgin_BX0036_1xC
 Bulgin Battery Holder, BX0036, Battery Type C (https://www.bulgin.com/products/pub/media/bulgin/data/Battery_holders.pdf)
@@ -76229,31 +76229,31 @@ varistor SIOV
 0
 2
 2
-custom_parts
+custom
+CP_Radial_D8.0mm_P3.50mm_HOR
+CP, Radial series, Radial, pin pitch=3.50mm, , diameter=8mm, Electrolytic Capacitor
+CP Radial series Radial pin pitch 3.50mm  diameter 8mm Electrolytic Capacitor
+0
+2
+2
+custom
 CUI_SJ-43614-SMT
 
 
 0
 4
 4
-custom_parts
+custom
 CX90M-16P
 
 
 0
 22
 18
-custom_parts
-SW_Cherry_MX_1.00u_PCB
-Cherry MX keyswitch, 1.00u, PCB mount, http://cherryamericas.com/wp-content/uploads/2014/12/mx_cat.pdf
-Cherry MX keyswitch 1.00u PCB
-0
-2
-2
-custom_parts
-SW_Push_SPST_NO_Alps_SKRK_hand_solder
-http://www.alps.com/prod/info/E/HTML/Tact/SurfaceMount/SKRK/SKRKAHE020.html
-SMD SMT button
+custom
+Omron-B3AL
+
+
 0
 2
 2
