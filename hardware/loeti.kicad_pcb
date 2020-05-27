@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 41)
+    (drawings 40)
     (tracks 0)
     (zones 0)
     (modules 63)
@@ -635,7 +635,7 @@
   )
 
   (module custom:CUI_SJ-43614-SMT (layer F.Cu) (tedit 5E8098DF) (tstamp 5E9D5823)
-    (at 106.6774 47.6919 270)
+    (at 110.0115 47.6919 270)
     (path /5E93DE18)
     (fp_text reference J3 (at 4.2 -4.15 180) (layer F.SilkS)
       (effects (font (size 1.000228 1.000228) (thickness 0.15)))
@@ -2923,7 +2923,6 @@
   )
   (gr_line (start 120 121.5) (end 60 121.5) (layer Edge.Cuts) (width 0.1) (tstamp 5E821305))
   (gr_line (start 120 41.5) (end 120 121.5) (layer Edge.Cuts) (width 0.1) (tstamp 5E85CDFE))
-  (gr_line (start 108.85 41.5) (end 120 41.5) (layer Edge.Cuts) (width 0.1) (tstamp 5E9D5C36))
   (gr_line (start 60 41.5) (end 65.4 41.5) (layer Edge.Cuts) (width 0.1) (tstamp 5E9D5C3F))
   (gr_line (start 60 41.5) (end 60 121.5) (layer Edge.Cuts) (width 0.1))
 
