@@ -1,5 +1,9 @@
 EESchema-DOCLIB  Version 2.0
 #
+$CMP INA301
+F http://www.ti.com/lit/ds/symlink/ina301.pdf
+$ENDCMP
+#
 $CMP SI4425FDY
 D P-Channel 30 V (D-S) MOSFET
 F https://www.vishay.com/docs/77095/si4425fdy.pdf
