@@ -75,7 +75,7 @@ Wire Wire Line
 Connection ~ 2650 8950
 Connection ~ 2350 8950
 Wire Wire Line
-	6050 3150 6050 3250
+	5950 3150 5950 3250
 Wire Wire Line
 	7150 4500 7150 4600
 Wire Wire Line
@@ -130,12 +130,12 @@ $EndComp
 $Comp
 L power:GND #PWR024
 U 1 1 5A9ADA03
-P 6050 3250
-F 0 "#PWR024" H 6050 3000 50  0001 C CNN
-F 1 "GND" H 6055 3077 50  0000 C CNN
-F 2 "" H 6050 3250 50  0001 C CNN
-F 3 "" H 6050 3250 50  0001 C CNN
-	1    6050 3250
+P 5950 3250
+F 0 "#PWR024" H 5950 3000 50  0001 C CNN
+F 1 "GND" H 5955 3077 50  0000 C CNN
+F 2 "" H 5950 3250 50  0001 C CNN
+F 3 "" H 5950 3250 50  0001 C CNN
+	1    5950 3250
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -339,27 +339,27 @@ Wire Wire Line
 $Comp
 L Switch:SW_Push SW1
 U 1 1 5C1295B7
-P 6050 2950
-F 0 "SW1" V 6004 3098 50  0000 L CNN
-F 1 "key2" V 6095 3098 50  0000 L CNN
-F 2 "Button_Switch_SMD:SW_SPST_PTS810" H 6050 3150 50  0001 C CNN
-F 3 "" H 6050 3150 50  0001 C CNN
-	1    6050 2950
+P 5950 2950
+F 0 "SW1" V 5904 3098 50  0000 L CNN
+F 1 "key2" V 5995 3098 50  0000 L CNN
+F 2 "Button_Switch_SMD:SW_SPST_PTS810" H 5950 3150 50  0001 C CNN
+F 3 "" H 5950 3150 50  0001 C CNN
+	1    5950 2950
 	0    -1   1    0   
 $EndComp
 $Comp
 L power:+3V3 #PWR023
 U 1 1 5C1295BE
-P 6050 2250
-F 0 "#PWR023" H 6050 2100 50  0001 C CNN
-F 1 "+3V3" H 6065 2423 50  0000 C CNN
-F 2 "" H 6050 2250 50  0001 C CNN
-F 3 "" H 6050 2250 50  0001 C CNN
-	1    6050 2250
+P 5950 2250
+F 0 "#PWR023" H 5950 2100 50  0001 C CNN
+F 1 "+3V3" H 5965 2423 50  0000 C CNN
+F 2 "" H 5950 2250 50  0001 C CNN
+F 3 "" H 5950 2250 50  0001 C CNN
+	1    5950 2250
 	-1   0    0    -1  
 $EndComp
 Wire Wire Line
-	6050 2250 6050 2350
+	5950 2250 5950 2350
 Wire Wire Line
 	2600 1900 2450 1900
 $Comp
@@ -375,10 +375,6 @@ F 3 "" H 1850 3500 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	1850 3400 1850 3500
-Text GLabel 8850 3900 2    50   Input ~ 0
-USB_P
-Text GLabel 8850 3800 2    50   Input ~ 0
-USB_N
 $Comp
 L Device:C C9
 U 1 1 5A9C1A0C
@@ -631,13 +627,13 @@ F 3 "" H 14750 4000 50  0001 C CNN
 	1    14750 4000
 	1    0    0    -1  
 $EndComp
-Text GLabel 6750 3700 0    50   Input ~ 0
+Text GLabel 6650 3800 0    50   Input ~ 0
 SPI1_SCK
-Text GLabel 6750 3900 0    50   Input ~ 0
+Text GLabel 6650 4000 0    50   Input ~ 0
 SPI1_MOSI
 Text GLabel 7750 4200 2    50   Input ~ 0
 SPI1_NSS1
-Text GLabel 6750 3800 0    50   Input ~ 0
+Text GLabel 6650 3900 0    50   Input ~ 0
 SPI1_MISO
 Text GLabel 12100 2400 0    50   Input ~ 0
 SPI1_SCK
@@ -819,11 +815,11 @@ Text GLabel 15150 4700 2    50   Input ~ 0
 SPI1_MOSI
 Text GLabel 15150 4800 2    50   Input ~ 0
 SPI1_MISO
-Text GLabel 7750 3700 2    50   Input ~ 0
+Text GLabel 7750 3900 2    50   Input ~ 0
 SPI1_NSS2
-Text GLabel 6750 4000 0    50   Input ~ 0
+Text GLabel 6650 4100 0    50   Input ~ 0
 I2C1_SCL
-Text GLabel 6750 4100 0    50   Input ~ 0
+Text GLabel 6650 4200 0    50   Input ~ 0
 I2C1_SDA
 Text GLabel 3700 7900 2    50   Input ~ 0
 I2C1_SCL
@@ -835,25 +831,23 @@ Text GLabel 2250 9550 0    50   Input ~ 0
 I2C1_SDA
 Text GLabel 3700 8100 2    50   Input ~ 0
 PD_ALERT_INT
-Text GLabel 7750 3600 2    50   Input ~ 0
+Text GLabel 7750 3800 2    50   Input ~ 0
 PD_ALERT_INT
 Wire Wire Line
-	6500 4650 6500 4750
+	8250 7100 8250 7200
 $Comp
 L power:GND #PWR026
 U 1 1 5E8122BA
-P 6500 4750
-F 0 "#PWR026" H 6500 4500 50  0001 C CNN
-F 1 "GND" H 6505 4577 50  0000 C CNN
-F 2 "" H 6500 4750 50  0001 C CNN
-F 3 "" H 6500 4750 50  0001 C CNN
-	1    6500 4750
+P 8250 7200
+F 0 "#PWR026" H 8250 6950 50  0001 C CNN
+F 1 "GND" H 8255 7027 50  0000 C CNN
+F 2 "" H 8250 7200 50  0001 C CNN
+F 3 "" H 8250 7200 50  0001 C CNN
+	1    8250 7200
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	6750 4200 6500 4200
-Wire Wire Line
-	6500 4200 6500 4350
+	8250 6650 8250 6800
 Text GLabel 14500 9200 2    50   Input ~ 0
 SHUNT-
 Wire Wire Line
@@ -869,23 +863,23 @@ Wire Wire Line
 $Comp
 L Device:R R6
 U 1 1 5E824254
-P 6050 2500
-F 0 "R6" H 5980 2454 50  0000 R CNN
-F 1 "10k" H 5980 2545 50  0000 R CNN
-F 2 "Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder" V 5980 2500 50  0001 C CNN
-F 3 "~" H 6050 2500 50  0001 C CNN
-	1    6050 2500
+P 5950 2500
+F 0 "R6" H 5880 2454 50  0000 R CNN
+F 1 "10k" H 5880 2545 50  0000 R CNN
+F 2 "Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder" V 5880 2500 50  0001 C CNN
+F 3 "~" H 5950 2500 50  0001 C CNN
+	1    5950 2500
 	1    0    0    -1  
 $EndComp
 $Comp
 L Device:R R7
 U 1 1 5E825484
-P 6500 4500
-F 0 "R7" H 6430 4454 50  0000 R CNN
-F 1 "10k" H 6430 4545 50  0000 R CNN
-F 2 "Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder" V 6430 4500 50  0001 C CNN
-F 3 "~" H 6500 4500 50  0001 C CNN
-	1    6500 4500
+P 8250 6950
+F 0 "R7" H 8180 6904 50  0000 R CNN
+F 1 "10k" H 8180 6995 50  0000 R CNN
+F 2 "Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder" V 8180 6950 50  0001 C CNN
+F 3 "~" H 8250 6950 50  0001 C CNN
+	1    8250 6950
 	-1   0    0    1   
 $EndComp
 $Comp
@@ -927,8 +921,6 @@ Wire Wire Line
 	5800 7350 5900 7350
 Connection ~ 5800 7150
 NoConn ~ 5900 7250
-NoConn ~ 5900 7450
-NoConn ~ 7000 7450
 NoConn ~ 7000 7250
 Text GLabel 7000 6950 2    50   Input ~ 0
 SWDIO
@@ -936,7 +928,7 @@ Text GLabel 7000 7050 2    50   Input ~ 0
 SWCLK
 Text GLabel 7000 7350 2    50   Input ~ 0
 NRST
-Text GLabel 5650 2700 0    50   Input ~ 0
+Text GLabel 5550 2700 0    50   Input ~ 0
 NRST
 Text GLabel 7750 4000 2    50   Input ~ 0
 SWDIO
@@ -1142,7 +1134,7 @@ F 3 "~" H 1500 4500 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	1500 4650 1500 4750
-Text GLabel 6750 3600 0    50   Input ~ 0
+Text GLabel 6650 3700 0    50   Input ~ 0
 PD_RST
 Wire Wire Line
 	12500 4500 12950 4500
@@ -1203,64 +1195,12 @@ F 3 "" H 6450 6600 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	5650 2700 6050 2700
+	5550 2700 5950 2700
 Wire Wire Line
-	6050 2650 6050 2700
-Connection ~ 6050 2700
+	5950 2650 5950 2700
+Connection ~ 5950 2700
 Wire Wire Line
-	6050 2700 6750 2700
-Wire Wire Line
-	6050 2700 6050 2750
-Text GLabel 4050 3050 2    50   Input ~ 0
-USB_P
-Text GLabel 4050 2050 2    50   Input ~ 0
-USB_N
-$Comp
-L Power_Protection:USBLC6-2SC6 U3
-U 1 1 5E962D2B
-P 3750 2550
-F 0 "U3" H 3750 3231 50  0000 C CNN
-F 1 "USBLC6-2SC6" H 3750 3140 50  0000 C CNN
-F 2 "Package_TO_SOT_SMD:SOT-23-6" H 3000 2950 50  0001 C CNN
-F 3 "http://www2.st.com/resource/en/datasheet/CD00050750.pdf" H 3950 2900 50  0001 C CNN
-	1    3750 2550
-	0    -1   -1   0   
-$EndComp
-Wire Wire Line
-	2450 2400 2450 2500
-Wire Wire Line
-	2450 2600 2450 2700
-Wire Wire Line
-	3850 2050 4050 2050
-Wire Wire Line
-	3850 3050 4050 3050
-Wire Wire Line
-	3650 3050 3250 3050
-Wire Wire Line
-	3250 3050 3250 2700
-Wire Wire Line
-	3250 2700 2450 2700
-Connection ~ 2450 2700
-Wire Wire Line
-	2450 2400 3250 2400
-Wire Wire Line
-	3250 2400 3250 2050
-Wire Wire Line
-	3250 2050 3650 2050
-Connection ~ 2450 2400
-Wire Wire Line
-	2900 2550 3250 2550
-$Comp
-L power:GND #PWR019
-U 1 1 5E9A5EA0
-P 4250 2550
-F 0 "#PWR019" H 4250 2300 50  0001 C CNN
-F 1 "GND" H 4250 2400 50  0000 C CNN
-F 2 "" H 4250 2550 50  0001 C CNN
-F 3 "" H 4250 2550 50  0001 C CNN
-	1    4250 2550
-	0    -1   -1   0   
-$EndComp
+	5950 2700 5950 2750
 $Comp
 L Device:D_Schottky_x2_ACom_KKA D1
 U 1 1 5E9BD548
@@ -1291,17 +1231,6 @@ Wire Wire Line
 	4550 4850 4450 4850
 Wire Wire Line
 	3750 4850 3850 4850
-$Comp
-L power:+3V3 #PWR011
-U 1 1 5E9E2C0E
-P 2900 2550
-F 0 "#PWR011" H 2900 2400 50  0001 C CNN
-F 1 "+3V3" H 2915 2723 50  0000 C CNN
-F 2 "" H 2900 2550 50  0001 C CNN
-F 3 "" H 2900 2550 50  0001 C CNN
-	1    2900 2550
-	0    -1   -1   0   
-$EndComp
 $Comp
 L power:GND #PWR015
 U 1 1 5EA3EF18
@@ -1976,36 +1905,6 @@ Wire Wire Line
 Text GLabel 7000 7150 2    50   Input ~ 0
 SWO
 $Comp
-L Device:R R9
-U 1 1 5ED7E821
-P 8300 3800
-F 0 "R9" H 8230 3754 50  0000 R CNN
-F 1 "20" H 8230 3845 50  0000 R CNN
-F 2 "Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder" V 8230 3800 50  0001 C CNN
-F 3 "~" H 8300 3800 50  0001 C CNN
-	1    8300 3800
-	0    -1   -1   0   
-$EndComp
-$Comp
-L Device:R R11
-U 1 1 5ED7F80E
-P 8600 3900
-F 0 "R11" H 8530 3854 50  0000 R CNN
-F 1 "20" H 8530 3945 50  0000 R CNN
-F 2 "Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder" V 8530 3900 50  0001 C CNN
-F 3 "~" H 8600 3900 50  0001 C CNN
-	1    8600 3900
-	0    -1   -1   0   
-$EndComp
-Wire Wire Line
-	8850 3800 8450 3800
-Wire Wire Line
-	8150 3800 7750 3800
-Wire Wire Line
-	7750 3900 8450 3900
-Wire Wire Line
-	8750 3900 8850 3900
-$Comp
 L Relay_SolidState:ASSR-1218 U8
 U 1 1 5EDBD456
 P 11450 4200
@@ -2136,21 +2035,10 @@ Text GLabel 13450 9150 0    50   Input ~ 0
 CUR_RESET
 Text GLabel 13450 9050 0    50   Input ~ 0
 CUR_LIMIT
-Text GLabel 6750 3300 0    50   Input ~ 0
+Text GLabel 6650 3400 0    50   Input ~ 0
 CUR_NALERT
-Text GLabel 6750 3200 0    50   Input ~ 0
+Text GLabel 6650 3300 0    50   Input ~ 0
 CUR_RESET
-$Comp
-L MCU_ST_STM32F0:STM32F042K6Tx U5
-U 1 1 5EAA038A
-P 7250 3400
-F 0 "U5" H 7250 2311 50  0000 C CNN
-F 1 "STM32F042K6Tx" H 7250 2220 50  0000 C CNN
-F 2 "Package_QFP:LQFP-32_7x7mm_P0.8mm" H 6850 2500 50  0001 R CNN
-F 3 "http://www.st.com/st-web-ui/static/active/en/resource/technical/document/datasheet/DM00105814.pdf" H 7250 3400 50  0001 C CNN
-	1    7250 3400
-	1    0    0    -1  
-$EndComp
 Text GLabel 8050 5900 0    50   Input ~ 0
 ADC_IN2
 Text GLabel 9050 5900 0    50   Input ~ 0
@@ -2266,8 +2154,6 @@ F 3 "~" H 6200 8900 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	5900 8800 6000 8800
-NoConn ~ 6750 3500
-NoConn ~ 7750 3200
 Text GLabel 11350 8750 0    50   Input ~ 0
 CUR_NALERT
 $Comp
@@ -2300,4 +2186,37 @@ Wire Wire Line
 	11450 8750 11350 8750
 Text Notes 14200 8500 0    50   ~ 0
 10 mOhm shunt\n20 V/V gain\n10 A in -> 2 V out
+$Comp
+L MCU_ST_STM32F0:STM32F030K6Tx U5
+U 1 1 5EDA1F44
+P 7250 3400
+F 0 "U5" H 7200 2311 50  0000 C CNN
+F 1 "STM32F030K6Tx" H 7200 2220 50  0000 C CNN
+F 2 "Package_QFP:LQFP-32_7x7mm_P0.8mm" H 6750 2500 50  0001 R CNN
+F 3 "http://www.st.com/st-web-ui/static/active/en/resource/technical/document/datasheet/DM00088500.pdf" H 7250 3400 50  0001 C CNN
+	1    7250 3400
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8250 6650 8600 6650
+NoConn ~ 2450 2400
+NoConn ~ 2450 2500
+NoConn ~ 2450 2600
+NoConn ~ 2450 2700
+Wire Wire Line
+	6650 2700 5950 2700
+Text GLabel 6650 2900 0    50   Input ~ 0
+BOOT0
+Text GLabel 8600 6650 2    50   Input ~ 0
+BOOT0
+Text GLabel 7000 7450 2    50   Input ~ 0
+VCP_TX
+Text GLabel 5900 7450 0    50   Input ~ 0
+VCP_RX
+Text GLabel 7750 3600 2    50   Input ~ 0
+VCP_RX
+Text GLabel 7750 3700 2    50   Input ~ 0
+VCP_TX
+NoConn ~ 6650 3600
+NoConn ~ 7750 3200
 $EndSCHEMATC
