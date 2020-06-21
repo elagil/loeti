@@ -23,7 +23,7 @@
 #define HEATER_TEMPERATURE_I (0.0007 / (MS2S(LOOP_TIME_TEMPERATURE_MS)))
 
 #define VOLTAGE_SENSE_RATIO 11
-#define CURRENT_SENSE_RATIO 2.5
+#define CURRENT_SENSE_RATIO 5
 #define ADC_REF_VOLTAGE 3.3
 #define ADC_FS_READING 4096
 #define ADC_TO_VOLT(x) ((double)x / (double)ADC_FS_READING * (double)ADC_REF_VOLTAGE)
@@ -38,6 +38,7 @@ extern THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);
 #define PWM_MAX_PERCENTAGE 10000
 typedef struct
 {
+    double current_offset;     //<<< Offset current without load
     double voltage_negotiated; //<<< Negotiated voltage
     double current_negotiated; //<<< Negotiated current
     double power_negotiated;   //<<< Maximum power that the supply can deliver

@@ -4,11 +4,16 @@
 #include "heater.h"
 #include "events.h"
 
-event_source_t pwm_event_source;
+#define HEATER_PWM PWMD1
+#define HEATER_PWM_CHANNEL 0
+
+event_source_t pwm_done_event_source;
+event_source_t cur_alert_event_source;
 
 // default heater values, suitable for T245 handles and tips
 heater_t heater = {
     .power = {
+        .current_offset = 0,
         .voltage_negotiated = 0,
         .current_negotiated = 0,
         .power_negotiated = 0,
@@ -16,7 +21,7 @@ heater_t heater = {
         .current_meas = 0,
         .pwm = 0,
         .pwm_max = PWM_MAX_PERCENTAGE},
-    .current_control = {.set = 0, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
+    .current_control = {.set = 0.50, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
     .temperature_control = {.set = 300, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .error = 0, .integratedError = 0},
     .temperatures = {.min = 150, .max = 380, .local = 25}};
 
@@ -96,7 +101,7 @@ void currentControlLoop(void)
         (heater.temperature_control.is <= heater.temperatures.max))
     {
         // Calculation of actual error
-        heater.current_control.error = heater.current_control.set - heater.current_control.is;
+        heater.current_control.error = heater.current_control.set - heater.current_control.is + heater.power.current_offset;
 
         if ((heater.power.pwm < heater.power.pwm_max) && (heater.power.pwm >= 0))
         {
@@ -147,7 +152,21 @@ static const ADCConversionGroup adcgrpcfg1 = {
     ADC_CHSELR_CHSEL2 | ADC_CHSELR_CHSEL7 /* CHSELR */
 };
 
-volatile uint32_t overshoot = 0;
+static void curAlert(void *arg)
+{
+    (void)arg;
+    chSysLockFromISR();
+
+    /* Invocation of some I-Class system APIs, never preemptable.*/
+    if (pwmIsChannelEnabledI(&HEATER_PWM, HEATER_PWM_CHANNEL))
+    {
+        pwmDisableChannelI(&HEATER_PWM, HEATER_PWM_CHANNEL);
+    }
+    chEvtBroadcastI(&cur_alert_event_source);
+
+    chSysUnlockFromISR();
+}
+
 THD_FUNCTION(heaterThread, arg)
 {
     (void)arg;
@@ -156,13 +175,16 @@ THD_FUNCTION(heaterThread, arg)
     event_listener_t power_event_listener;
     event_listener_t temp_event_listener;
 
+    palEnableLineEvent(LINE_CUR_NALERT, PAL_EVENT_MODE_FALLING_EDGE);
+    palSetLineCallback(LINE_CUR_NALERT, curAlert, NULL);
+
     chEvtRegisterMask(&power_event_source, &power_event_listener, POWER_EVENT);
     chEvtRegisterMask(&temp_event_source, &temp_event_listener, TEMP_EVENT);
 
     adcStart(&ADCD1, NULL);
 
     chEvtWaitAny(POWER_EVENT);
-    pwmStart(&PWMD1, &pwmcfg);
+    pwmStart(&HEATER_PWM, &pwmcfg);
 
     while (true)
     {
@@ -177,7 +199,7 @@ THD_FUNCTION(heaterThread, arg)
             uint16_t ratio = heater.power.pwm;
             chBSemSignal(&heater.bsem);
 
-            pwmEnableChannel(&PWMD1, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD1, ratio));
+            pwmEnableChannel(&HEATER_PWM, HEATER_PWM_CHANNEL, PWM_PERCENTAGE_TO_WIDTH(&HEATER_PWM, ratio));
 
             chThdSleepMilliseconds(LOOP_TIME_CURRENT_MS);
 
@@ -187,11 +209,19 @@ THD_FUNCTION(heaterThread, arg)
             chBSemWait(&heater.bsem);
             heater.power.voltage_meas = VOLTAGE_SENSE_RATIO * ADC_TO_VOLT(fields[1]);
             heater.current_control.is = CURRENT_SENSE_RATIO * ADC_TO_VOLT(fields[0]);
+
+            if (!heater.connected)
+            {
+                heater.power.current_offset = heater.current_control.is;
+            }
             chBSemSignal(&heater.bsem);
         }
 
-        pwmDisableChannel(&PWMD1, 0);
+        if (pwmIsChannelEnabledI(&HEATER_PWM, HEATER_PWM_CHANNEL))
+        {
+            pwmDisableChannel(&HEATER_PWM, HEATER_PWM_CHANNEL);
+        }
 
-        chEvtBroadcast(&pwm_event_source);
+        chEvtBroadcast(&pwm_done_event_source);
     }
 }

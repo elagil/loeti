@@ -9,9 +9,10 @@
 
 event_source_t temp_event_source;
 
-#define TC_CONNECT_DEBOUNCE_MS 1000
+#define TC_CONNECT_DEBOUNCE_MS 2000
 #define TC_ADC_LEN 2
 #define TC_DISCONNECT 32767
+#define TC_LINE LINE_TC_SEL0
 
 // Extracts the upper or lower byte from the register (16 bit length)
 #define CONF_REG_LOWER_BYTE(reg) (reg & 0xff)
@@ -103,6 +104,8 @@ event_source_t temp_event_source;
 #define TC_OFFSET 5
 #define TC_READ_DEAD_TIME_US 500 // wait for anti alias low pass in thermocouple amplifier
 #define TC_READ_DELAY_US 1200
+#define TC_RELAIS_ON_DELAY_US 1000
+#define TC_RELAIS_OFF_DELAY_US 100
 
 #define exchangeSpiAdc(txbuf, rxbuf) spiExchangeHelper(&SPID1, &tc_adc_spicfg, TC_ADC_LEN, txbuf, rxbuf)
 
@@ -127,8 +130,96 @@ void calcBuffer(uint8_t *txbuf, uint16_t config)
     *(txbuf + 1) = CONF_REG_LOWER_BYTE(config);
 }
 
-uint32_t temp_log_idx;
-volatile uint16_t temp_log[384];
+bool measureTcTemperature(ioline_t ssr_line, uint8_t *acquire_configuration, uint8_t *read_configuration)
+{
+    uint16_t raw;
+    int16_t converted;
+
+    palSetLine(ssr_line);
+    // wait for TC relais to switch closed
+    chThdSleepMicroseconds(TC_RELAIS_ON_DELAY_US);
+
+    // wait for ADC low-pass to settle
+    chThdSleepMicroseconds(TC_READ_DEAD_TIME_US);
+
+    exchangeSpiAdc(acquire_configuration, (uint8_t *)&raw);
+
+    // wait for acquisition to finish
+    chThdSleepMicroseconds(TC_READ_DELAY_US);
+
+    exchangeSpiAdc(read_configuration, (uint8_t *)&raw);
+
+    palClearLine(ssr_line);
+    // wait for TC relais to switch open
+    chThdSleepMicroseconds(TC_RELAIS_OFF_DELAY_US);
+
+    // byteswap
+    converted = REG_TO_TEMP(raw);
+
+    if (converted != TC_DISCONNECT)
+    {
+        chBSemWait(&heater.bsem);
+        // calculate actual heater temperature, including cold junction compensation
+        heater.temperature_control.is = converted * TC_SLOPE + TC_OFFSET + heater.temperatures.local;
+        chBSemSignal(&heater.bsem);
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+
+void measureLocalTemperature(uint8_t *acquire_configuration, uint8_t *read_configuration)
+{
+    uint16_t raw;
+    int16_t converted;
+
+    // Measure local temperature while heater is working
+    exchangeSpiAdc(acquire_configuration, (uint8_t *)&raw);
+    chThdSleepMicroseconds(TC_READ_DELAY_US);
+
+    exchangeSpiAdc(read_configuration, (uint8_t *)&raw);
+    converted = REG_TO_TEMP(raw);
+
+    chBSemWait(&heater.bsem);
+    heater.temperatures.local = (converted >> 2) * 0.03125;
+    chBSemSignal(&heater.bsem);
+}
+
+void heaterDebounce(bool valid)
+{
+    static uint32_t debounce = 0;
+
+    if (!heater.connected)
+    { // check for heater presence and detect configuration, separate TC
+        if (valid)
+        {
+            debounce++;
+        }
+        else
+        {
+            debounce = 0;
+        }
+
+        if (debounce >= TC_CONNECT_DEBOUNCE_MS / LOOP_TIME_TEMPERATURE_MS)
+        {
+            chBSemWait(&heater.bsem);
+            heater.connected = TRUE;
+            chBSemSignal(&heater.bsem);
+            debounce = 0;
+        }
+    }
+    else
+    {
+        if (!valid)
+        {
+            chBSemWait(&heater.bsem);
+            heater.connected = FALSE;
+            chBSemSignal(&heater.bsem);
+        }
+    }
+}
 
 THD_FUNCTION(adcThread, arg)
 {
@@ -139,7 +230,7 @@ THD_FUNCTION(adcThread, arg)
     chRegSetThreadName("tc_adc");
 
     chEvtRegisterMask(&power_event_source, &power_event_listener, POWER_EVENT);
-    chEvtRegisterMask(&pwm_event_source, &pwm_event_listener, PWM_EVENT);
+    chEvtRegisterMask(&pwm_done_event_source, &pwm_event_listener, PWM_EVENT);
 
     uint8_t conf_acquire_local[TC_ADC_LEN];
     uint8_t conf_acquire_tc[TC_ADC_LEN];
@@ -151,62 +242,21 @@ THD_FUNCTION(adcThread, arg)
 
     chEvtWaitAny(POWER_EVENT);
 
-    uint16_t raw;
-    int16_t converted;
+    palClearLine(LINE_TC_SEL0);
+    palClearLine(LINE_TC_SEL1);
 
-    // initial conversion
-    exchangeSpiAdc(conf_acquire_tc, (uint8_t *)&raw);
-
-    chThdSleepMicroseconds(TC_READ_DELAY_US);
-
-    uint32_t debounce = 0;
     while (true)
     {
-        // read conversion
-        exchangeSpiAdc(conf_read, (uint8_t *)&raw);
-        converted = REG_TO_TEMP(raw);
-
-        chBSemWait(&heater.bsem);
-        if (converted == TC_DISCONNECT)
-        {
-            debounce = 0;
-            heater.connected = false;
-        }
-        else
-        {
-            if (++debounce >= TC_CONNECT_DEBOUNCE_MS / LOOP_TIME_TEMPERATURE_MS)
-            {
-                heater.connected = true;
-            }
-        }
-        // calculate actual heater temperature, including cold junction compensation
-        heater.temperature_control.is = converted * TC_SLOPE + TC_OFFSET + heater.temperatures.local;
-
-        chBSemSignal(&heater.bsem);
+        bool valid = measureTcTemperature(TC_LINE, conf_acquire_tc, conf_read);
+        heaterDebounce(valid);
 
         chEvtBroadcast(&temp_event_source);
 
         chThdSleepMilliseconds(LOOP_TIME_TEMPERATURE_MS / 2);
 
-        // Measure local temperature while heater is working
-        exchangeSpiAdc(conf_acquire_local, (uint8_t *)&raw);
-        chThdSleepMicroseconds(TC_READ_DELAY_US);
+        measureLocalTemperature(conf_acquire_local, conf_read);
 
-        exchangeSpiAdc(conf_read, (uint8_t *)&raw);
-        converted = REG_TO_TEMP(raw);
-
-        chBSemWait(&heater.bsem);
-        heater.temperatures.local = (converted >> 2) * 0.03125;
-        chBSemSignal(&heater.bsem);
-
-        // Wait for PWM to stop
+        // Wait for heating to stop
         chEvtWaitAny(PWM_EVENT);
-
-        chThdSleepMicroseconds(TC_READ_DEAD_TIME_US);
-
-        // start new conversion after heater switched off
-        exchangeSpiAdc(conf_acquire_tc, (uint8_t *)&raw);
-
-        chThdSleepMicroseconds(TC_READ_DELAY_US);
     }
 }

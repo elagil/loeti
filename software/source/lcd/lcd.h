@@ -3,7 +3,7 @@
 
 #include "ch.h"
 
-#define LCD_THREAD_STACK_SIZE 512
+#define LCD_THREAD_STACK_SIZE 256
 
 extern THD_WORKING_AREA(waLcdThread, LCD_THREAD_STACK_SIZE);
 

@@ -9,8 +9,8 @@
 #define USB_PD_TIMEOUT_TICKS TIME_MS2I(USB_PD_TIMEOUT)
 
 event_source_t power_event_source;
-event_source_t alert_event_source;
-event_listener_t alert_event_listener;
+event_source_t pd_alert_event_source;
+event_listener_t pd_alert_event_listener;
 
 USB_PD_I2C_PORT STUSB45DeviceConf;
 extern uint8_t Cut;
@@ -31,7 +31,7 @@ static void toggleAlarmManagement(void *arg)
     (void)arg;
     chSysLockFromISR();
     /* Invocation of some I-Class system APIs, never preemptable.*/
-    chEvtBroadcastI(&alert_event_source);
+    chEvtBroadcastI(&pd_alert_event_source);
     chSysUnlockFromISR();
 }
 
@@ -82,8 +82,8 @@ THD_FUNCTION(usbPdThread, arg)
 
     STUSB45DeviceConf.I2cDeviceID_7bit = 0x28;
 
-    chEvtObjectInit(&alert_event_source);
-    chEvtRegisterMask(&alert_event_source, &alert_event_listener, PD_ALERT_EVENT);
+    chEvtObjectInit(&pd_alert_event_source);
+    chEvtRegisterMask(&pd_alert_event_source, &pd_alert_event_listener, PD_ALERT_EVENT);
 
     palEnableLineEvent(LINE_PD_ALERT_INT, PAL_EVENT_MODE_FALLING_EDGE);
     palSetLineCallback(LINE_PD_ALERT_INT, toggleAlarmManagement, NULL);
@@ -97,14 +97,14 @@ THD_FUNCTION(usbPdThread, arg)
     exchangeSrc();
 
     // Select source profile with highest power output
-    volatile uint8_t pdo = FindHighestSrcPower();
+    uint8_t pdo = FindHighestSrcPower();
 
     // Wait for source to accept selected profile
     exchangeSrc();
 
     // Calculate provided power from source voltage and current
-    volatile uint32_t current = getPdoCurrent(pdo);
-    volatile uint32_t voltage = getPdoVoltage(pdo);
+    uint32_t current = getPdoCurrent(pdo);
+    uint32_t voltage = getPdoVoltage(pdo);
 
     chBSemWait(&heater.bsem);
 

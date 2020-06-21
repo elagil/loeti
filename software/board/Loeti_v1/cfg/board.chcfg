@@ -9,10 +9,10 @@
     <output_path>..</output_path>
     <hal_version>5.0.x</hal_version>
   </configuration_settings>
-  <board_name>STMicroelectronics STM32F042K6 on Loeti</board_name>
+  <board_name>STMicroelectronics STM32F030K6 on Loeti</board_name>
   <board_id>Loeti_v1</board_id>
   <board_functions></board_functions>
-  <subtype>STM32F042x6</subtype>
+  <subtype>STM32F030x6</subtype>
   <clocks HSEFrequency="0" HSEBypass="false" LSEFrequency="0"
   	LSEBypass="false" LSEDrive="3 High Drive (default)" />
   <ports>
@@ -37,31 +37,31 @@
         ID="CUR"
         Type="PushPull"
         Level="High"
-        Speed="High"
+        Speed="Maximum"
         Resistor="Floating"
         Mode="Input"
         Alternate="0" />
       <pin3
-        ID="PA3"
-        Type="PushPull"
-        Level="High"
-        Speed="High"
-        Resistor="Floating"
-        Mode="Input"
-        Alternate="0" />
-      <pin4
-        ID="PA4"
+        ID="TC_SEL1"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
         Resistor="Floating"
-        Mode="Input"
+        Mode="Output"
+        Alternate="0" />
+      <pin4
+        ID="TC_SEL0"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Output"
         Alternate="0" />
       <pin5
         ID="PA5"
         Type="PushPull"
         Level="Low"
-        Speed="High"
+        Speed="Maximum"
         Resistor="Floating"
         Mode="Input"
         Alternate="0" />
@@ -77,7 +77,7 @@
         ID="VOL"
         Type="PushPull"
         Level="High"
-        Speed="High"
+        Speed="Maximum"
         Resistor="Floating"
         Mode="Input"
         Alternate="0" />
@@ -90,7 +90,7 @@
         Mode="Alternate"
         Alternate="2" />
       <pin9
-        ID="PD_ALERT_INT"
+        ID="VCP_RX"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
@@ -98,7 +98,7 @@
         Mode="Input"
         Alternate="0" />
       <pin10
-        ID="SPI1_NSS2"
+        ID="VCP_TX"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
@@ -106,20 +106,20 @@
         Mode="Output"
         Alternate="0" />
       <pin11
-        ID="USB_DM"
+        ID="PD_ALERT_INT"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="PullUp"
+        Resistor="Floating"
         Mode="Input"
         Alternate="0" />
       <pin12
-        ID="USB_DP"
+        ID="SPI1_NSS2"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
         Resistor="PullUp"
-        Mode="Input"
+        Mode="Output"
         Alternate="0" />
       <pin13
         ID="SWDIO"
@@ -668,15 +668,15 @@
     </GPIOE>
     <GPIOF>
       <pin0
-        ID="ARD_D7"
+        ID="CUR_RESET"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
         Resistor="PullUp"
-        Mode="Input"
+        Mode="Output"
         Alternate="0" />
       <pin1
-        ID="ARD_D8"
+        ID="CUR_NALERT"
         Type="PushPull"
         Level="High"
         Speed="Maximum"

@@ -3,7 +3,7 @@
 
 #include "ch.h"
 
-#define UI_THREAD_STACK_SIZE 128
+#define UI_THREAD_STACK_SIZE 64
 
 extern THD_WORKING_AREA(waUiThread, UI_THREAD_STACK_SIZE);
 
