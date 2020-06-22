@@ -21,7 +21,7 @@ heater_t heater = {
         .current_meas = 0,
         .pwm = 0,
         .pwm_max = PWM_MAX_PERCENTAGE},
-    .current_control = {.set = 0.50, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
+    .current_control = {.set = 0, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
     .temperature_control = {.set = 300, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .error = 0, .integratedError = 0},
     .temperatures = {.min = 150, .max = 380, .local = 25}};
 

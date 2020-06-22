@@ -100,8 +100,16 @@ event_source_t temp_event_source;
 // Do not change ADC settings, by setting invalid flag
 #define UNCHANGED_ADC_SETTINGS (NOP_INVALID << NOP_POS)
 
+#ifdef C210
+#define TC_SLOPE 0.6452 // 0.2706
+#define TC_OFFSET 35
+#endif
+
+#ifdef C245
 #define TC_SLOPE 0.2706
 #define TC_OFFSET 5
+#endif
+
 #define TC_READ_DEAD_TIME_US 500 // wait for anti alias low pass in thermocouple amplifier
 #define TC_READ_DELAY_US 1200
 #define TC_RELAIS_ON_DELAY_US 1000

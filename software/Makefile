@@ -3,6 +3,12 @@
 # NOTE: Can be overridden externally.
 #
 
+# Handle options:
+#   C210
+#   C245
+
+HANDLE_TYPE = C245
+
 # Compiler options here.
 ifeq ($(USE_OPT),)
   USE_OPT = -Og -ggdb -fomit-frame-pointer -falign-functions=16
@@ -151,7 +157,7 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS =
+UDEFS = -D$(HANDLE_TYPE)
 
 # Define ASM defines here
 UADEFS =
