@@ -22,7 +22,7 @@ heater_t heater = {
         .pwm = 0,
         .pwm_max = PWM_MAX_PERCENTAGE},
     .current_control = {.set = 0, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
-    .temperature_control = {.set = 300, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .error = 0, .integratedError = 0},
+    .temperature_control = {.set = 300, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .d = HEATER_TEMPERATURE_D, .error = 0, .error_last = 0, .integratedError = 0},
     .temperatures = {.min = 150, .max = 380, .local = 25}};
 
 THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);
@@ -64,7 +64,11 @@ void temperatureControlLoop(void)
         }
 
         // Control equation
-        heater.current_control.set = heater.temperature_control.p * heater.temperature_control.error + heater.temperature_control.i * heater.temperature_control.integratedError;
+        double diff_error = heater.temperature_control.error - heater.temperature_control.error_last;
+
+        heater.current_control.set = heater.temperature_control.d * diff_error + heater.temperature_control.p * heater.temperature_control.error + heater.temperature_control.i * heater.temperature_control.integratedError;
+
+        heater.temperature_control.error_last = heater.temperature_control.error;
 
         // Clamp to available power supply current
         if (heater.current_control.set > heater.power.current_negotiated)
@@ -80,6 +84,7 @@ void temperatureControlLoop(void)
     {
         // Reset control after disconnected tool or other error
         heater.temperature_control.error = 0;
+        heater.temperature_control.error_last = 0;
         heater.temperature_control.integratedError = 0;
         heater.current_control.set = 0;
     }

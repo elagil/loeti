@@ -46,6 +46,7 @@ THD_FUNCTION(lcdThread, arg)
     ssd1803_initialize();
 
     char str[10];
+    char uart_str[10];
     uint8_t waiting = 0;
 
     while (true)
@@ -61,6 +62,15 @@ THD_FUNCTION(lcdThread, arg)
         double voltage = heater.power.voltage_meas;
         double power = (current * voltage) / heater.power.power_negotiated;
         chBSemSignal(&heater.bsem);
+
+        chsnprintf(uart_str, LINE_LENGTH + 1, "C___%5d\n", (uint16_t)(is * 100));
+        sdWrite(&SD1, (uint8_t *)uart_str, LINE_LENGTH);
+
+        chsnprintf(uart_str, LINE_LENGTH + 1, "V___%5d\n", (uint16_t)(voltage * 1000));
+        sdWrite(&SD1, (uint8_t *)uart_str, LINE_LENGTH);
+
+        chsnprintf(uart_str, LINE_LENGTH + 1, "A___%5d\n", (uint16_t)(current * 1000));
+        sdWrite(&SD1, (uint8_t *)uart_str, LINE_LENGTH);
 
         ssd1803_move_to_line(0);
 

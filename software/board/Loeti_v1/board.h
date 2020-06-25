@@ -239,8 +239,8 @@
  * PA6  - LCD_NRST                  (output pushpull maximum).
  * PA7  - VOL                       (input floating).
  * PA8  - PWM                       (alternate 2).
- * PA9  - VCP_RX                    (input floating).
- * PA10 - VCP_TX                    (output pushpull maximum).
+ * PA9  - VCP_RX                    (alternate 1).
+ * PA10 - VCP_TX                    (alternate 1).
  * PA11 - PD_ALERT_INT              (input floating).
  * PA12 - SPI1_NSS2                 (output pushpull maximum).
  * PA13 - SWDIO                     (alternate 0).
@@ -256,8 +256,8 @@
                                      PIN_MODE_OUTPUT(GPIOA_LCD_NRST) |      \
                                      PIN_MODE_INPUT(GPIOA_VOL) |            \
                                      PIN_MODE_ALTERNATE(GPIOA_PWM) |        \
-                                     PIN_MODE_INPUT(GPIOA_VCP_RX) |         \
-                                     PIN_MODE_OUTPUT(GPIOA_VCP_TX) |        \
+                                     PIN_MODE_ALTERNATE(GPIOA_VCP_RX) |     \
+                                     PIN_MODE_ALTERNATE(GPIOA_VCP_TX) |     \
                                      PIN_MODE_INPUT(GPIOA_PD_ALERT_INT) |   \
                                      PIN_MODE_OUTPUT(GPIOA_SPI1_NSS2) |     \
                                      PIN_MODE_ALTERNATE(GPIOA_SWDIO) |      \
@@ -336,8 +336,8 @@
                                      PIN_AFIO_AF(GPIOA_LCD_NRST, 0U) |      \
                                      PIN_AFIO_AF(GPIOA_VOL, 0U))
 #define VAL_GPIOA_AFRH              (PIN_AFIO_AF(GPIOA_PWM, 2U) |           \
-                                     PIN_AFIO_AF(GPIOA_VCP_RX, 0U) |        \
-                                     PIN_AFIO_AF(GPIOA_VCP_TX, 0U) |        \
+                                     PIN_AFIO_AF(GPIOA_VCP_RX, 1U) |        \
+                                     PIN_AFIO_AF(GPIOA_VCP_TX, 1U) |        \
                                      PIN_AFIO_AF(GPIOA_PD_ALERT_INT, 0U) |  \
                                      PIN_AFIO_AF(GPIOA_SPI1_NSS2, 0U) |     \
                                      PIN_AFIO_AF(GPIOA_SWDIO, 0U) |         \

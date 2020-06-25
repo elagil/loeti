@@ -10,6 +10,7 @@
         "ch.h": "c",
         "usb_pd.h": "c",
         "events.h": "c",
-        "lcd.h": "c"
+        "lcd.h": "c",
+        "limits": "c"
     }
 }

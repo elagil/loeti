@@ -32,8 +32,9 @@
 #endif
 
 #ifdef C245
-#define HEATER_TEMPERATURE_P 0.045
-#define HEATER_TEMPERATURE_I (0.0007 / (MS2S(LOOP_TIME_TEMPERATURE_MS)))
+#define HEATER_TEMPERATURE_P 0.2
+#define HEATER_TEMPERATURE_I (0.01 / (MS2S(LOOP_TIME_TEMPERATURE_MS)))
+#define HEATER_TEMPERATURE_D (0 * (MS2S(LOOP_TIME_TEMPERATURE_MS)))
 #endif
 
 #define VOLTAGE_SENSE_RATIO 11
@@ -75,17 +76,19 @@ typedef struct
     double set;
     double integratedError; //<<< Error from I-component of control loop
     double error;           //<<< Error from P-component of control loop
+    double error_last;      //<<< Last error value
     double p;               //<<< Contol loop P variable
     double i;               //<<< Contol loop I variable
-} pi_t;
+    double d;               //<<< Contol loop D variable
+} pid_t;
 typedef struct
 {
     bool sleep;     //<<< True, if heater is in sleep mode
     bool connected; //<<< True, if heater is connected to the station
     heater_power_t power;
     heater_temperatures_t temperatures;
-    pi_t temperature_control;
-    pi_t current_control;
+    pid_t temperature_control;
+    pid_t current_control;
     binary_semaphore_t bsem; //<<< Locking semaphore
 } heater_t;
 

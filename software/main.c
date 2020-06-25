@@ -26,6 +26,12 @@
 
 binary_semaphore_t dma_lock;
 
+static const SerialConfig serialConfig = {
+    115200,
+    0,
+    USART_CR2_STOP1_BITS | USART_CR2_SWAP,
+    0};
+
 /*
  * Application entry point.=
  */
@@ -78,6 +84,11 @@ int main(void)
    * Creates the temperature ADC read thread.
    */
   chThdCreateStatic(waAdcThread, sizeof(waAdcThread), NORMALPRIO, adcThread, NULL);
+
+  /*
+   * Start serial driver
+   */
+  sdStart(&SD1, &serialConfig);
 
   while (true)
   {

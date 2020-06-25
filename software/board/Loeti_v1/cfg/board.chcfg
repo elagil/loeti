@@ -95,16 +95,16 @@
         Level="High"
         Speed="Maximum"
         Resistor="Floating"
-        Mode="Input"
-        Alternate="0" />
+        Mode="Alternate"
+        Alternate="1" />
       <pin10
         ID="VCP_TX"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
         Resistor="PullUp"
-        Mode="Output"
-        Alternate="0" />
+        Mode="Alternate"
+        Alternate="1" />
       <pin11
         ID="PD_ALERT_INT"
         Type="PushPull"
