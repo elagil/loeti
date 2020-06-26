@@ -3,6 +3,7 @@ import serial
 import sys
 import concurrent.futures as cf
 import time
+from collections import deque
 
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QMainWindow
@@ -14,9 +15,9 @@ def getNumber(raw, factor):
 
 
 def acquire(plotTemp, plotPower):
-    temperatures = []
-    powers = []
-    times = []
+    temperatures = deque(maxlen=600)
+    powers = deque(maxlen=600)
+    times = deque(maxlen=600)
 
     current = 0
     voltage = 0
