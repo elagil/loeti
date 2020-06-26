@@ -2,6 +2,7 @@ import numpy as np
 import serial
 import sys
 import concurrent.futures as cf
+import time
 
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QMainWindow
@@ -13,39 +14,47 @@ def getNumber(raw, factor):
 
 
 def acquire(plotTemp, plotPower):
-    s = serial.Serial('COM5', 115200, timeout=1)
-
     temperatures = []
     powers = []
+    times = []
 
-    tempPlot = plotTemp.plot()
-    powerPlot = plotPower.plot()
     current = 0
     voltage = 0
     power = 0
 
     while True:
-        res = s.readline().decode("utf-8")
-        res = res[:-1]
+        try:
+            s = serial.Serial('COM5', 115200)
 
-        if res[0] == "A":
-            current = getNumber(res, 1000)
+        except:
+            continue
 
-        elif res[0] == "V":
-            voltage = getNumber(res, 1000)
+        else:
+            start = time.time()
 
-        elif res[0] == "C":
-            temperature = getNumber(res, 100)
-            temperatures.append(temperature)
+            while True:
+                try:
+                    res = s.readline().decode("utf-8")
 
-        power = current * voltage
-        if power > 100:
-            power = 0
+                except:
+                    continue
 
-        powers.append(power)
+                else:
+                    res = res[:-1]
 
-        tempPlot.setData(np.array(temperatures))
-        powerPlot.setData(np.array(powers))
+                    curTime = time.time() - start
+                    temperature = getNumber(res[:5], 100)
+                    power = getNumber(res[5:], 100)
+
+                    if power > 100:
+                        power = 0
+
+                    times.append(curTime)
+                    temperatures.append(temperature)
+                    powers.append(power)
+
+                    plotTemp.setData(np.array(times), np.array(temperatures))
+                    plotPower.setData(np.array(times), np.array(powers))
 
 
 def go():
@@ -59,8 +68,20 @@ def go():
     btn = QtGui.QPushButton('press me')
     text = QtGui.QLineEdit('enter text')
     listw = QtGui.QListWidget()
-    plotTemp = pg.PlotWidget()
-    plotPower = pg.PlotWidget()
+
+    plots = pg.PlotWidget()
+    plotsItem = plots.getPlotItem()
+    plotsItem.addLegend()
+    plotsItem.showGrid(x=True, y=True)
+
+    plotsItem.setLabel("bottom", text="Time", units="s")
+
+    plotTemp = pg.PlotDataItem(
+        name="temperature/°C", pen=pg.mkPen('y', width=2))
+    plotPower = pg.PlotDataItem(name="power/W", pen=pg.mkPen('r', width=2))
+
+    plots.addItem(plotTemp)
+    plots.addItem(plotPower)
 
     # Create a grid layout to manage the widgets size and position
     layout = QtGui.QGridLayout()
@@ -71,8 +92,7 @@ def go():
     # layout.addWidget(text, 1, 0)   # text edit goes in middle-left
     # layout.addWidget(listw, 2, 0)  # list widget goes in bottom-left
     # plot goes on right side, spanning 3 rows
-    layout.addWidget(plotTemp, 0, 0)
-    layout.addWidget(plotPower, 1, 0)
+    layout.addWidget(plots, 0, 0)
 
     threadPoolExecutor = cf.ThreadPoolExecutor()
     task = threadPoolExecutor.submit(acquire, plotTemp, plotPower)
