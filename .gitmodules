@@ -1,3 +1,0 @@
-[submodule "chibios"]
-	path = chibios
-	url = https://github.com/ChibiOS/ChibiOS.git
