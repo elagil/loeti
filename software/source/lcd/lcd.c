@@ -17,6 +17,7 @@
 THD_WORKING_AREA(waLcdThread, LCD_THREAD_STACK_SIZE);
 
 #define LINE_LENGTH 10
+#define TEMP_AVGS 5
 
 THD_FUNCTION(lcdThread, arg)
 {
@@ -54,14 +55,12 @@ THD_FUNCTION(lcdThread, arg)
     chBSemSignal(&heater.bsem);
 
     ssd1803_move_to_line(0);
-    chsnprintf(str, LINE_LENGTH + 1, "  Supply  ");
+    chsnprintf(str, LINE_LENGTH + 1, "      %3dW", (uint16_t)power_negotiated);
     ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
 
-    ssd1803_move_to_line(1);
-    chsnprintf(str, LINE_LENGTH + 1, "   %3dW   ", (uint16_t)power_negotiated);
-    ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
-
-    chThdSleepSeconds(1);
+    double temps[TEMP_AVGS];
+    uint32_t temp_idx = 0;
+    double avg = 0;
 
     while (true)
     {
@@ -72,43 +71,32 @@ THD_FUNCTION(lcdThread, arg)
         double is = heater.temperature_control.is;
         double set = heater.temperature_control.set;
         double max = heater.temperatures.max;
-        double error = heater.temperature_control.error;
         double current = heater.current_control.is - heater.power.current_offset;
         double voltage = heater.power.voltage_meas;
         double power = (current * voltage) / heater.power.power_negotiated;
         chBSemSignal(&heater.bsem);
 
+        if (++temp_idx == TEMP_AVGS)
+        {
+            temp_idx = 0;
+        }
+
+        temps[temp_idx] = is;
+
+        avg = 0;
+        for (uint32_t i = 0; i < TEMP_AVGS; i++)
+        {
+            avg += temps[i] / TEMP_AVGS;
+        }
+
         chsnprintf(uart_str, 12, "%5d%5d\n", (uint16_t)(is * 100), (uint16_t)(current * voltage * 100));
         sdWrite(&SD1, (uint8_t *)uart_str, 11);
-
-        ssd1803_move_to_line(0);
-
-        if (connected)
-        {
-            if (error > 3)
-            {
-                chsnprintf(str, LINE_LENGTH + 1, "      %3d\x1a", (uint16_t)(100 * power));
-            }
-            else if (error < -3)
-            {
-                chsnprintf(str, LINE_LENGTH + 1, "      %3d\x1b", (uint16_t)(100 * power));
-            }
-            else
-            {
-                chsnprintf(str, LINE_LENGTH + 1, "      %3d\xbb", (uint16_t)(100 * power));
-            }
-        }
-        else
-        {
-            chsnprintf(str, LINE_LENGTH + 1, "          ");
-        }
-        ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
 
         ssd1803_move_to_line(1);
         if (connected && (is < max) && (is > 0))
         {
             waiting = 0;
-            chsnprintf(str, LINE_LENGTH + 1, "    %3d   ", (uint16_t)(is + 0.5));
+            chsnprintf(str, LINE_LENGTH + 1, "    %3d   ", (uint16_t)(avg + 0.5));
         }
         else
         {
