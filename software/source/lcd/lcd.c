@@ -49,6 +49,20 @@ THD_FUNCTION(lcdThread, arg)
     char uart_str[10];
     uint8_t waiting = 0;
 
+    chBSemWait(&heater.bsem);
+    double power_negotiated = heater.power.power_negotiated;
+    chBSemSignal(&heater.bsem);
+
+    ssd1803_move_to_line(0);
+    chsnprintf(str, LINE_LENGTH + 1, "  Supply  ");
+    ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
+
+    ssd1803_move_to_line(1);
+    chsnprintf(str, LINE_LENGTH + 1, "   %3dW   ", (uint16_t)power_negotiated);
+    ssd1803_writeByteArray((uint8_t *)str, LINE_LENGTH);
+
+    chThdSleepSeconds(1);
+
     while (true)
     {
         chEvtWaitAny(TEMP_EVENT);
@@ -58,6 +72,7 @@ THD_FUNCTION(lcdThread, arg)
         double is = heater.temperature_control.is;
         double set = heater.temperature_control.set;
         double max = heater.temperatures.max;
+        double error = heater.temperature_control.error;
         double current = heater.current_control.is - heater.power.current_offset;
         double voltage = heater.power.voltage_meas;
         double power = (current * voltage) / heater.power.power_negotiated;
@@ -70,7 +85,18 @@ THD_FUNCTION(lcdThread, arg)
 
         if (connected)
         {
-            chsnprintf(str, LINE_LENGTH + 1, "      %3dW", (uint16_t)(current * voltage + 0.5));
+            if (error > 3)
+            {
+                chsnprintf(str, LINE_LENGTH + 1, "      %3d\x1a", (uint16_t)(100 * power));
+            }
+            else if (error < -3)
+            {
+                chsnprintf(str, LINE_LENGTH + 1, "      %3d\x1b", (uint16_t)(100 * power));
+            }
+            else
+            {
+                chsnprintf(str, LINE_LENGTH + 1, "      %3d\xbb", (uint16_t)(100 * power));
+            }
         }
         else
         {

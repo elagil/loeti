@@ -101,13 +101,18 @@ event_source_t temp_event_source;
 #define UNCHANGED_ADC_SETTINGS (NOP_INVALID << NOP_POS)
 
 #ifdef C210
-#define TC_SLOPE 0.6452 // 0.2706
+#define TC_SLOPE 0.65
 #define TC_OFFSET 35
 #endif
 
 #ifdef C245
-#define TC_SLOPE 0.2706
+#define TC_SLOPE 0.27
 #define TC_OFFSET 5
+#endif
+
+#ifdef WMRP
+#define TC_SLOPE 0.42
+#define TC_OFFSET 30
 #endif
 
 #define TC_READ_DEAD_TIME_US 500 // wait for anti alias low pass in thermocouple amplifier
@@ -161,7 +166,7 @@ bool measureTcTemperature(ioline_t ssr_line, uint8_t *acquire_configuration, uin
     // wait for TC relais to switch open
     chThdSleepMicroseconds(TC_RELAIS_OFF_DELAY_US);
 
-    // byteswap
+    // byteswap 340, 666, 290 547
     converted = REG_TO_TEMP(raw);
 
     if (converted != TC_DISCONNECT)

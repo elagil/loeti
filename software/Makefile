@@ -4,8 +4,9 @@
 #
 
 # Handle options:
-#   C210
-#   C245
+#   C210 (JBC)
+#   C245 (JBC)
+#   WMRP (Weller)
 
 HANDLE_TYPE = C245
 

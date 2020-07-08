@@ -3,25 +3,38 @@ import serial
 import sys
 import concurrent.futures as cf
 import time
+import pickle
+
 from collections import deque
 
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QMainWindow
 import pyqtgraph as pg
 
+DIGITS = 5
+ACQUISITION_LENGTH = 6000
 
-def getNumber(raw, factor):
-    return float(raw[-5:])/factor
+
+def getNumber(raw, scale):
+    return float(raw[-DIGITS:]) / scale
+
+
+def store(dataset, filename):
+    f = open(filename, "wb")
+    pickle.dump(dataset, f)
+    f.close()
 
 
 def acquire(plotTemp, plotPower):
-    temperatures = deque(maxlen=600)
-    powers = deque(maxlen=600)
-    times = deque(maxlen=600)
+    temperatures = deque(maxlen=ACQUISITION_LENGTH)
+    powers = deque(maxlen=ACQUISITION_LENGTH)
+    times = deque(maxlen=ACQUISITION_LENGTH)
 
     current = 0
     voltage = 0
     power = 0
+
+    stored = False
 
     while True:
         try:
@@ -56,6 +69,10 @@ def acquire(plotTemp, plotPower):
 
                     plotTemp.setData(np.array(times), np.array(temperatures))
                     plotPower.setData(np.array(times), np.array(powers))
+
+                    if temperature > 350 and not stored:
+                        store((times, temperatures, powers), "step.pkl")
+                        stored = True
 
 
 def go():
