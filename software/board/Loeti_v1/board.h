@@ -27,14 +27,14 @@
 /*===========================================================================*/
 
 /*
- * Setup for STMicroelectronics STM32F030K6 on Loeti board.
+ * Setup for STMicroelectronics STM32F042K6 on Loeti board.
  */
 
 /*
  * Board identifier.
  */
 #define BOARD_Loeti_v1
-#define BOARD_NAME                  "STMicroelectronics STM32F030K6 on Loeti"
+#define BOARD_NAME                  "STMicroelectronics STM32F042K6 on Loeti"
 
 /*
  * Board oscillators-related settings.
@@ -54,7 +54,7 @@
 /*
  * MCU type as defined in the ST header.
  */
-#define STM32F030x6
+#define STM32F042x6
 
 /*
  * IO pins assignments.

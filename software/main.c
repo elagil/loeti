@@ -88,7 +88,7 @@ int main(void)
   /*
    * Start serial driver
    */
-  sdStart(&SD1, &serialConfig);
+  sdStart(&SD2, &serialConfig);
 
   while (true)
   {

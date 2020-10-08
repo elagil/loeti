@@ -9,10 +9,10 @@
     <output_path>..</output_path>
     <hal_version>5.0.x</hal_version>
   </configuration_settings>
-  <board_name>STMicroelectronics STM32F030K6 on Loeti</board_name>
+  <board_name>STMicroelectronics STM32F042K6 on Loeti</board_name>
   <board_id>Loeti_v1</board_id>
   <board_functions></board_functions>
-  <subtype>STM32F030x6</subtype>
+  <subtype>STM32F042x6</subtype>
   <clocks HSEFrequency="0" HSEBypass="false" LSEFrequency="0"
   	LSEBypass="false" LSEDrive="3 High Drive (default)" />
   <ports>

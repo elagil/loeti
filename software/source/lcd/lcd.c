@@ -90,7 +90,7 @@ THD_FUNCTION(lcdThread, arg)
         }
 
         chsnprintf(uart_str, 12, "%5d%5d\n", (uint16_t)(is * 100), (uint16_t)(current * voltage * 100));
-        sdWrite(&SD1, (uint8_t *)uart_str, 11);
+        sdWrite(&SD2, (uint8_t *)uart_str, 11);
 
         ssd1803_move_to_line(1);
         if (connected && (is < max) && (is > 0))
