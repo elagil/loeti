@@ -1,5 +1,9 @@
 EESchema-DOCLIB  Version 2.0
 #
+$CMP INA239
+F http://www.ti.com/lit/ds/symlink/ina301.pdf
+$ENDCMP
+#
 $CMP INA301
 F http://www.ti.com/lit/ds/symlink/ina301.pdf
 $ENDCMP
