@@ -29,7 +29,7 @@ binary_semaphore_t dma_lock;
 static const SerialConfig serialConfig = {
     115200,
     0,
-    USART_CR2_STOP1_BITS | USART_CR2_SWAP,
+    USART_CR2_STOP1_BITS,
     0};
 
 /*
