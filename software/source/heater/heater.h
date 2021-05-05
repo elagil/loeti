@@ -3,7 +3,12 @@
 
 #include "ch.h"
 
-#define TEMPERATURE_SET_INTERVAL 10
+#define HEATER_TEMP_LEVEL_COUNT 3
+#define HEATER_TEMP_LEVEL0 300
+#define HEATER_TEMP_LEVEL_STEP 25
+
+extern uint32_t heater_temp_set_level;
+
 #define LOOP_TIME_RATIO 20
 #define LOOP_TIME_TEMPERATURE_MS 100
 #define LOOP_TIME_CURRENT_MS (LOOP_TIME_TEMPERATURE_MS / LOOP_TIME_RATIO)
@@ -26,6 +31,7 @@
 #define HEATER_RESISTANCE 3
 #endif
 
+#define HEATER_CURRENT_LIMIT 0.9
 #define HEATER_CURRENT_P 0
 #define HEATER_CURRENT_I_SCALE 0.5
 #define HEATER_CURRENT_I (HEATER_CURRENT_I_SCALE * HEATER_RESISTANCE / (2 * MS2S(LOOP_TIME_CURRENT_MS)))
@@ -48,8 +54,10 @@
 #define HEATER_TEMPERATURE_D (0 * (MS2S(LOOP_TIME_TEMPERATURE_MS)))
 #endif
 
+// Ratios as defined by resistors and inherent gains of the parts
 #define VOLTAGE_SENSE_RATIO 11
 #define CURRENT_SENSE_RATIO 5
+
 #define ADC_REF_VOLTAGE 3.3
 #define ADC_FS_READING 4096
 #define ADC_TO_VOLT(x) ((double)x / (double)ADC_FS_READING * (double)ADC_REF_VOLTAGE)
@@ -94,9 +102,9 @@ typedef struct
 } pid_t;
 typedef struct
 {
-    bool sleep;     //<<< True, if heater is in sleep mode
-    bool connected; //<<< True, if heater is connected to the station
-    heater_power_t power;
+    bool sleep;           //<<< True, if heater is in sleep mode
+    bool connected;       //<<< True, if heater is connected to the station
+    heater_power_t power; //<<< Heater power structure
     heater_temperatures_t temperatures;
     pid_t temperature_control;
     pid_t current_control;
