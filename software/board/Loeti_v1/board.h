@@ -74,14 +74,14 @@
 #define GPIOA_SPI1_NSS2             12U
 #define GPIOA_SWDIO                 13U
 #define GPIOA_SWCLK                 14U
-#define GPIOA_SPI1_NSS1             15U
+#define GPIOA_LED0                  15U
 
 #define GPIOB_PIN0                  0U
 #define GPIOB_PD_RST                1U
 #define GPIOB_PIN2                  2U
-#define GPIOB_SPI1_SCK              3U
-#define GPIOB_SPI1_MISO             4U
-#define GPIOB_SPI1_MOSI             5U
+#define GPIOB_LED1                  3U
+#define GPIOB_LED2                  4U
+#define GPIOB_PIN5                  5U
 #define GPIOB_I2C1_SVL              6U
 #define GPIOB_I2C1_SDA              7U
 #define GPIOB_PIN8                  8U
@@ -179,11 +179,10 @@
 #define LINE_SPI1_NSS2              PAL_LINE(GPIOA, 12U)
 #define LINE_SWDIO                  PAL_LINE(GPIOA, 13U)
 #define LINE_SWCLK                  PAL_LINE(GPIOA, 14U)
-#define LINE_SPI1_NSS1              PAL_LINE(GPIOA, 15U)
+#define LINE_LED0                   PAL_LINE(GPIOA, 15U)
 #define LINE_PD_RST                 PAL_LINE(GPIOB, 1U)
-#define LINE_SPI1_SCK               PAL_LINE(GPIOB, 3U)
-#define LINE_SPI1_MISO              PAL_LINE(GPIOB, 4U)
-#define LINE_SPI1_MOSI              PAL_LINE(GPIOB, 5U)
+#define LINE_LED1                   PAL_LINE(GPIOB, 3U)
+#define LINE_LED2                   PAL_LINE(GPIOB, 4U)
 #define LINE_I2C1_SVL               PAL_LINE(GPIOB, 6U)
 #define LINE_I2C1_SDA               PAL_LINE(GPIOB, 7U)
 #define LINE_CUR_RESET              PAL_LINE(GPIOF, 0U)
@@ -245,7 +244,7 @@
  * PA12 - SPI1_NSS2                 (output pushpull maximum).
  * PA13 - SWDIO                     (alternate 0).
  * PA14 - SWCLK                     (alternate 0).
- * PA15 - SPI1_NSS1                 (output pushpull maximum).
+ * PA15 - LED0                      (output pushpull maximum).
  */
 #define VAL_GPIOA_MODER             (PIN_MODE_INPUT(GPIOA_SW0) |            \
                                      PIN_MODE_INPUT(GPIOA_SW1) |            \
@@ -262,7 +261,7 @@
                                      PIN_MODE_OUTPUT(GPIOA_SPI1_NSS2) |     \
                                      PIN_MODE_ALTERNATE(GPIOA_SWDIO) |      \
                                      PIN_MODE_ALTERNATE(GPIOA_SWCLK) |      \
-                                     PIN_MODE_OUTPUT(GPIOA_SPI1_NSS1))
+                                     PIN_MODE_OUTPUT(GPIOA_LED0))
 #define VAL_GPIOA_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOA_SW0) |        \
                                      PIN_OTYPE_PUSHPULL(GPIOA_SW1) |        \
                                      PIN_OTYPE_PUSHPULL(GPIOA_CUR) |        \
@@ -278,7 +277,7 @@
                                      PIN_OTYPE_PUSHPULL(GPIOA_SPI1_NSS2) |  \
                                      PIN_OTYPE_PUSHPULL(GPIOA_SWDIO) |      \
                                      PIN_OTYPE_PUSHPULL(GPIOA_SWCLK) |      \
-                                     PIN_OTYPE_PUSHPULL(GPIOA_SPI1_NSS1))
+                                     PIN_OTYPE_PUSHPULL(GPIOA_LED0))
 #define VAL_GPIOA_OSPEEDR           (PIN_OSPEED_HIGH(GPIOA_SW0) |           \
                                      PIN_OSPEED_HIGH(GPIOA_SW1) |           \
                                      PIN_OSPEED_HIGH(GPIOA_CUR) |           \
@@ -294,7 +293,7 @@
                                      PIN_OSPEED_HIGH(GPIOA_SPI1_NSS2) |     \
                                      PIN_OSPEED_HIGH(GPIOA_SWDIO) |         \
                                      PIN_OSPEED_HIGH(GPIOA_SWCLK) |         \
-                                     PIN_OSPEED_HIGH(GPIOA_SPI1_NSS1))
+                                     PIN_OSPEED_HIGH(GPIOA_LED0))
 #define VAL_GPIOA_PUPDR             (PIN_PUPDR_PULLUP(GPIOA_SW0) |          \
                                      PIN_PUPDR_PULLUP(GPIOA_SW1) |          \
                                      PIN_PUPDR_FLOATING(GPIOA_CUR) |        \
@@ -310,7 +309,7 @@
                                      PIN_PUPDR_PULLUP(GPIOA_SPI1_NSS2) |    \
                                      PIN_PUPDR_PULLUP(GPIOA_SWDIO) |        \
                                      PIN_PUPDR_PULLDOWN(GPIOA_SWCLK) |      \
-                                     PIN_PUPDR_PULLUP(GPIOA_SPI1_NSS1))
+                                     PIN_PUPDR_FLOATING(GPIOA_LED0))
 #define VAL_GPIOA_ODR               (PIN_ODR_HIGH(GPIOA_SW0) |              \
                                      PIN_ODR_HIGH(GPIOA_SW1) |              \
                                      PIN_ODR_HIGH(GPIOA_CUR) |              \
@@ -326,7 +325,7 @@
                                      PIN_ODR_HIGH(GPIOA_SPI1_NSS2) |        \
                                      PIN_ODR_HIGH(GPIOA_SWDIO) |            \
                                      PIN_ODR_HIGH(GPIOA_SWCLK) |            \
-                                     PIN_ODR_HIGH(GPIOA_SPI1_NSS1))
+                                     PIN_ODR_HIGH(GPIOA_LED0))
 #define VAL_GPIOA_AFRL              (PIN_AFIO_AF(GPIOA_SW0, 0U) |           \
                                      PIN_AFIO_AF(GPIOA_SW1, 0U) |           \
                                      PIN_AFIO_AF(GPIOA_CUR, 0U) |           \
@@ -342,7 +341,7 @@
                                      PIN_AFIO_AF(GPIOA_SPI1_NSS2, 0U) |     \
                                      PIN_AFIO_AF(GPIOA_SWDIO, 0U) |         \
                                      PIN_AFIO_AF(GPIOA_SWCLK, 0U) |         \
-                                     PIN_AFIO_AF(GPIOA_SPI1_NSS1, 0U))
+                                     PIN_AFIO_AF(GPIOA_LED0, 0U))
 
 /*
  * GPIOB setup:
@@ -350,9 +349,9 @@
  * PB0  - PIN0                      (input pullup).
  * PB1  - PD_RST                    (output pushpull maximum).
  * PB2  - PIN2                      (input pullup).
- * PB3  - SPI1_SCK                  (alternate 0).
- * PB4  - SPI1_MISO                 (alternate 0).
- * PB5  - SPI1_MOSI                 (alternate 0).
+ * PB3  - LED1                      (output pushpull maximum).
+ * PB4  - LED2                      (output pushpull maximum).
+ * PB5  - PIN5                      (alternate 0).
  * PB6  - I2C1_SVL                  (alternate 1).
  * PB7  - I2C1_SDA                  (alternate 1).
  * PB8  - PIN8                      (input pullup).
@@ -367,9 +366,9 @@
 #define VAL_GPIOB_MODER             (PIN_MODE_INPUT(GPIOB_PIN0) |           \
                                      PIN_MODE_OUTPUT(GPIOB_PD_RST) |        \
                                      PIN_MODE_INPUT(GPIOB_PIN2) |           \
-                                     PIN_MODE_ALTERNATE(GPIOB_SPI1_SCK) |   \
-                                     PIN_MODE_ALTERNATE(GPIOB_SPI1_MISO) |  \
-                                     PIN_MODE_ALTERNATE(GPIOB_SPI1_MOSI) |  \
+                                     PIN_MODE_OUTPUT(GPIOB_LED1) |          \
+                                     PIN_MODE_OUTPUT(GPIOB_LED2) |          \
+                                     PIN_MODE_ALTERNATE(GPIOB_PIN5) |       \
                                      PIN_MODE_ALTERNATE(GPIOB_I2C1_SVL) |   \
                                      PIN_MODE_ALTERNATE(GPIOB_I2C1_SDA) |   \
                                      PIN_MODE_INPUT(GPIOB_PIN8) |           \
@@ -383,9 +382,9 @@
 #define VAL_GPIOB_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOB_PIN0) |       \
                                      PIN_OTYPE_PUSHPULL(GPIOB_PD_RST) |     \
                                      PIN_OTYPE_PUSHPULL(GPIOB_PIN2) |       \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_SPI1_SCK) |   \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_SPI1_MISO) |  \
-                                     PIN_OTYPE_PUSHPULL(GPIOB_SPI1_MOSI) |  \
+                                     PIN_OTYPE_PUSHPULL(GPIOB_LED1) |       \
+                                     PIN_OTYPE_PUSHPULL(GPIOB_LED2) |       \
+                                     PIN_OTYPE_PUSHPULL(GPIOB_PIN5) |       \
                                      PIN_OTYPE_PUSHPULL(GPIOB_I2C1_SVL) |   \
                                      PIN_OTYPE_PUSHPULL(GPIOB_I2C1_SDA) |   \
                                      PIN_OTYPE_PUSHPULL(GPIOB_PIN8) |       \
@@ -399,9 +398,9 @@
 #define VAL_GPIOB_OSPEEDR           (PIN_OSPEED_HIGH(GPIOB_PIN0) |          \
                                      PIN_OSPEED_HIGH(GPIOB_PD_RST) |        \
                                      PIN_OSPEED_HIGH(GPIOB_PIN2) |          \
-                                     PIN_OSPEED_HIGH(GPIOB_SPI1_SCK) |      \
-                                     PIN_OSPEED_HIGH(GPIOB_SPI1_MISO) |     \
-                                     PIN_OSPEED_HIGH(GPIOB_SPI1_MOSI) |     \
+                                     PIN_OSPEED_HIGH(GPIOB_LED1) |          \
+                                     PIN_OSPEED_HIGH(GPIOB_LED2) |          \
+                                     PIN_OSPEED_HIGH(GPIOB_PIN5) |          \
                                      PIN_OSPEED_HIGH(GPIOB_I2C1_SVL) |      \
                                      PIN_OSPEED_HIGH(GPIOB_I2C1_SDA) |      \
                                      PIN_OSPEED_HIGH(GPIOB_PIN8) |          \
@@ -415,9 +414,9 @@
 #define VAL_GPIOB_PUPDR             (PIN_PUPDR_PULLUP(GPIOB_PIN0) |         \
                                      PIN_PUPDR_PULLDOWN(GPIOB_PD_RST) |     \
                                      PIN_PUPDR_PULLUP(GPIOB_PIN2) |         \
-                                     PIN_PUPDR_FLOATING(GPIOB_SPI1_SCK) |   \
-                                     PIN_PUPDR_PULLUP(GPIOB_SPI1_MISO) |    \
-                                     PIN_PUPDR_PULLUP(GPIOB_SPI1_MOSI) |    \
+                                     PIN_PUPDR_FLOATING(GPIOB_LED1) |       \
+                                     PIN_PUPDR_FLOATING(GPIOB_LED2) |       \
+                                     PIN_PUPDR_PULLUP(GPIOB_PIN5) |         \
                                      PIN_PUPDR_PULLUP(GPIOB_I2C1_SVL) |     \
                                      PIN_PUPDR_PULLUP(GPIOB_I2C1_SDA) |     \
                                      PIN_PUPDR_PULLUP(GPIOB_PIN8) |         \
@@ -431,9 +430,9 @@
 #define VAL_GPIOB_ODR               (PIN_ODR_HIGH(GPIOB_PIN0) |             \
                                      PIN_ODR_HIGH(GPIOB_PD_RST) |           \
                                      PIN_ODR_HIGH(GPIOB_PIN2) |             \
-                                     PIN_ODR_LOW(GPIOB_SPI1_SCK) |          \
-                                     PIN_ODR_HIGH(GPIOB_SPI1_MISO) |        \
-                                     PIN_ODR_HIGH(GPIOB_SPI1_MOSI) |        \
+                                     PIN_ODR_HIGH(GPIOB_LED1) |             \
+                                     PIN_ODR_HIGH(GPIOB_LED2) |             \
+                                     PIN_ODR_HIGH(GPIOB_PIN5) |             \
                                      PIN_ODR_HIGH(GPIOB_I2C1_SVL) |         \
                                      PIN_ODR_HIGH(GPIOB_I2C1_SDA) |         \
                                      PIN_ODR_HIGH(GPIOB_PIN8) |             \
@@ -447,9 +446,9 @@
 #define VAL_GPIOB_AFRL              (PIN_AFIO_AF(GPIOB_PIN0, 0U) |          \
                                      PIN_AFIO_AF(GPIOB_PD_RST, 0U) |        \
                                      PIN_AFIO_AF(GPIOB_PIN2, 0U) |          \
-                                     PIN_AFIO_AF(GPIOB_SPI1_SCK, 0U) |      \
-                                     PIN_AFIO_AF(GPIOB_SPI1_MISO, 0U) |     \
-                                     PIN_AFIO_AF(GPIOB_SPI1_MOSI, 0U) |     \
+                                     PIN_AFIO_AF(GPIOB_LED1, 0U) |          \
+                                     PIN_AFIO_AF(GPIOB_LED2, 0U) |          \
+                                     PIN_AFIO_AF(GPIOB_PIN5, 0U) |          \
                                      PIN_AFIO_AF(GPIOB_I2C1_SVL, 1U) |      \
                                      PIN_AFIO_AF(GPIOB_I2C1_SDA, 1U))
 #define VAL_GPIOB_AFRH              (PIN_AFIO_AF(GPIOB_PIN8, 0U) |          \

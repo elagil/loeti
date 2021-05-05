@@ -18,9 +18,9 @@
 #include "hal.h"
 
 #include "heater.h"
-#include "tc_adc.h"
+#include "diagnostic.h"
+#include "sensor.h"
 #include "usb_pd.h"
-#include "lcd.h"
 #include "ui.h"
 #include "events.h"
 
@@ -66,9 +66,9 @@ int main(void)
   chThdCreateStatic(waUiThread, sizeof(waUiThread), NORMALPRIO, uiThread, NULL);
 
   /*
-   * Creates the LCD thread.
+   * Creates the diagnostic thread.
    */
-  chThdCreateStatic(waLcdThread, sizeof(waLcdThread), NORMALPRIO, lcdThread, NULL);
+  chThdCreateStatic(waDiagThread, sizeof(waDiagThread), NORMALPRIO, diagThread, NULL);
 
   /*
    * Creates the USB PD control thread.
@@ -81,9 +81,9 @@ int main(void)
   chThdCreateStatic(waHeaterThread, sizeof(waHeaterThread), NORMALPRIO, heaterThread, NULL);
 
   /*
-   * Creates the temperature ADC read thread.
+   * Creates the temperature sense thread.
    */
-  chThdCreateStatic(waAdcThread, sizeof(waAdcThread), NORMALPRIO, adcThread, NULL);
+  chThdCreateStatic(waSensorThread, sizeof(waSensorThread), NORMALPRIO, sensorThread, NULL);
 
   /*
    * Start serial driver

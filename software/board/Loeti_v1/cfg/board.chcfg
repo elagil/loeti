@@ -138,11 +138,11 @@
         Mode="Alternate"
         Alternate="0" />
       <pin15
-        ID="SPI1_NSS1"
+        ID="LED0"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="PullUp"
+        Resistor="Floating"
         Mode="Output"
         Alternate="0" />
     </GPIOA>
@@ -172,23 +172,23 @@
         Mode="Input"
         Alternate="0" />
       <pin3
-        ID="SPI1_SCK"
-        Type="PushPull"
-        Level="Low"
-        Speed="Maximum"
-        Resistor="Floating"
-        Mode="Alternate"
-        Alternate="0" />
-      <pin4
-        ID="SPI1_MISO"
+        ID="LED1"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="PullUp"
-        Mode="Alternate"
+        Resistor="Floating"
+        Mode="Output"
+        Alternate="0" />
+      <pin4
+        ID="LED2"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Output"
         Alternate="0" />
       <pin5
-        ID="SPI1_MOSI"
+        ID=""
         Type="PushPull"
         Level="High"
         Speed="Maximum"

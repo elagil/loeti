@@ -1,19 +1,17 @@
-#include "lcd.h"
-
 #include "ch.h"
 #include "hal.h"
 #include "heater.h"
+#include "diagnostic.h"
 #include "usb_pd.h"
 #include "chprintf.h"
 #include "events.h"
+#include "sensor.h"
 
-#include "tc_adc.h"
-
-THD_WORKING_AREA(waLcdThread, LCD_THREAD_STACK_SIZE);
+THD_WORKING_AREA(waDiagThread, DIAG_THREAD_STACK_SIZE);
 
 #define UART_STR_LEN 10
 
-THD_FUNCTION(lcdThread, arg)
+THD_FUNCTION(diagThread, arg)
 {
     (void)arg;
 

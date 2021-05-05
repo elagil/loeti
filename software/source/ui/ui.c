@@ -18,6 +18,16 @@ THD_FUNCTION(uiThread, arg)
 
     while (true)
     {
+        palToggleLine(LINE_LED0);
+        chThdSleepMilliseconds(50);
+        palToggleLine(LINE_LED1);
+        chThdSleepMilliseconds(50);
+        palToggleLine(LINE_LED2);
+        chThdSleepMilliseconds(50);
+    }
+
+    while (true)
+    {
         switches.current.id.sw0 = palReadLine(LINE_SW0);
         switches.current.id.sw1 = palReadLine(LINE_SW1);
 
