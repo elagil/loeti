@@ -4,6 +4,7 @@
 #include "heater.h"
 
 #define DEBOUNCE 5
+#define TEMPERATURE_SET_INTERVAL 25
 
 event_source_t switch_event_source;
 switches_t switches;
@@ -18,18 +19,7 @@ THD_FUNCTION(uiThread, arg)
 
     while (true)
     {
-        palToggleLine(LINE_LED0);
-        chThdSleepMilliseconds(50);
-        palToggleLine(LINE_LED1);
-        chThdSleepMilliseconds(50);
-        palToggleLine(LINE_LED2);
-        chThdSleepMilliseconds(50);
-    }
-
-    while (true)
-    {
-        switches.current.id.sw0 = palReadLine(LINE_SW0);
-        switches.current.id.sw1 = palReadLine(LINE_SW1);
+        switches.current.id.sw0 = palReadLine(LINE_SW);
 
         if (switches.current.raw < switches.previous.raw)
         {
@@ -37,23 +27,10 @@ THD_FUNCTION(uiThread, arg)
             {
                 chBSemWait(&heater.bsem);
 
-                if (!switches.current.id.sw0 && !switches.current.id.sw1)
+                if (!switches.current.id.sw0)
                 {
-                    heater.sleep = true;
-                }
-                else if (!switches.current.id.sw1)
-                {
-                    if (heater.sleep)
-                    {
-                        heater.sleep = false;
-                    }
-                    else
-                    {
-                        heater.temperature_control.set += TEMPERATURE_SET_INTERVAL;
-                    }
-                }
-                else if (!switches.current.id.sw0)
-                {
+                    palToggleLine(LINE_LED0);
+
                     if (heater.sleep)
                     {
                         heater.sleep = false;

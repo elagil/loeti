@@ -180,8 +180,8 @@ THD_FUNCTION(heaterThread, arg)
     event_listener_t power_event_listener;
     event_listener_t temp_event_listener;
 
-    palEnableLineEvent(LINE_CUR_NALERT, PAL_EVENT_MODE_FALLING_EDGE);
-    palSetLineCallback(LINE_CUR_NALERT, curAlert, NULL);
+    palEnableLineEvent(LINE_CURRENT_ALERT, PAL_EVENT_MODE_FALLING_EDGE);
+    palSetLineCallback(LINE_CURRENT_ALERT, curAlert, NULL);
 
     chEvtRegisterMask(&power_event_source, &power_event_listener, POWER_EVENT);
     chEvtRegisterMask(&temp_event_source, &temp_event_listener, TEMP_EVENT);
