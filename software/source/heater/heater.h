@@ -9,7 +9,7 @@
 
 extern uint32_t heater_temp_set_level;
 
-#define LOOP_TIME_RATIO 20
+#define LOOP_TIME_RATIO 10
 #define LOOP_TIME_TEMPERATURE_MS 100
 #define LOOP_TIME_CURRENT_MS (LOOP_TIME_TEMPERATURE_MS / LOOP_TIME_RATIO)
 
@@ -71,19 +71,19 @@ typedef struct
     double current_offset;     //<<< Offset current without load
     double voltage_negotiated; //<<< Negotiated voltage
     double current_negotiated; //<<< Negotiated current
+    double current_target;     //<<< The target current, slightly below negotiated current
     double power_negotiated;   //<<< Maximum power that the supply can deliver
     double voltage_meas;       //<<< Measured voltage
     double current_meas;       //<<< Measured current
     double pwm;                //<<< Current PWM ratio
     double pwm_max;            //<<< Maximum PWM ratio that is settable
-} heater_power_t;
+} power_t;
 
 typedef struct
 {
-    double min;   //<<< Minimum heater temperature
-    double max;   //<<< Maximum heater temperature
-    double local; //<<< Local temperature of station
-} heater_temperatures_t;
+    double min; //<<< Minimum heater temperature
+    double max; //<<< Maximum heater temperature
+} temperatures_t;
 
 typedef struct
 {
@@ -98,10 +98,10 @@ typedef struct
 } pid_t;
 typedef struct
 {
-    bool sleep;           //<<< True, if heater is in sleep mode
-    bool connected;       //<<< True, if heater is connected to the station
-    heater_power_t power; //<<< Heater power structure
-    heater_temperatures_t temperatures;
+    bool sleep;     //<<< True, if heater is in sleep mode
+    bool connected; //<<< True, if heater is connected to the station
+    power_t power;  //<<< Heater power structure
+    temperatures_t temperatures;
     pid_t temperature_control;
     pid_t current_control;
     binary_semaphore_t bsem; //<<< Locking semaphore

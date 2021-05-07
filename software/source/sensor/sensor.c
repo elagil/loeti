@@ -7,8 +7,6 @@
 #include "sensor.h"
 
 event_source_t temp_event_source;
-double local_temp;
-volatile double iron_temp;
 
 #define TEMP_FIELD 0
 #define exchangeSpiAdc(txbuf, rxbuf) spiExchangeHelper(&SPID1, &tc_adc_spicfg, TC_ADC_LEN, txbuf, rxbuf)
@@ -24,14 +22,14 @@ static adcsample_t adcsample[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
  * Mode:        Linear buffer, 1 sample of 1 channels, SW triggered.
  * Channel:     2
  */
-static const ADCConversionGroup adcgrpcfg = {
+static const ADCConversionGroup temperatureMeasurement = {
     FALSE,
     ADC_GRP1_NUM_CHANNELS,
     NULL,
     NULL,
     ADC_CFGR1_RES_12BIT, /* CFGR1 */
     ADC_TR(0, 0),        /* TR */
-    ADC_SMPR_SMP_1P5,    /* SMPR */
+    ADC_SMPR_SMP_28P5,   /* SMPR */
     ADC_CHSELR_CHSEL2    /* CHSELR */
 };
 
@@ -52,13 +50,27 @@ THD_FUNCTION(sensorThread, arg)
     {
         chEvtBroadcast(&temp_event_source);
 
-        chThdSleepMilliseconds(LOOP_TIME_TEMPERATURE_MS / 2);
-
-        // Measure temperature sensor output
-        adcConvert(&ADCD1, &adcgrpcfg, adcsample, ADC_GRP1_BUF_DEPTH);
-        iron_temp = ADC_TO_VOLT(adcsample[TEMP_FIELD]);
-
         // Wait for heating to stop
         chEvtWaitAny(PWM_EVENT);
+
+        chThdSleepMilliseconds(10);
+
+        // Measure iron temperature sensor
+        adcConvert(&ADCD1, &temperatureMeasurement, adcsample, ADC_GRP1_BUF_DEPTH);
+
+        chBSemWait(&heater.bsem);
+        uint16_t raw = adcsample[TEMP_FIELD];
+        heater.temperature_control.is = (raw - 2410) * 0.33152;
+
+        if (raw >= (ADC_FS_READING - 100))
+        {
+            heater.connected = false;
+        }
+        else
+        {
+            heater.connected = true;
+        }
+
+        chBSemSignal(&heater.bsem);
     }
 }

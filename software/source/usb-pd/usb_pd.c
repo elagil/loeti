@@ -129,6 +129,7 @@ THD_FUNCTION(usbPdThread, arg)
     heater.power.voltage_negotiated = voltage / 1000;
     heater.power.current_negotiated = current / 1000;
     heater.power.power_negotiated = heater.power.current_negotiated * heater.power.voltage_negotiated;
+    heater.power.current_target = heater.power.current_negotiated * HEATER_CURRENT_LIMIT;
 
     chBSemSignal(&heater.bsem);
 

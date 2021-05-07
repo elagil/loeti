@@ -9,7 +9,6 @@
 #define HEATER_PWM_CHANNEL 2
 
 #define CURRENT_FIELD 0
-#define VOLTAGE_FIELD 1
 
 event_source_t pwm_done_event_source;
 event_source_t cur_alert_event_source;
@@ -25,9 +24,9 @@ heater_t heater = {
         .current_meas = 0,
         .pwm = 0,
         .pwm_max = PWM_MAX_PERCENTAGE},
-    .current_control = {.set = 0.1, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
-    .temperature_control = {.set = 300, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .d = HEATER_TEMPERATURE_D, .error = 0, .error_last = 0, .integratedError = 0},
-    .temperatures = {.min = 150, .max = 380, .local = 25}};
+    .current_control = {.set = 0, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
+    .temperature_control = {.set = 200, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .d = HEATER_TEMPERATURE_D, .error = 0, .error_last = 0, .integratedError = 0},
+    .temperatures = {.min = 150, .max = 380}};
 
 THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);
 
@@ -61,7 +60,7 @@ void temperatureControlLoop(void)
         // Calculation of actual error
         heater.temperature_control.error = heater.temperature_control.set - heater.temperature_control.is;
 
-        if ((heater.current_control.set < heater.power.current_negotiated) && (heater.current_control.set >= 0))
+        if ((heater.current_control.set < heater.power.current_target) && (heater.current_control.set >= 0))
         {
             // anti windup and integration of error
             heater.temperature_control.integratedError += heater.temperature_control.error * MS2S(LOOP_TIME_TEMPERATURE_MS);
@@ -75,9 +74,9 @@ void temperatureControlLoop(void)
         heater.temperature_control.error_last = heater.temperature_control.error;
 
         // Clamp to available power supply current
-        if (heater.current_control.set > heater.power.current_negotiated)
+        if (heater.current_control.set > heater.power.current_target)
         {
-            heater.current_control.set = heater.power.current_negotiated;
+            heater.current_control.set = heater.power.current_target;
         }
         else if (heater.current_control.set < 0)
         {
@@ -141,24 +140,24 @@ void currentControlLoop(void)
     chBSemSignal(&heater.bsem);
 }
 
-#define ADC_GRP1_NUM_CHANNELS 2
+#define ADC_GRP1_NUM_CHANNELS 1
 #define ADC_GRP1_BUF_DEPTH 1
 static adcsample_t adcsamples[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
 
 /*
  * ADC conversion group.
- * Mode:        Linear buffer, 1 samples of 2 channels, SW triggered.
- * Channels:    1, 3
+ * Mode:        Linear buffer, 1 sample of 1 channel, SW triggered.
+ * Channels:    1
  */
-static const ADCConversionGroup adcgrpcfg = {
+static const ADCConversionGroup currentMeasurement = {
     FALSE,
     ADC_GRP1_NUM_CHANNELS,
     NULL,
     NULL,
-    ADC_CFGR1_RES_12BIT,                  /* CFGR1 */
-    ADC_TR(0, 0),                         /* TR */
-    ADC_SMPR_SMP_1P5,                     /* SMPR */
-    ADC_CHSELR_CHSEL1 | ADC_CHSELR_CHSEL3 /* CHSELR */
+    ADC_CFGR1_RES_12BIT, /* CFGR1 */
+    ADC_TR(0, 0),        /* TR */
+    ADC_SMPR_SMP_28P5,   /* SMPR */
+    ADC_CHSELR_CHSEL1    /* CHSELR */
 };
 
 static void curAlert(void *arg)
@@ -199,7 +198,7 @@ THD_FUNCTION(heaterThread, arg)
     {
         chEvtWaitAny(TEMP_EVENT);
 
-        // temperatureControlLoop();
+        temperatureControlLoop();
 
         for (uint32_t current_loop_counter = 0; current_loop_counter < LOOP_TIME_RATIO; current_loop_counter++)
         {
@@ -208,15 +207,14 @@ THD_FUNCTION(heaterThread, arg)
             uint16_t ratio = heater.power.pwm;
             chBSemSignal(&heater.bsem);
 
-            // pwmEnableChannel(&HEATER_PWM, HEATER_PWM_CHANNEL, PWM_PERCENTAGE_TO_WIDTH(&HEATER_PWM, ratio));
+            pwmEnableChannel(&HEATER_PWM, HEATER_PWM_CHANNEL, PWM_PERCENTAGE_TO_WIDTH(&HEATER_PWM, ratio));
 
             chThdSleepMilliseconds(LOOP_TIME_CURRENT_MS);
 
             // Measure heater current
-            adcConvert(&ADCD1, &adcgrpcfg, adcsamples, ADC_GRP1_BUF_DEPTH);
+            adcConvert(&ADCD1, &currentMeasurement, adcsamples, ADC_GRP1_BUF_DEPTH);
 
             chBSemWait(&heater.bsem);
-            heater.power.voltage_meas = VOLTAGE_SENSE_RATIO * ADC_TO_VOLT(adcsamples[VOLTAGE_FIELD]);
             heater.current_control.is = CURRENT_SENSE_RATIO * ADC_TO_VOLT(adcsamples[CURRENT_FIELD]);
 
             if (!heater.connected)
