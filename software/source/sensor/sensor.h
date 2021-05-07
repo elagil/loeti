@@ -9,13 +9,18 @@ extern THD_WORKING_AREA(waSensorThread, SENSOR_THREAD_STACK_SIZE);
 
 extern event_source_t temp_event;
 
-union sensor_data_t
+#define ADC_REF_VOLTAGE 3.3
+#define ADC_FS_READING 4096
+#define ADC_TO_VOLT(x) ((double)x / (double)ADC_FS_READING * (double)ADC_REF_VOLTAGE)
+
+typedef union
 {
     int16_t value;
     uint8_t array[2];
-};
+} sensor_data_t;
 
-extern union sensor_data_t sensor_data;
+extern sensor_data_t local_temp_sensor_data;
+extern sensor_data_t iron_temp_sensor_data;
 
 #ifdef __cplusplus
 extern "C"

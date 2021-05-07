@@ -1,7 +1,7 @@
 Circuit: * D:\git\electronics\loeti\hardware\switchmode.asc
 
-Limiting rise time of source v2 to 1e-006
-Limiting fall time of source v2 to 1e-006
+Limiting rise time of source v2 to 1.2e-006
+Limiting fall time of source v2 to 1.2e-006
 Direct Newton iteration failed to find .op point.  (Use ".option noopiter" to skip.)
 Starting Gmin stepping
 Gmin = 10
@@ -25,59 +25,28 @@ vernier = 0.000488281
 Gmin = 0
 Gmin stepping succeeded in finding the operating point.
 
-Heightened Def Con from 4.04e-005 to 4.0403e-005
-Heightened Def Con from 6.0408e-005 to 6.0413e-005
-Heightened Def Con from 8.04151e-005 to 8.04201e-005
-Heightened Def Con from 0.000100421 to 0.000100426
-Heightened Def Con from 0.000120427 to 0.000120432
-Heightened Def Con from 0.000140433 to 0.000140444
-Heightened Def Con from 0.000160436 to 0.000160447
-Heightened Def Con from 0.000180436 to 0.000180447
-Heightened Def Con from 0.000200433 to 0.000200444
-Heightened Def Con from 0.000220429 to 0.00022044
-Heightened Def Con from 0.000240424 to 0.000240435
-Heightened Def Con from 0.000260421 to 0.000260432
-Heightened Def Con from 0.000280419 to 0.000280425
-Heightened Def Con from 0.000300418 to 0.00030043
-Heightened Def Con from 0.000320417 to 0.000320423
-Heightened Def Con from 0.000340417 to 0.000340429
-Heightened Def Con from 0.000360417 to 0.000360429
-Heightened Def Con from 0.000380417 to 0.000380423
-Heightened Def Con from 0.000420417 to 0.000420423
-Heightened Def Con from 0.000440417 to 0.000440423
-Heightened Def Con from 0.000460417 to 0.000460423
-Heightened Def Con from 0.000480418 to 0.000480424
-Heightened Def Con from 0.000500418 to 0.000500424
-Heightened Def Con from 0.000520418 to 0.000520424
-Heightened Def Con from 0.000540418 to 0.000540424
-Heightened Def Con from 0.000560418 to 0.000560424
-Heightened Def Con from 0.000580418 to 0.000580424
-Heightened Def Con from 0.000600418 to 0.000600424
-Heightened Def Con from 0.000640418 to 0.000640424
-Heightened Def Con from 0.000660418 to 0.000660424
-Heightened Def Con from 0.000680418 to 0.000680424
-Heightened Def Con from 0.000700418 to 0.000700424
-Heightened Def Con from 0.000720418 to 0.000720424
-Heightened Def Con from 0.000740418 to 0.00074043
-Heightened Def Con from 0.000760418 to 0.00076043
-Heightened Def Con from 0.000780418 to 0.00078043
-Heightened Def Con from 0.000800418 to 0.00080043
+Heightened Def Con from 0.000439393 to 0.000439395
+Heightened Def Con from 0.0004632 to 0.0004632
+Heightened Def Con from 0.00176317 to 0.00176318
+Heightened Def Con from 0.0032762 to 0.0032762
+Heightened Def Con from 0.003975 to 0.003975
+Heightened Def Con from 0.00443937 to 0.00443938
 
-Date: Sat Apr 17 09:21:50 2021
-Total elapsed time: 10.986 seconds.
+Date: Thu May 06 22:26:49 2021
+Total elapsed time: 11.034 seconds.
 
 tnom = 27
 temp = 27
 method = modified trap
-totiter = 634498
-traniter = 632969
-tranpoints = 177176
-accept = 127471
-rejected = 49742
+totiter = 581949
+traniter = 580419
+tranpoints = 162358
+accept = 113174
+rejected = 49190
 matrix size = 157
-fillins = 272
+fillins = 274
 solver = Normal
-Thread vector: 12.3/8.1[2] 4.3/2.9[2] 3.4/1.8[2] 0.5/0.7[1]  2592/500
-Matrix Compiler1: 27.45 KB object code size  5.9/2.8/[1.8]
-Matrix Compiler2: 18.39 KB object code size  2.7/2.6/[1.2]
+Thread vector: 12.7/8.0[2] 4.6/3.0[2] 3.4/1.9[2] 0.6/0.8[1]  2592/500
+Matrix Compiler1: 27.61 KB object code size  5.6/2.9/[1.7]
+Matrix Compiler2: 18.42 KB object code size  2.5/2.7/[1.2]
 

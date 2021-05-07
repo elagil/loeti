@@ -341,7 +341,7 @@
 /*
  * GPIOB setup:
  *
- * PB0  - PWM                       (alternate 2).
+ * PB0  - PWM                       (alternate 1).
  * PB1  - PD_RST                    (output pushpull maximum).
  * PB2  - PIN2                      (input pullup).
  * PB3  - LED1                      (output pushpull maximum).
@@ -438,7 +438,7 @@
                                      PIN_ODR_HIGH(GPIOB_PIN13) |            \
                                      PIN_ODR_HIGH(GPIOB_PIN14) |            \
                                      PIN_ODR_HIGH(GPIOB_PIN15))
-#define VAL_GPIOB_AFRL              (PIN_AFIO_AF(GPIOB_PWM, 2U) |           \
+#define VAL_GPIOB_AFRL              (PIN_AFIO_AF(GPIOB_PWM, 1U) |           \
                                      PIN_AFIO_AF(GPIOB_PD_RST, 0U) |        \
                                      PIN_AFIO_AF(GPIOB_PIN2, 0U) |          \
                                      PIN_AFIO_AF(GPIOB_LED1, 0U) |          \

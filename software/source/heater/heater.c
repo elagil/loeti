@@ -3,9 +3,13 @@
 #include "usb_pd.h"
 #include "heater.h"
 #include "events.h"
+#include "sensor.h"
 
-#define HEATER_PWM PWMD1
-#define HEATER_PWM_CHANNEL 0
+#define HEATER_PWM PWMD3
+#define HEATER_PWM_CHANNEL 2
+
+#define CURRENT_FIELD 0
+#define VOLTAGE_FIELD 1
 
 event_source_t pwm_done_event_source;
 event_source_t cur_alert_event_source;
@@ -21,7 +25,7 @@ heater_t heater = {
         .current_meas = 0,
         .pwm = 0,
         .pwm_max = PWM_MAX_PERCENTAGE},
-    .current_control = {.set = 0, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
+    .current_control = {.set = 0.1, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
     .temperature_control = {.set = 300, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .d = HEATER_TEMPERATURE_D, .error = 0, .error_last = 0, .integratedError = 0},
     .temperatures = {.min = 150, .max = 380, .local = 25}};
 
@@ -29,12 +33,12 @@ THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);
 
 static PWMConfig pwmcfg = {
     24000000, /* 24 MHz PWM clock frequency.                */
-    1200,     /* Initial PWM period 50 uS. -> 20 kHz PWM    */
+    500,      /* Initial PWM period 20.83 uS. -> 48 kHz PWM */
     NULL,     /* Period callback.                           */
     {
-        {PWM_OUTPUT_ACTIVE_HIGH, NULL}, /* CH1 mode and callback.         */
+        {PWM_OUTPUT_DISABLED, NULL},    /* CH1 mode and callback.         */
         {PWM_OUTPUT_DISABLED, NULL},    /* CH2 mode and callback.         */
-        {PWM_OUTPUT_DISABLED, NULL},    /* CH3 mode and callback.         */
+        {PWM_OUTPUT_ACTIVE_HIGH, NULL}, /* CH3 mode and callback.         */
         {PWM_OUTPUT_DISABLED, NULL}     /* CH4 mode and callback.         */
     },
     0, /* Control Register 2.            */
@@ -139,14 +143,14 @@ void currentControlLoop(void)
 
 #define ADC_GRP1_NUM_CHANNELS 2
 #define ADC_GRP1_BUF_DEPTH 1
-static adcsample_t fields[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
+static adcsample_t adcsamples[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
 
 /*
  * ADC conversion group.
  * Mode:        Linear buffer, 1 samples of 2 channels, SW triggered.
- * Channels:    2, 7
+ * Channels:    1, 3
  */
-static const ADCConversionGroup adcgrpcfg1 = {
+static const ADCConversionGroup adcgrpcfg = {
     FALSE,
     ADC_GRP1_NUM_CHANNELS,
     NULL,
@@ -154,7 +158,7 @@ static const ADCConversionGroup adcgrpcfg1 = {
     ADC_CFGR1_RES_12BIT,                  /* CFGR1 */
     ADC_TR(0, 0),                         /* TR */
     ADC_SMPR_SMP_1P5,                     /* SMPR */
-    ADC_CHSELR_CHSEL2 | ADC_CHSELR_CHSEL7 /* CHSELR */
+    ADC_CHSELR_CHSEL1 | ADC_CHSELR_CHSEL3 /* CHSELR */
 };
 
 static void curAlert(void *arg)
@@ -195,7 +199,7 @@ THD_FUNCTION(heaterThread, arg)
     {
         chEvtWaitAny(TEMP_EVENT);
 
-        temperatureControlLoop();
+        // temperatureControlLoop();
 
         for (uint32_t current_loop_counter = 0; current_loop_counter < LOOP_TIME_RATIO; current_loop_counter++)
         {
@@ -204,16 +208,16 @@ THD_FUNCTION(heaterThread, arg)
             uint16_t ratio = heater.power.pwm;
             chBSemSignal(&heater.bsem);
 
-            pwmEnableChannel(&HEATER_PWM, HEATER_PWM_CHANNEL, PWM_PERCENTAGE_TO_WIDTH(&HEATER_PWM, ratio));
+            // pwmEnableChannel(&HEATER_PWM, HEATER_PWM_CHANNEL, PWM_PERCENTAGE_TO_WIDTH(&HEATER_PWM, ratio));
 
             chThdSleepMilliseconds(LOOP_TIME_CURRENT_MS);
 
             // Measure heater current
-            adcConvert(&ADCD1, &adcgrpcfg1, fields, ADC_GRP1_BUF_DEPTH);
+            adcConvert(&ADCD1, &adcgrpcfg, adcsamples, ADC_GRP1_BUF_DEPTH);
 
             chBSemWait(&heater.bsem);
-            heater.power.voltage_meas = VOLTAGE_SENSE_RATIO * ADC_TO_VOLT(fields[1]);
-            heater.current_control.is = CURRENT_SENSE_RATIO * ADC_TO_VOLT(fields[0]);
+            heater.power.voltage_meas = VOLTAGE_SENSE_RATIO * ADC_TO_VOLT(adcsamples[VOLTAGE_FIELD]);
+            heater.current_control.is = CURRENT_SENSE_RATIO * ADC_TO_VOLT(adcsamples[CURRENT_FIELD]);
 
             if (!heater.connected)
             {

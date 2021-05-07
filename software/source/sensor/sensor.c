@@ -1,17 +1,39 @@
-#include "sensor.h"
-
 #include "ch.h"
 #include "hal.h"
 #include "heater.h"
 #include "usb_pd.h"
 #include "spiHelper.h"
 #include "events.h"
+#include "sensor.h"
 
 event_source_t temp_event_source;
+double local_temp;
+volatile double iron_temp;
 
+#define TEMP_FIELD 0
 #define exchangeSpiAdc(txbuf, rxbuf) spiExchangeHelper(&SPID1, &tc_adc_spicfg, TC_ADC_LEN, txbuf, rxbuf)
 
 THD_WORKING_AREA(waSensorThread, SENSOR_THREAD_STACK_SIZE);
+
+#define ADC_GRP1_NUM_CHANNELS 1
+#define ADC_GRP1_BUF_DEPTH 1
+static adcsample_t adcsample[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
+
+/*
+ * ADC conversion group.
+ * Mode:        Linear buffer, 1 sample of 1 channels, SW triggered.
+ * Channel:     2
+ */
+static const ADCConversionGroup adcgrpcfg = {
+    FALSE,
+    ADC_GRP1_NUM_CHANNELS,
+    NULL,
+    NULL,
+    ADC_CFGR1_RES_12BIT, /* CFGR1 */
+    ADC_TR(0, 0),        /* TR */
+    ADC_SMPR_SMP_1P5,    /* SMPR */
+    ADC_CHSELR_CHSEL2    /* CHSELR */
+};
 
 THD_FUNCTION(sensorThread, arg)
 {
@@ -31,6 +53,10 @@ THD_FUNCTION(sensorThread, arg)
         chEvtBroadcast(&temp_event_source);
 
         chThdSleepMilliseconds(LOOP_TIME_TEMPERATURE_MS / 2);
+
+        // Measure temperature sensor output
+        adcConvert(&ADCD1, &adcgrpcfg, adcsample, ADC_GRP1_BUF_DEPTH);
+        iron_temp = ADC_TO_VOLT(adcsample[TEMP_FIELD]);
 
         // Wait for heating to stop
         chEvtWaitAny(PWM_EVENT);

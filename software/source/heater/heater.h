@@ -58,10 +58,6 @@ extern uint32_t heater_temp_set_level;
 #define VOLTAGE_SENSE_RATIO 11
 #define CURRENT_SENSE_RATIO 5
 
-#define ADC_REF_VOLTAGE 3.3
-#define ADC_FS_READING 4096
-#define ADC_TO_VOLT(x) ((double)x / (double)ADC_FS_READING * (double)ADC_REF_VOLTAGE)
-
 #define HEATER_THREAD_STACK_SIZE 128
 
 extern THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);

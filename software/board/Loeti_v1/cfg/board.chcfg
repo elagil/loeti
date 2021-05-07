@@ -154,7 +154,7 @@
         Speed="Maximum"
         Resistor="Floating"
         Mode="Alternate"
-        Alternate="2" />
+        Alternate="1" />
       <pin1
         ID="PD_RST"
         Type="PushPull"
