@@ -10,8 +10,11 @@
 
 #define CURRENT_FIELD 0
 
+uint32_t heater_level;
 event_source_t pwm_done_event_source;
 event_source_t cur_alert_event_source;
+
+const double heater_levels[HEATER_LEVEL_COUNT] = {300, 325, 350};
 
 // default heater values, suitable for T245 handles and tips
 heater_t heater = {
@@ -25,8 +28,8 @@ heater_t heater = {
         .pwm = 0,
         .pwm_max = PWM_MAX_PERCENTAGE},
     .current_control = {.set = 0, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
-    .temperature_control = {.set = 200, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .d = HEATER_TEMPERATURE_D, .error = 0, .error_last = 0, .integratedError = 0},
-    .temperatures = {.min = 150, .max = 380}};
+    .temperature_control = {.set = 0, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .d = HEATER_TEMPERATURE_D, .error = 0, .error_last = 0, .integratedError = 0},
+    .temperatures = {.min = 150, .max = 370}};
 
 THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);
 
@@ -190,13 +193,17 @@ THD_FUNCTION(heaterThread, arg)
     chEvtRegisterMask(&temp_event_source, &temp_event_listener, TEMP_EVENT);
 
     adcStart(&ADCD1, NULL);
+    pwmStart(&HEATER_PWM, &pwmcfg);
 
     chEvtWaitAny(POWER_EVENT);
-    pwmStart(&HEATER_PWM, &pwmcfg);
 
     while (true)
     {
         chEvtWaitAny(TEMP_EVENT);
+
+        chBSemWait(&heater.bsem);
+        heater.temperature_control.set = heater_levels[heater_level];
+        chBSemSignal(&heater.bsem);
 
         temperatureControlLoop();
 

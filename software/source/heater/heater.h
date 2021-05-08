@@ -3,11 +3,11 @@
 
 #include "ch.h"
 
-#define HEATER_TEMP_LEVEL_COUNT 3
-#define HEATER_TEMP_LEVEL0 300
-#define HEATER_TEMP_LEVEL_STEP 25
+#define HEATER_LEVEL_COUNT 3
+#define DEFAULT_HEATER_LEVEL 0
 
-extern uint32_t heater_temp_set_level;
+extern const double heater_levels[HEATER_LEVEL_COUNT];
+extern uint32_t heater_level;
 
 #define LOOP_TIME_RATIO 10
 #define LOOP_TIME_TEMPERATURE_MS 100

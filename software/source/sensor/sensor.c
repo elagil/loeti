@@ -5,9 +5,11 @@
 #include "spiHelper.h"
 #include "events.h"
 #include "sensor.h"
+#include "dma_lock.h"
 
 event_source_t temp_event_source;
 
+#define HEATER_DEBOUNCE_LIMIT 10
 #define TEMP_FIELD 0
 #define exchangeSpiAdc(txbuf, rxbuf) spiExchangeHelper(&SPID1, &tc_adc_spicfg, TC_ADC_LEN, txbuf, rxbuf)
 
@@ -33,6 +35,52 @@ static const ADCConversionGroup temperatureMeasurement = {
     ADC_CHSELR_CHSEL2    /* CHSELR */
 };
 
+/*
+ * I2C configuration for TMP100 sensor
+ * 400 kHz fast mode
+ */
+static const uint16_t tmp100_address = 0x48;
+
+static const I2CConfig i2ccfg = {
+    STM32_TIMINGR_PRESC(0) |
+        STM32_TIMINGR_SCLDEL(3) |
+        STM32_TIMINGR_SDADEL(1) |
+        STM32_TIMINGR_SCLH(3) |
+        STM32_TIMINGR_SCLL(9),
+    0,
+    0};
+
+msg_t I2C_Read_TMP100(i2caddr_t address, uint8_t *rxbuf, uint16_t length)
+{
+    chBSemWait(&dma_lock);
+    uint8_t txbuf[1] = {0};
+
+    i2cAcquireBus(&I2CD1);
+    i2cStart(&I2CD1, &i2ccfg);
+
+    msg_t status = i2cMasterTransmit(&I2CD1, address, txbuf, 1, rxbuf, length);
+
+    i2cStop(&I2CD1);
+    i2cReleaseBus(&I2CD1);
+
+    chBSemSignal(&dma_lock);
+    return status;
+}
+
+double measureLocalTemperature(void)
+{
+    uint8_t rxbuf[2];
+    sensor_data_t tmp100_sensor_data;
+
+    I2C_Read_TMP100(tmp100_address, rxbuf, 2);
+    tmp100_sensor_data.array[0] = rxbuf[1];
+    tmp100_sensor_data.array[1] = rxbuf[0];
+
+    double local_temperature = (double)tmp100_sensor_data.value / 256;
+
+    return local_temperature;
+}
+
 THD_FUNCTION(sensorThread, arg)
 {
     (void)arg;
@@ -46,31 +94,48 @@ THD_FUNCTION(sensorThread, arg)
 
     chEvtWaitAny(POWER_EVENT);
 
+    uint32_t heater_debounce = 0;
+
     while (true)
     {
-        chEvtBroadcast(&temp_event_source);
+        // Wait for temperature sensor value to settle
+        chThdSleepMilliseconds(1);
 
-        // Wait for heating to stop
-        chEvtWaitAny(PWM_EVENT);
-
-        chThdSleepMilliseconds(10);
-
-        // Measure iron temperature sensor
+        // Finally measure iron temperature
         adcConvert(&ADCD1, &temperatureMeasurement, adcsample, ADC_GRP1_BUF_DEPTH);
 
         chBSemWait(&heater.bsem);
-        uint16_t raw = adcsample[TEMP_FIELD];
-        heater.temperature_control.is = (raw - 2410) * 0.33152;
+        adcsample_t raw = adcsample[TEMP_FIELD];
+        double iron_temperature = adcsample[TEMP_FIELD] * 0.1333;
+
+        // Measure local PCB temperature, for cold junction compensation
+        double local_temperature = measureLocalTemperature();
+
+        heater.temperature_control.is = iron_temperature + local_temperature;
 
         if (raw >= (ADC_FS_READING - 100))
         {
+            heater_debounce = 0;
             heater.connected = false;
         }
         else
         {
-            heater.connected = true;
+            if (heater_debounce == HEATER_DEBOUNCE_LIMIT)
+            {
+                heater.connected = true;
+            }
+            else
+            {
+                heater_debounce++;
+            }
         }
 
         chBSemSignal(&heater.bsem);
+
+        // Temperature measurement complete, notify listening threads
+        chEvtBroadcast(&temp_event_source);
+
+        // Wait for heating to stop
+        chEvtWaitAny(PWM_EVENT);
     }
 }

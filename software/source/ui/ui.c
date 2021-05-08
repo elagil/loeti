@@ -17,6 +17,8 @@ THD_FUNCTION(uiThread, arg)
     chRegSetThreadName("ui");
     uint8_t debounce = 0;
 
+    heater_level = DEFAULT_HEATER_LEVEL;
+
     while (true)
     {
         switches.current.id.sw0 = palReadLine(LINE_SW);
@@ -29,26 +31,10 @@ THD_FUNCTION(uiThread, arg)
 
                 if (!switches.current.id.sw0)
                 {
-                    palToggleLine(LINE_LED0);
-
-                    if (heater.sleep)
+                    if (++heater_level == HEATER_LEVEL_COUNT)
                     {
-                        heater.sleep = false;
+                        heater_level = 0;
                     }
-                    else
-                    {
-                        heater.temperature_control.set -= TEMPERATURE_SET_INTERVAL;
-                    }
-                }
-
-                if (heater.temperature_control.set > heater.temperatures.max)
-                {
-                    heater.temperature_control.set = heater.temperatures.max;
-                }
-
-                if (heater.temperature_control.set < heater.temperatures.min)
-                {
-                    heater.temperature_control.set = heater.temperatures.min;
                 }
 
                 chBSemSignal(&heater.bsem);
