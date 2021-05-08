@@ -113,7 +113,7 @@ THD_FUNCTION(sensorThread, arg)
 
         heater.temperature_control.is = iron_temperature + local_temperature;
 
-        if (raw >= (ADC_FS_READING - 100))
+        if (raw >= (ADC_FS_READING - ADC_FS_MARGIN))
         {
             heater_debounce = 0;
             heater.connected = false;

@@ -9,8 +9,8 @@
 
 THD_WORKING_AREA(waDiagThread, DIAG_THREAD_STACK_SIZE);
 
-#define LED_LINE_COUNT 3
-const ioline_t leds[LED_LINE_COUNT] = {LINE_LED2, LINE_LED1, LINE_LED0};
+#define LED_LINE_COUNT 2
+const ioline_t leds[LED_LINE_COUNT] = {LINE_LED2, LINE_LED1};
 
 #define UART_STR_LEN 10
 

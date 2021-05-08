@@ -14,7 +14,7 @@ uint32_t heater_level;
 event_source_t pwm_done_event_source;
 event_source_t cur_alert_event_source;
 
-const double heater_levels[HEATER_LEVEL_COUNT] = {300, 325, 350};
+const double heater_levels[HEATER_LEVEL_COUNT] = {310, 340};
 
 // default heater values, suitable for T245 handles and tips
 heater_t heater = {
@@ -29,7 +29,7 @@ heater_t heater = {
         .pwm_max = PWM_MAX_PERCENTAGE},
     .current_control = {.set = 0, .p = HEATER_CURRENT_P, .i = HEATER_CURRENT_I, .error = 0, .integratedError = 0},
     .temperature_control = {.set = 0, .p = HEATER_TEMPERATURE_P, .i = HEATER_TEMPERATURE_I, .d = HEATER_TEMPERATURE_D, .error = 0, .error_last = 0, .integratedError = 0},
-    .temperatures = {.min = 150, .max = 370}};
+    .temperatures = {.min = 150, .max = 375}};
 
 THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);
 
@@ -75,16 +75,6 @@ void temperatureControlLoop(void)
         heater.current_control.set = heater.temperature_control.d * diff_error + heater.temperature_control.p * heater.temperature_control.error + heater.temperature_control.i * heater.temperature_control.integratedError;
 
         heater.temperature_control.error_last = heater.temperature_control.error;
-
-        // Clamp to available power supply current
-        if (heater.current_control.set > heater.power.current_target)
-        {
-            heater.current_control.set = heater.power.current_target;
-        }
-        else if (heater.current_control.set < 0)
-        {
-            heater.current_control.set = 0;
-        }
     }
     else
     {
@@ -111,8 +101,24 @@ void currentControlLoop(void)
         (heater.temperature_control.set <= heater.temperatures.max) &&
         (heater.temperature_control.is <= heater.temperatures.max))
     {
+        double current_set;
+
+        // Clamp to available power supply current
+        if (heater.current_control.set > heater.power.current_target)
+        {
+            current_set = heater.power.current_target;
+        }
+        else if (heater.current_control.set < 0)
+        {
+            current_set = 0;
+        }
+        else
+        {
+            current_set = heater.current_control.set;
+        }
+
         // Calculation of actual error
-        heater.current_control.error = heater.current_control.set - heater.current_control.is + heater.power.current_offset;
+        heater.current_control.error = current_set - heater.current_control.is + heater.power.current_offset;
 
         if ((heater.power.pwm < heater.power.pwm_max) && (heater.power.pwm >= 0))
         {
@@ -188,9 +194,12 @@ THD_FUNCTION(heaterThread, arg)
 
     palEnableLineEvent(LINE_CURRENT_ALERT, PAL_EVENT_MODE_FALLING_EDGE);
     palSetLineCallback(LINE_CURRENT_ALERT, curAlert, NULL);
-
     chEvtRegisterMask(&power_event_source, &power_event_listener, POWER_EVENT);
     chEvtRegisterMask(&temp_event_source, &temp_event_listener, TEMP_EVENT);
+
+    // Transparent current limiting mode:
+    // Output immediately returns active after fault condition is cleared
+    palClearLine(LINE_CURR_RESET);
 
     adcStart(&ADCD1, NULL);
     pwmStart(&HEATER_PWM, &pwmcfg);

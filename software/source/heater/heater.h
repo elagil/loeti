@@ -3,7 +3,7 @@
 
 #include "ch.h"
 
-#define HEATER_LEVEL_COUNT 3
+#define HEATER_LEVEL_COUNT 2
 #define DEFAULT_HEATER_LEVEL 0
 
 extern const double heater_levels[HEATER_LEVEL_COUNT];

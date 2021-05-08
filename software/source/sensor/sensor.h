@@ -11,6 +11,7 @@ extern event_source_t temp_event;
 
 #define ADC_REF_VOLTAGE 3.3
 #define ADC_FS_READING 4096
+#define ADC_FS_MARGIN 100
 #define ADC_TO_VOLT(x) ((double)x / (double)ADC_FS_READING * (double)ADC_REF_VOLTAGE)
 
 typedef union
