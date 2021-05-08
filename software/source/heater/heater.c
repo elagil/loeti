@@ -16,7 +16,6 @@ event_source_t cur_alert_event_source;
 
 const double heater_levels[HEATER_LEVEL_COUNT] = {310, 340};
 
-// default heater values, suitable for T245 handles and tips
 heater_t heater = {
     .power = {
         .current_offset = 0,
@@ -33,6 +32,10 @@ heater_t heater = {
 
 THD_WORKING_AREA(waHeaterThread, HEATER_THREAD_STACK_SIZE);
 
+/**
+ * @brief PWM configuration for switching the power transistor
+ * 
+ */
 static PWMConfig pwmcfg = {
     24000000, /* 24 MHz PWM clock frequency.                */
     500,      /* Initial PWM period 20.83 uS. -> 48 kHz PWM */
@@ -48,7 +51,7 @@ static PWMConfig pwmcfg = {
 };
 
 /**
- * @brief Control loop for heater element temperature
+ * @brief Control loop for heater temperature (outer loop)
  */
 void temperatureControlLoop(void)
 {
@@ -89,7 +92,7 @@ void temperatureControlLoop(void)
 }
 
 /**
- * @brief Control loop for heater element current
+ * @brief Control loop for heater current (inner loop)
  */
 void currentControlLoop(void)
 {
@@ -153,10 +156,10 @@ void currentControlLoop(void)
 #define ADC_GRP1_BUF_DEPTH 1
 static adcsample_t adcsamples[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
 
-/*
- * ADC conversion group.
- * Mode:        Linear buffer, 1 sample of 1 channel, SW triggered.
- * Channels:    1
+/**
+ * @brief ADC conversion group.
+ * @details Mode: Linear buffer, 1 sample of 1 channel, SW triggered.
+ * 
  */
 static const ADCConversionGroup currentMeasurement = {
     FALSE,
@@ -169,6 +172,12 @@ static const ADCConversionGroup currentMeasurement = {
     ADC_CHSELR_CHSEL1    /* CHSELR */
 };
 
+/**
+ * @brief Interrupt for handling overcurrent conditions
+ * @detail Immediately stops PWM generation and issues an alert event.
+ * 
+ * @param arg unused
+ */
 static void curAlert(void *arg)
 {
     (void)arg;
@@ -184,6 +193,10 @@ static void curAlert(void *arg)
     chSysUnlockFromISR();
 }
 
+/**
+ * @brief Heater thread, controls PWM and current/temperature loops
+ * 
+ */
 THD_FUNCTION(heaterThread, arg)
 {
     (void)arg;
@@ -198,36 +211,43 @@ THD_FUNCTION(heaterThread, arg)
     chEvtRegisterMask(&temp_event_source, &temp_event_listener, TEMP_EVENT);
 
     // Transparent current limiting mode:
-    // Output immediately returns active after fault condition is cleared
+    // Output immediately returns active after fault condition is cleared. ISR disables PWM immediately.
     palClearLine(LINE_CURR_RESET);
 
     adcStart(&ADCD1, NULL);
     pwmStart(&HEATER_PWM, &pwmcfg);
 
+    // Wait for USB-PD negotiation to succeed
     chEvtWaitAny(POWER_EVENT);
 
     while (true)
     {
+        // Wait for completion of temperature measurement
         chEvtWaitAny(TEMP_EVENT);
 
         chBSemWait(&heater.bsem);
+        // Read selected heater level
         heater.temperature_control.set = heater_levels[heater_level];
         chBSemSignal(&heater.bsem);
 
+        // Calculate new current set value, based on temperature error
         temperatureControlLoop();
 
+        // Current control loop, executed LOOP_TIME_RATIO times.
         for (uint32_t current_loop_counter = 0; current_loop_counter < LOOP_TIME_RATIO; current_loop_counter++)
         {
             currentControlLoop();
+
             chBSemWait(&heater.bsem);
             uint16_t ratio = heater.power.pwm;
             chBSemSignal(&heater.bsem);
 
+            // Select PWM ratio, according to current control loop output
             pwmEnableChannel(&HEATER_PWM, HEATER_PWM_CHANNEL, PWM_PERCENTAGE_TO_WIDTH(&HEATER_PWM, ratio));
 
             chThdSleepMilliseconds(LOOP_TIME_CURRENT_MS);
 
-            // Measure heater current
+            // Measure heater current at the end of current loop period (wait for current low-pass filter to settle).
             adcConvert(&ADCD1, &currentMeasurement, adcsamples, ADC_GRP1_BUF_DEPTH);
 
             chBSemWait(&heater.bsem);
@@ -237,14 +257,17 @@ THD_FUNCTION(heaterThread, arg)
             {
                 heater.power.current_offset = heater.current_control.is;
             }
+
             chBSemSignal(&heater.bsem);
         }
 
+        // Deactivate PWM before temperature measurement. Required for correct measurement.
         if (pwmIsChannelEnabledI(&HEATER_PWM, HEATER_PWM_CHANNEL))
         {
             pwmDisableChannel(&HEATER_PWM, HEATER_PWM_CHANNEL);
         }
 
+        // Signal the end of the heating routine.
         chEvtBroadcast(&pwm_done_event_source);
     }
 }
