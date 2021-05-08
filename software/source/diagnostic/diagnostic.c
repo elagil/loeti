@@ -9,6 +9,7 @@
 
 THD_WORKING_AREA(waDiagThread, DIAG_THREAD_STACK_SIZE);
 
+#define TEMPERATURE_REACHED_MARGIN 3 // degrees
 #define LED_LINE_COUNT 2
 const ioline_t leds[LED_LINE_COUNT] = {LINE_LED2, LINE_LED1};
 
@@ -133,7 +134,7 @@ THD_FUNCTION(diagThread, arg)
 
             if (connected)
             {
-                if ((is < set) && ((set - is) > 10))
+                if ((is < set) && ((set - is) > TEMPERATURE_REACHED_MARGIN))
                 {
                     diagnostic_state = heating;
                 }

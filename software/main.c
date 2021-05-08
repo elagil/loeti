@@ -32,8 +32,8 @@ static const SerialConfig serialConfig = {
     USART_CR2_STOP1_BITS | USART_CR2_SWAP,
     0};
 
-/*
- * Application entry point.=
+/**
+ * @brief Application entry point.
  */
 int main(void)
 {
@@ -59,6 +59,8 @@ int main(void)
 
   palClearLine(LINE_PD_RST);
   palClearLine(LINE_PWM);
+  palSetLine(LINE_LED1);
+  palSetLine(LINE_LED2);
 
   /*
    * Creates the switch checker thread.
