@@ -56,6 +56,7 @@ int main(void)
   chEvtObjectInit(&temp_event_source);
   chEvtObjectInit(&power_event_source);
   chEvtObjectInit(&pwm_done_event_source);
+  chEvtObjectInit(&cur_alert_event_source);
 
   palClearLine(LINE_PD_RST);
   palClearLine(LINE_PWM);
