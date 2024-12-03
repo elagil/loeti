@@ -1,5 +1,9 @@
 (sym_lib_table
-  (lib (name custom)(type Legacy)(uri ${KIPRJMOD}/custom.lib)(options "")(descr ""))
-  (lib (name custom_components)(type Legacy)(uri ${KIPRJMOD}/custom_components.lib)(options "")(descr ""))
-  (lib (name loeti-rescue)(type Legacy)(uri ${KIPRJMOD}/loeti-rescue.lib)(options "")(descr ""))
+  (version 7)
+  (lib (name "custom")(type "KiCad")(uri "${KIPRJMOD}/custom.kicad_sym")(options "")(descr ""))
+  (lib (name "custom_components")(type "KiCad")(uri "${KIPRJMOD}/custom_components.kicad_sym")(options "")(descr ""))
+  (lib (name "loeti-rescue")(type "KiCad")(uri "${KIPRJMOD}/loeti-rescue.kicad_sym")(options "")(descr ""))
+  (lib (name "connectors-debug")(type "KiCad")(uri "${KIPRJMOD}/../kicad-library/symbols/connectors_debug.kicad_sym")(options "")(descr ""))
+  (lib (name "display-visions")(type "KiCad")(uri "${KIPRJMOD}/../kicad-library/symbols/display_visions.kicad_sym")(options "")(descr ""))
+  (lib (name "interface-usb")(type "KiCad")(uri "${KIPRJMOD}/../kicad-library/symbols/interface_usb.kicad_sym")(options "")(descr ""))
 )
