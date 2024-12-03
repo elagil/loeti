@@ -8,7 +8,7 @@ license = "GPL-3.0"
 embassy-stm32 = { path = "../embassy/embassy-stm32", features = [
     "defmt",
     "time-driver-any",
-    "stm32g431c6",
+    "stm32g431cb",
     "memory-x",
     "unstable-pac",
     "exti",
@@ -39,6 +39,8 @@ embedded-hal = "1"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 heapless = { version = "0.8", default-features = false }
 static_cell = "2"
+embedded-graphics = "0.8.1"
+ssd1306 = "0.8.4"
 
 # cargo build/run
 [profile.dev]
