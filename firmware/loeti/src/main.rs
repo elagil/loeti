@@ -48,15 +48,22 @@ async fn main(spawner: Spawner) {
         use embassy_stm32::adc::{Adc, AdcChannel};
         use embassy_stm32::dac::DacCh1;
 
-        let adc = Adc::new(p.ADC2);
-        let dac = DacCh1::new(p.DAC1, p.DMA1_CH5, p.PA4);
+        let adc_temp = Adc::new(p.ADC2);
+        let adc_power = Adc::new(p.ADC1);
+        let dac_current_limit = DacCh1::new(p.DAC1, p.DMA1_CH5, p.PA4);
 
         let iron_resources = IronResources {
-            adc: adc,
-            dac: dac,
-            adc_pin_a: p.PA0.degrade_adc(), // C245
-            adc_pin_b: p.PA1.degrade_adc(), // C210
-            adc_dma: p.DMA1_CH4,
+            adc_temp,
+            adc_pin_temp_a: p.PA0.degrade_adc(), // C245
+            adc_pin_temp_b: p.PA1.degrade_adc(), // C210
+            adc_temp_dma: p.DMA1_CH4,
+
+            adc_power,
+            adc_pin_voltage: p.PA2.degrade_adc(),
+            adc_pin_current: p.PA3.degrade_adc(),
+            adc_power_dma: p.DMA1_CH6,
+
+            dac_current_limit,
         };
         unwrap!(spawner.spawn(iron::iron_task(iron_resources)));
     }
