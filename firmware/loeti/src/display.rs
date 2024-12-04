@@ -1,3 +1,4 @@
+//! Controls the display of the soldering controller.
 use embassy_stm32::spi::Spi;
 use embassy_stm32::{gpio::Output, mode::Async};
 use embedded_graphics::{
@@ -9,13 +10,19 @@ use panic_probe as _;
 use ssd1306::prelude::{DisplayRotation, DisplaySize128x64, SPIInterface};
 use ssd1306::Ssd1306;
 
+/// Resources for driving the display.
 pub struct DisplayResources {
+    /// The display SPI controller.
     pub spi: Spi<'static, Async>,
-    pub pin_dc: Output<'static>,
-    pub pin_reset: Output<'static>,
+    /// The display chip select (for SPI)
     pub pin_cs: Output<'static>,
+    /// The display data/control line.
+    pub pin_dc: Output<'static>,
+    /// The display reset line.
+    pub pin_reset: Output<'static>,
 }
 
+/// Handle displaying the UI.
 #[embassy_executor::task]
 pub async fn display_task(mut display_resources: DisplayResources) {
     let spi_interface = SPIInterface::new(

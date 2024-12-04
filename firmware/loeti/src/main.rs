@@ -3,10 +3,12 @@
 
 use defmt::{info, unwrap};
 use embassy_executor::Spawner;
-use embassy_stm32::gpio::{Level, Output, Speed};
+use embassy_stm32::exti::ExtiInput;
+use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
 use embassy_stm32::ucpd::{self, Ucpd};
 use embassy_stm32::{bind_interrupts, peripherals, Config};
 use loeti::iron::IronResources;
+use loeti::ui::RotaryEncoderResources;
 use loeti::{display, iron, usb_pd};
 use {defmt_rtt as _, panic_probe as _};
 
@@ -43,19 +45,32 @@ async fn main(spawner: Spawner) {
         unwrap!(spawner.spawn(display::display_task(display_resources)));
     }
 
+    // Launch UI with rotary encoder control
+    {
+        let _rotary_encoder_resources = RotaryEncoderResources {
+            pin_sw: Input::new(p.PB0, Pull::None),
+            pin_a: Input::new(p.PB1, Pull::None),
+            pin_b: Input::new(p.PB2, Pull::None),
+        };
+    }
+
     // Launch iron control
     {
         use embassy_stm32::adc::{Adc, AdcChannel};
         use embassy_stm32::dac::DacCh1;
+        use embassy_stm32::time::khz;
+        use embassy_stm32::timer::simple_pwm::PwmPin;
+        use embassy_stm32::timer::simple_pwm::SimplePwm;
 
         let adc_temp = Adc::new(p.ADC2);
         let adc_power = Adc::new(p.ADC1);
         let dac_current_limit = DacCh1::new(p.DAC1, p.DMA1_CH5, p.PA4);
+        let pwm_pin = PwmPin::new_ch4(p.PB11, OutputType::PushPull);
 
         let iron_resources = IronResources {
             adc_temp,
-            adc_pin_temp_a: p.PA0.degrade_adc(), // C245
-            adc_pin_temp_b: p.PA1.degrade_adc(), // C210
+            adc_pin_temp_a: p.PA0.degrade_adc(),
+            adc_pin_temp_b: p.PA1.degrade_adc(),
             adc_temp_dma: p.DMA1_CH4,
 
             adc_power,
@@ -64,6 +79,12 @@ async fn main(spawner: Spawner) {
             adc_power_dma: p.DMA1_CH6,
 
             dac_current_limit,
+
+            exti_current_alert: ExtiInput::new(p.PC15, p.EXTI15, Pull::None),
+
+            pwm_heater: SimplePwm::new(p.TIM2, None, None, None, Some(pwm_pin), khz(48), Default::default()),
+
+            pin_sleep: Input::new(p.PA5, Pull::Up),
         };
         unwrap!(spawner.spawn(iron::iron_task(iron_resources)));
     }

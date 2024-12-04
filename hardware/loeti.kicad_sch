@@ -8918,16 +8918,6 @@
 	)
 	(wire
 		(pts
-			(xy 215.9 46.99) (xy 232.41 46.99)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "04e830fb-7073-48d9-aea0-19bd3321dbb4")
-	)
-	(wire
-		(pts
 			(xy 330.2 133.35) (xy 334.01 133.35)
 		)
 		(stroke
@@ -9698,16 +9688,6 @@
 	)
 	(wire
 		(pts
-			(xy 182.88 57.15) (xy 166.37 57.15)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2bedb5bf-9ee5-418e-9998-c225ed6f3f24")
-	)
-	(wire
-		(pts
 			(xy 153.67 114.3) (xy 153.67 113.03)
 		)
 		(stroke
@@ -9995,6 +9975,16 @@
 			(type default)
 		)
 		(uuid "431b5630-6899-45cb-a445-94c09b10703c")
+	)
+	(wire
+		(pts
+			(xy 166.37 52.07) (xy 182.88 52.07)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "43687e67-c76b-4914-8821-1a1736def543")
 	)
 	(wire
 		(pts
@@ -11738,6 +11728,16 @@
 	)
 	(wire
 		(pts
+			(xy 182.88 57.15) (xy 166.37 57.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "afa17b23-f1a1-46d0-a2f1-ad1775c28acc")
+	)
+	(wire
+		(pts
 			(xy 374.65 71.12) (xy 374.65 72.39)
 		)
 		(stroke
@@ -11805,16 +11805,6 @@
 			(type default)
 		)
 		(uuid "b4268f80-e05a-435d-a7f1-4ab2c7e6c56b")
-	)
-	(wire
-		(pts
-			(xy 215.9 44.45) (xy 232.41 44.45)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b4c5c396-9d06-46f5-bdb0-f1c908b0e01b")
 	)
 	(polyline
 		(pts
@@ -11955,6 +11945,16 @@
 			(type default)
 		)
 		(uuid "bbf41437-e521-45d2-8bbb-d07f60460df1")
+	)
+	(wire
+		(pts
+			(xy 182.88 62.23) (xy 166.37 62.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bbfd67c4-1f28-45c2-abd7-ca8ee64a1ac4")
 	)
 	(wire
 		(pts
@@ -12505,6 +12505,16 @@
 			(type solid)
 		)
 		(uuid "dc9bd68c-0524-4cc6-8602-8c5654694917")
+	)
+	(wire
+		(pts
+			(xy 182.88 59.69) (xy 166.37 59.69)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dead5e4f-9208-47e4-8588-9890a5e6c705")
 	)
 	(wire
 		(pts
@@ -13740,6 +13750,17 @@
 		)
 		(uuid "57c21da0-12d7-46c5-b2e1-14d6504ff87e")
 	)
+	(label "ROT_A"
+		(at 166.37 59.69 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.524 1.524)
+			)
+			(justify left bottom)
+		)
+		(uuid "5a01906e-d354-43d9-9f11-0b66c7a2dc9e")
+	)
 	(label "SHUNT-"
 		(at 374.65 160.02 180)
 		(fields_autoplaced yes)
@@ -13827,6 +13848,17 @@
 			(justify right bottom)
 		)
 		(uuid "787eab16-a49d-421f-b645-96dbd0b30580")
+	)
+	(label "ROT_SW"
+		(at 166.37 57.15 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.524 1.524)
+			)
+			(justify left bottom)
+		)
+		(uuid "79784ad3-cf7f-42c3-80ee-7f8f73c5ee05")
 	)
 	(label "CC2"
 		(at 55.88 36.83 180)
@@ -13927,17 +13959,6 @@
 		)
 		(uuid "964a42ce-887c-493f-b144-9cbbbfa2fda5")
 	)
-	(label "ROT_A"
-		(at 232.41 46.99 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.524 1.524)
-			)
-			(justify right bottom)
-		)
-		(uuid "96b0ca69-e371-4c90-9996-1d1e7cde9353")
-	)
 	(label "NRST"
 		(at 130.81 72.39 0)
 		(fields_autoplaced yes)
@@ -13959,17 +13980,6 @@
 			(justify left bottom)
 		)
 		(uuid "97425439-cfad-42e5-9057-b4849007ee73")
-	)
-	(label "ROT_B"
-		(at 166.37 57.15 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.524 1.524)
-			)
-			(justify left bottom)
-		)
-		(uuid "9835a12b-08a3-441e-a3bc-edaa3abe3245")
 	)
 	(label "SWO"
 		(at 166.37 64.77 0)
@@ -14070,16 +14080,16 @@
 		)
 		(uuid "af8a5174-3fac-4a39-bf14-19f0f9505554")
 	)
-	(label "ROT_SW"
-		(at 232.41 44.45 180)
+	(label "ROT_B"
+		(at 166.37 62.23 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
 			)
-			(justify right bottom)
+			(justify left bottom)
 		)
-		(uuid "b49df0cc-4379-4708-919c-812874abb423")
+		(uuid "b76f98a3-95d2-4071-b6d9-27e363c598eb")
 	)
 	(label "_USB_D_N"
 		(at 73.66 44.45 0)
@@ -14113,6 +14123,17 @@
 			(justify left bottom)
 		)
 		(uuid "c46e5f68-ab07-4bea-9a28-fb42989821ec")
+	)
+	(label "CURR_ALERT"
+		(at 166.37 52.07 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.524 1.524)
+			)
+			(justify left bottom)
+		)
+		(uuid "c860d364-4983-4ea3-af8b-3cdd24b57a4b")
 	)
 	(label "TEMP_245"
 		(at 236.22 222.25 180)

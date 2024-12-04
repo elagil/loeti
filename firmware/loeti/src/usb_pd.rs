@@ -1,3 +1,4 @@
+//! Handles USB PD negotiation.
 use defmt::{error, info, Format};
 use embassy_stm32::peripherals;
 use embassy_stm32::ucpd::{self, CcPhy, CcPull, CcSel, CcVState, Ucpd};
@@ -39,6 +40,7 @@ async fn wait_attached<T: ucpd::Instance>(cc_phy: &mut CcPhy<'_, T>) -> CableOri
     }
 }
 
+/// Handle USB PD negotiation.
 #[embassy_executor::task]
 pub async fn ucpd_task(
     mut ucpd: Ucpd<'static, peripherals::UCPD1>,
