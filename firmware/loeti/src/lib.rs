@@ -3,6 +3,6 @@
 #![warn(missing_docs)]
 
 pub mod display;
-pub mod iron;
+pub mod tool;
 pub mod ui;
 pub mod usb_pd;

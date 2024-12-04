@@ -7,9 +7,9 @@ use embassy_stm32::exti::ExtiInput;
 use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
 use embassy_stm32::ucpd::{self, Ucpd};
 use embassy_stm32::{bind_interrupts, peripherals, Config};
-use loeti::iron::IronResources;
+use loeti::tool::{AdcPowerResources, AdcTemperatureResources, ToolResources};
 use loeti::ui::RotaryEncoderResources;
-use loeti::{display, iron, usb_pd};
+use loeti::{display, tool, usb_pd};
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
@@ -67,16 +67,20 @@ async fn main(spawner: Spawner) {
         let dac_current_limit = DacCh1::new(p.DAC1, p.DMA1_CH5, p.PA4);
         let pwm_pin = PwmPin::new_ch4(p.PB11, OutputType::PushPull);
 
-        let iron_resources = IronResources {
-            adc_temp,
-            adc_pin_temp_a: p.PA0.degrade_adc(),
-            adc_pin_temp_b: p.PA1.degrade_adc(),
-            adc_temp_dma: p.DMA1_CH4,
+        let iron_resources = ToolResources {
+            adc_temperature_resources: AdcTemperatureResources {
+                adc_temp,
+                adc_pin_temperature_a: p.PA0.degrade_adc(),
+                adc_pin_temperature_b: p.PA1.degrade_adc(),
+                adc_temperature_dma: p.DMA1_CH4,
+            },
 
-            adc_power,
-            adc_pin_voltage: p.PA2.degrade_adc(),
-            adc_pin_current: p.PA3.degrade_adc(),
-            adc_power_dma: p.DMA1_CH6,
+            adc_power_resources: AdcPowerResources {
+                adc_power,
+                adc_pin_voltage: p.PA2.degrade_adc(),
+                adc_pin_current: p.PA3.degrade_adc(),
+                adc_power_dma: p.DMA1_CH6,
+            },
 
             dac_current_limit,
 
@@ -86,6 +90,6 @@ async fn main(spawner: Spawner) {
 
             pin_sleep: Input::new(p.PA5, Pull::Up),
         };
-        unwrap!(spawner.spawn(iron::iron_task(iron_resources)));
+        unwrap!(spawner.spawn(tool::tool_task(iron_resources)));
     }
 }
