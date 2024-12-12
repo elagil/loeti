@@ -42,6 +42,7 @@ static_cell = "2"
 embedded-graphics = "0.8.1"
 ssd1306 = "0.8.4"
 pid = "4.0.0"
+micromath = "2.1.0"
 
 # cargo build/run
 [profile.dev]

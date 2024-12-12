@@ -1,31 +1,43 @@
 //! Drives the tool's heating element, based on target and actual temperature.
-use defmt::{info, Format};
+use defmt::{info, warn, Format};
 use embassy_futures::select::{select, Either};
 use embassy_stm32::{adc, dac, exti::ExtiInput, gpio::Input, peripherals, timer::simple_pwm::SimplePwm};
 use embassy_time::{Duration, Ticker, Timer};
+use micromath::F32Ext;
 use pid::{self, Pid};
 
-const ADC_RESOLUTION: adc::Resolution = adc::Resolution::BITS12;
 type PwmPercentage = u8;
 type ResistanceOhm = f32;
 type TemperatureC = f32;
 type Volt = f32;
 
+const ADC_RESOLUTION: adc::Resolution = adc::Resolution::BITS12;
+const DETECT_THRESHOLD_V: Volt = 0.1;
+
+#[derive(Debug, Format)]
+enum Error {
+    NoTool,
+    UnknownTool,
+    ToolMismatch,
+}
+
 fn adc_value_to_v(value: u16) -> Volt {
     (adc::VREF_DEFAULT_MV as f32) * (value as f32) / (adc::resolution_to_max_count(ADC_RESOLUTION) as f32) / 1000.0
 }
 
-pub struct AdcTemperatureResources {
+/// Resources for the tool ADC, for temperature measurement and tool detection.
+pub struct AdcToolResources {
     /// The ADC for temperature measurements.
     pub adc_temp: adc::Adc<'static, peripherals::ADC2>,
-    /// The first ADC input pin (used for C245 tools).
-    pub adc_pin_temperature_a: adc::AnyAdcChannel<peripherals::ADC2>,
-    /// The second ADC input pin (used for C210 tools).
-    pub adc_pin_temperature_b: adc::AnyAdcChannel<peripherals::ADC2>,
+    /// The ADC temperature input pin.
+    pub adc_pin_temperature: adc::AnyAdcChannel<peripherals::ADC2>,
+    /// The ADC detection input pin.
+    pub adc_pin_detect: adc::AnyAdcChannel<peripherals::ADC2>,
     /// The DMA for the temperature ADC.
     pub adc_temperature_dma: peripherals::DMA1_CH4,
 }
 
+/// Resources for the power ADC, for tool voltage and current measurement.
 pub struct AdcPowerResources {
     /// The ADC for power (voltage and current) measurements.
     pub adc_power: adc::Adc<'static, peripherals::ADC1>,
@@ -39,64 +51,73 @@ pub struct AdcPowerResources {
 
 /// Resources for driving the tool's heater and taking associated measurements.
 pub struct ToolResources {
-    pub adc_temperature_resources: AdcTemperatureResources,
+    /// ADC for tool detection and temperature.
+    pub adc_tool_resources: AdcToolResources,
+
+    /// ADC for tool voltage and current.
     pub adc_power_resources: AdcPowerResources,
 
-    /// The DAC that sets the current limit for the current sensing IC (INA301).
+    /// The DAC that sets the current limit for the current sensing IC (INA301A).
     pub dac_current_limit: dac::DacChannel<'static, peripherals::DAC1, 1, peripherals::DMA1_CH5>,
 
     /// External interrupt for current alerts.
     pub exti_current_alert: ExtiInput<'static>,
 
     /// The PWM for driving the tool's heating element.
-    pub pwm_heater: SimplePwm<'static, peripherals::TIM2>,
+    pub pwm_heater: SimplePwm<'static, peripherals::TIM1>,
 
     /// A pin for detecting the tool sleep position (in holder).
     pub pin_sleep: Input<'static>,
 }
 
 #[derive(Clone, Copy)]
-enum TemperatureSensorValue {
-    Invalid,
-    A(Volt),
-    B(Volt),
+struct ToolMeasurement {
+    detect_v: Volt,
+    temperature_v: Volt,
 }
 
-async fn measure_temperature_sensor(adc_temperature_resources: &mut AdcTemperatureResources) -> TemperatureSensorValue {
+async fn measure_tool(adc_tool_resources: &mut AdcToolResources) -> Result<ToolMeasurement, Error> {
     const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES47_5;
     let mut adc_buffer = [0u16; 2];
 
-    adc_temperature_resources
+    adc_tool_resources
         .adc_temp
         .read(
-            &mut adc_temperature_resources.adc_temperature_dma,
+            &mut adc_tool_resources.adc_temperature_dma,
             [
-                (&mut adc_temperature_resources.adc_pin_temperature_a, SAMPLE_TIME),
-                (&mut adc_temperature_resources.adc_pin_temperature_b, SAMPLE_TIME),
+                (&mut adc_tool_resources.adc_pin_detect, SAMPLE_TIME),
+                (&mut adc_tool_resources.adc_pin_temperature, SAMPLE_TIME),
             ]
             .into_iter(),
             &mut adc_buffer,
         )
         .await;
 
-    let temperature_a = adc_value_to_v(adc_buffer[0]);
-    let temperature_b = adc_value_to_v(adc_buffer[1]);
+    let detect_v = adc_value_to_v(adc_buffer[0]);
+    let temperature_v = adc_value_to_v(adc_buffer[1]);
 
-    TemperatureSensorValue::Invalid
+    if detect_v < 3.0 {
+        Ok(ToolMeasurement {
+            detect_v,
+            temperature_v,
+        })
+    } else {
+        Err(Error::NoTool)
+    }
 }
 
-struct ToolPower {
+struct PowerMeasurement {
     current_a: f32,
     voltage_v: f32,
 }
 
-impl ToolPower {
+impl PowerMeasurement {
     fn power_w(&self) -> f32 {
         self.voltage_v * self.current_a
     }
 }
 
-async fn measure_power(adc_power_resources: &mut AdcPowerResources) -> ToolPower {
+async fn measure_power(adc_power_resources: &mut AdcPowerResources) -> PowerMeasurement {
     const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES47_5;
     let mut adc_buffer = [0u16; 2];
 
@@ -119,10 +140,10 @@ async fn measure_power(adc_power_resources: &mut AdcPowerResources) -> ToolPower
     const VOLTAGE_DIVIDER_RATIO: f32 = 11.0;
     let voltage_v = VOLTAGE_DIVIDER_RATIO * adc_value_to_v(adc_buffer[1]);
 
-    ToolPower { current_a, voltage_v }
+    PowerMeasurement { current_a, voltage_v }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum ToolType {
     C210,
     C245,
@@ -133,6 +154,8 @@ struct ToolProperties {
     tool_type: ToolType,
     max_current_a: f32,
     resistance_ohm: f32,
+    detect_v: Volt,
+    temperature_scale_c_per_v: f32,
 
     p: f32,
     i: f32,
@@ -143,6 +166,8 @@ const C210_PROPERTIES: ToolProperties = ToolProperties {
     tool_type: ToolType::C210,
     max_current_a: 3.0,
     resistance_ohm: 3.0,
+    detect_v: 1.0,
+    temperature_scale_c_per_v: 0.1333,
 
     p: 0.025,
     i: 0.005,
@@ -153,11 +178,15 @@ const C245_PROPERTIES: ToolProperties = ToolProperties {
     tool_type: ToolType::C245,
     max_current_a: 6.0,
     resistance_ohm: 2.5,
+    detect_v: 2.0,
+    temperature_scale_c_per_v: 0.1333,
 
     p: 0.2,
     i: 0.005,
     d: 0.2,
 };
+
+const ALL_TOOL_PROPERTIES: [ToolProperties; 2] = [C210_PROPERTIES, C245_PROPERTIES];
 
 impl From<ToolType> for ToolProperties {
     fn from(value: ToolType) -> Self {
@@ -176,12 +205,8 @@ struct Tool {
 }
 
 impl Tool {
-    pub fn new(temperature_sensor_value: TemperatureSensorValue) -> Self {
-        let tool_properties: ToolProperties = match temperature_sensor_value {
-            TemperatureSensorValue::A(_) => ToolType::C245.into(),
-            TemperatureSensorValue::B(_) => ToolType::C210.into(),
-            _ => panic!("Invalid temp sensor value for new tool"),
-        };
+    pub fn new(tool_measurement: ToolMeasurement) -> Result<Self, Error> {
+        let tool_properties = Tool::detect(tool_measurement)?;
 
         let mut tool = Self {
             tool_properties,
@@ -197,31 +222,40 @@ impl Tool {
 
         tool.current_pid.i(0.5 * tool_properties.resistance_ohm / 2.0, 100.0);
 
-        tool.update_temperature(temperature_sensor_value);
-        tool
+        Ok(tool)
     }
 
-    fn update_temperature(&mut self, temperature_sensor_value: TemperatureSensorValue) {
-        let temperature_c = match (temperature_sensor_value, &self.tool_properties.tool_type) {
-            (TemperatureSensorValue::A(x), ToolType::C245) => x * 0.1333,
-            (TemperatureSensorValue::B(x), ToolType::C210) => x * 0.1333,
-            _ => panic!("Invalid temp sensor value for current tool"),
-        };
+    fn detect(tool_measurement: ToolMeasurement) -> Result<ToolProperties, Error> {
+        for tool_properties in ALL_TOOL_PROPERTIES {
+            if (tool_measurement.detect_v - tool_properties.detect_v).abs() < DETECT_THRESHOLD_V {
+                return Ok(tool_properties);
+            }
+        }
 
-        self.current_pid
-            .setpoint(self.temperature_pid.next_control_output(temperature_c).output);
+        Err(Error::UnknownTool)
     }
 
-    fn update_power(&mut self, tool_power: ToolPower) {
+    fn update_temperature(&mut self, tool_measurement: ToolMeasurement) -> Result<(), Error> {
+        let tool_properties = Tool::detect(tool_measurement)?;
+        if tool_properties.tool_type != self.tool_properties.tool_type {
+            return Err(Error::ToolMismatch);
+        }
+
+        self.current_pid.setpoint(
+            self.temperature_pid
+                .next_control_output(tool_measurement.temperature_v * self.tool_properties.temperature_scale_c_per_v)
+                .output,
+        );
+
+        Ok(())
+    }
+
+    fn update_power(&mut self, tool_power: PowerMeasurement) {
         self.pwm_percentage = self.current_pid.next_control_output(tool_power.current_a).output as u8;
     }
 }
 
-/// Control the tool's heating element.
-///
-/// Takes current and temperature measurements, and adjusts the heater PWM duty cycle accordingly.
-#[embassy_executor::task]
-pub async fn tool_task(mut tool_resources: ToolResources) {
+async fn control(tool_resources: &mut ToolResources) -> Result<(), Error> {
     const CURRENT_CONTROL_CYCLE_COUNT: usize = 10;
     const LOOP_TIME_MS: u64 = 100;
     const CURRENT_LOOP_PERIOD_MS: u64 = LOOP_TIME_MS / 10;
@@ -237,21 +271,14 @@ pub async fn tool_task(mut tool_resources: ToolResources) {
     loop {
         // Wait for temperature sensor value to settle after disabling the heating element.
         Timer::after_millis(1).await;
-        let temperature_sensor_value = measure_temperature_sensor(&mut tool_resources.adc_temperature_resources).await;
-
-        if matches!(temperature_sensor_value, TemperatureSensorValue::Invalid) {
-            // Limit detection rate if no tool is connected.
-            Timer::after_millis(100).await;
-            tool = None;
-            continue;
-        };
+        let tool_measurement = measure_tool(&mut tool_resources.adc_tool_resources).await?;
 
         if tool.is_none() {
-            tool = Some(Tool::new(temperature_sensor_value))
+            tool = Some(Tool::new(tool_measurement)?)
         }
 
         let tool = tool.as_mut().unwrap();
-        tool.update_temperature(temperature_sensor_value);
+        tool.update_temperature(tool_measurement)?;
 
         pwm_heater_channel.set_duty_cycle_fully_off();
         pwm_heater_channel.enable();
@@ -282,5 +309,20 @@ pub async fn tool_task(mut tool_resources: ToolResources) {
         }
 
         pwm_heater_channel.disable();
+    }
+}
+
+/// Control the tool's heating element.
+///
+/// Takes current and temperature measurements, and adjusts the heater PWM duty cycle accordingly.
+#[embassy_executor::task]
+pub async fn tool_task(mut tool_resources: ToolResources) {
+    loop {
+        let result = control(&mut tool_resources).await;
+
+        if result.is_err() {
+            warn!("Tool error: {}", result);
+            Timer::after_millis(500).await
+        }
     }
 }

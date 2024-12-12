@@ -7,7 +7,7 @@ use embassy_stm32::exti::ExtiInput;
 use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
 use embassy_stm32::ucpd::{self, Ucpd};
 use embassy_stm32::{bind_interrupts, peripherals, Config};
-use loeti::tool::{AdcPowerResources, AdcTemperatureResources, ToolResources};
+use loeti::tool::{AdcPowerResources, AdcToolResources, ToolResources};
 use loeti::ui::RotaryEncoderResources;
 use loeti::{display, tool, usb_pd};
 use {defmt_rtt as _, panic_probe as _};
@@ -18,7 +18,22 @@ bind_interrupts!(struct Irqs {
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
-    let config = Config::default();
+    let mut config = Config::default();
+    {
+        use embassy_stm32::rcc::*;
+        config.rcc.pll = Some(Pll {
+            source: PllSource::HSE,
+            prediv: PllPreDiv::DIV4,
+            mul: PllMul::MUL85,
+            divp: None,
+            divq: None,
+            // Main system clock at 170 MHz
+            divr: Some(PllRDiv::DIV2),
+        });
+        config.rcc.hsi48 = Some(Hsi48Config { sync_from_usb: true });
+        config.rcc.mux.adc12sel = mux::Adcsel::SYS;
+        config.rcc.sys = Sysclk::PLL1_R;
+    }
     let p = embassy_stm32::init(config);
 
     info!("Hi");
@@ -65,13 +80,13 @@ async fn main(spawner: Spawner) {
         let adc_temp = Adc::new(p.ADC2);
         let adc_power = Adc::new(p.ADC1);
         let dac_current_limit = DacCh1::new(p.DAC1, p.DMA1_CH5, p.PA4);
-        let pwm_pin = PwmPin::new_ch4(p.PB11, OutputType::PushPull);
+        let pwm_pin = PwmPin::new_ch1(p.PA8, OutputType::PushPull);
 
         let iron_resources = ToolResources {
-            adc_temperature_resources: AdcTemperatureResources {
+            adc_tool_resources: AdcToolResources {
                 adc_temp,
-                adc_pin_temperature_a: p.PA0.degrade_adc(),
-                adc_pin_temperature_b: p.PA1.degrade_adc(),
+                adc_pin_temperature: p.PA0.degrade_adc(),
+                adc_pin_detect: p.PA1.degrade_adc(),
                 adc_temperature_dma: p.DMA1_CH4,
             },
 
@@ -86,9 +101,9 @@ async fn main(spawner: Spawner) {
 
             exti_current_alert: ExtiInput::new(p.PC15, p.EXTI15, Pull::None),
 
-            pwm_heater: SimplePwm::new(p.TIM2, None, None, None, Some(pwm_pin), khz(48), Default::default()),
+            pwm_heater: SimplePwm::new(p.TIM1, Some(pwm_pin), None, None, None, khz(170), Default::default()),
 
-            pin_sleep: Input::new(p.PA5, Pull::Up),
+            pin_sleep: Input::new(p.PB10, Pull::None),
         };
         unwrap!(spawner.spawn(tool::tool_task(iron_resources)));
     }
