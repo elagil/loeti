@@ -1,17 +1,16 @@
 //! Handles USB PD negotiation.
-use crate::MAX_SUPPLY_CURRENT_SIG;
-use defmt::{debug, info, Format};
+use defmt::{debug, error, info, Format};
 use embassy_stm32::gpio::Output;
 use embassy_stm32::peripherals;
 use embassy_stm32::ucpd::{self, CcPhy, CcPull, CcSel, CcVState, PdPhy, Ucpd};
 use embassy_time::{with_timeout, Duration};
-use uom::si::electric_current;
-use uom::si::electric_potential;
-use uom::si::f32::ElectricCurrent;
+use heapless::Vec;
+use uom::si::electric_current::{self, milliampere};
+use uom::si::electric_potential::{self, millivolt};
+use usb_pd::header::Header;
 use usb_pd::messages::pdo::PowerDataObject;
 use usb_pd::messages::Message;
-use usb_pd::sink::{Driver as SinkDriver, DriverState as SinkDriverState, Event, Sink};
-
+use usb_pd::sink::{Driver as SinkDriver, DriverState as SinkDriverState, Event, Request, Sink};
 use {defmt_rtt as _, panic_probe as _};
 
 #[derive(Debug, Format)]
@@ -100,12 +99,15 @@ async fn wait_attached<T: ucpd::Instance>(cc_phy: &mut CcPhy<'_, T>) -> CableOri
 #[embassy_executor::task]
 pub async fn ucpd_task(
     mut ucpd: Ucpd<'static, peripherals::UCPD1>,
-    rx_dma: peripherals::DMA1_CH1,
-    tx_dma: peripherals::DMA1_CH2,
-    mut ndb_pin: Output<'static>,
+    rx_dma: peripherals::GPDMA1_CH0,
+    tx_dma: peripherals::GPDMA1_CH1,
+    mut ndb: Output<'static>,
 ) {
+    ndb.set_high();
+
+    embassy_time::Timer::after_millis(100).await;
+
     ucpd.cc_phy().set_pull(CcPull::Sink);
-    ndb_pin.set_high();
 
     info!("Waiting for USB connection...");
     let cable_orientation = wait_attached(ucpd.cc_phy()).await;
@@ -127,8 +129,7 @@ pub async fn ucpd_task(
     let driver = UcpdSinkDriver::new(pd_phy);
     let mut sink = Sink::new(driver);
     sink.init().await;
-
-    let mut max_current = None;
+    info!("Sink initialized.");
 
     loop {
         let result = sink.wait_for_event().await;
@@ -139,8 +140,6 @@ pub async fn ucpd_task(
                     Event::SourceCapabilitiesChanged(caps) => {
                         info!("Source capabilities changed: {}", caps.pdos().len());
 
-                        let mut selected_supply = None;
-
                         for (index, pdo) in caps.pdos().iter().enumerate() {
                             if let PowerDataObject::FixedSupply(supply) = pdo {
                                 let potential_mv = supply.voltage().get::<electric_potential::millivolt>();
@@ -148,39 +147,18 @@ pub async fn ucpd_task(
 
                                 info!("Supply {}: {} mV, {} mA", index, potential_mv, current_ma);
 
-                                selected_supply = match selected_supply {
-                                    None => Some((index, supply)),
-                                    Some(x) => {
-                                        if supply.voltage() > x.1.voltage() {
-                                            Some((index, supply))
-                                        } else {
-                                            Some(x)
-                                        }
-                                    }
+                                if potential_mv == 9000 {
+                                    let request = usb_pd::sink::Request::RequestPower {
+                                        index,
+                                        current: supply.raw_max_current(),
+                                    };
+                                    info!("Requesting {}", request);
+                                    sink.request(request).await.unwrap();
                                 }
                             }
                         }
-
-                        if selected_supply.is_some() {
-                            let supply = selected_supply.unwrap();
-
-                            let max_current_ma = supply.1.max_current().get::<electric_current::milliampere>();
-                            max_current = Some(ElectricCurrent::new::<electric_current::milliampere>(
-                                max_current_ma as f32,
-                            ));
-
-                            let request = usb_pd::sink::Request::RequestPower {
-                                index: supply.0,
-                                current: supply.1.raw_max_current(),
-                            };
-                            info!("Requesting maximum voltage {}", request);
-                            sink.request(request).await.unwrap();
-                        }
                     }
-                    Event::PowerReady => {
-                        info!("Power ready.");
-                        MAX_SUPPLY_CURRENT_SIG.signal(max_current);
-                    }
+                    Event::PowerReady => info!("Power ready."),
                     Event::ProtocolChanged => info!("Protocol changed."),
                     Event::PowerAccepted => info!("Power accepted."),
                     Event::PowerRejected => info!("Power rejected."),

@@ -1,6 +1,6 @@
 LTspice 24.0.12 for Windows
 Circuit: * Z:\home\elagil\repo\loeti\hardware\switchmode.asc
-Start Time: Thu Dec 12 22:15:45 2024
+Start Time: Fri Dec 20 23:32:28 2024
 Warning: Multiple definitions of model "2scr375p" Type: BJT
 Warning: Multiple definitions of model "bc857b" Type: BJT
 Warning: Multiple definitions of model "bc847c" Type: BJT
@@ -127,5 +127,5 @@ Heightened Def Con from 0.0018528 to 0.00185281
 Heightened Def Con from 0.0019224 to 0.00192241
 Heightened Def Con from 0.0019282 to 0.00192821
 Heightened Def Con from 0.0019514 to 0.00195141
-Total elapsed time: 6.313 seconds.
+Total elapsed time: 15.839 seconds.
 

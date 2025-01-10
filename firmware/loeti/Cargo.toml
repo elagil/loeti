@@ -18,12 +18,12 @@ embassy-executor = { path = "../embassy/embassy-executor", features = [
     "arch-cortex-m",
     "executor-thread",
     "defmt",
-    "integrated-timers",
+    "task-arena-size-8192",
 ] }
 embassy-time = { path = "../embassy/embassy-time", features = [
     "defmt",
     "defmt-timestamp-uptime",
-    "tick-hz-32_768",
+    "tick-hz-100_000",
 ] }
 embassy-usb = { path = "../embassy/embassy-usb", features = ["defmt"] }
 embassy-futures = { path = "../embassy/embassy-futures" }
@@ -34,7 +34,6 @@ defmt-rtt = "0.4"
 
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7"
-# embedded-hal = "0.2.6"
 embedded-hal = "1"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 heapless = { version = "0.8", default-features = false }
@@ -44,13 +43,23 @@ ssd1306 = "0.8.4"
 pid = "4.0.0"
 micromath = "2.1.0"
 
+uom = { version = "0.36.0", default-features = false, features = ["si", "f32"] }
+usb-pd = { path = "../usb-pd/usb-pd" }
+rotary-encoder-embedded = "0.3.1"
+
+serde = { version = "1.0.217", default-features = false, features = ["derive"] }
+postcard = { version = "1.1.1", features = ["use-crc"] }
+crc = "3.2.1"
+eeprom24x = "0.7.2"
+
 # cargo build/run
 [profile.dev]
 codegen-units = 1
 debug = 2
 debug-assertions = true # <-
 incremental = false
-opt-level = 3           # <-
+lto = true
+opt-level = 'z'         # <-
 overflow-checks = true  # <-
 
 # cargo build/run --release
@@ -59,6 +68,6 @@ codegen-units = 1
 debug = 2
 debug-assertions = false # <-
 incremental = false
-lto = 'fat'
-opt-level = 3            # <-
+lto = true
+opt-level = 'z'          # <-
 overflow-checks = false  # <-

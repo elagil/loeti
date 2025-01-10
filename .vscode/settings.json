@@ -1,5 +1,7 @@
 {
     "rust-analyzer.linkedProjects": [
         "firmware/loeti/Cargo.toml",
+        "firmware/usb-pd-testing/Cargo.toml",
+        // "firmware/usb-pd/Cargo.toml",
     ]
 }
