@@ -26,7 +26,10 @@ use uom::si::{electric_current, power};
 mod library;
 use library::ToolProperties;
 
-use crate::{PERSISTENT, POWER_MEASUREMENT_W_SIG, POWER_RATIO_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG, TOOL_NAME_SIG};
+use crate::{
+    MAX_SUPPLY_CURRENT_SIG, PERSISTENT, POWER_MEASUREMENT_W_SIG, POWER_RATIO_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
+    TOOL_NAME_SIG,
+};
 
 const ADC_RESOLUTION: adc::Resolution = adc::Resolution::BITS12;
 const CURRENT_CONTROL_CYCLE_COUNT: u64 = 10;
@@ -116,7 +119,7 @@ async fn measure_tool(
     detect_ratio_threshold: Ratio,
     temperature_potential_threshold: ElectricPotential,
 ) -> Result<ToolMeasurement, Error> {
-    const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES640_5;
+    const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES247_5;
     let mut adc_buffer = [0u16; 2];
 
     adc_tool_resources
@@ -159,7 +162,7 @@ impl PowerMeasurement {
 }
 
 async fn measure_tool_power(adc_power_resources: &mut AdcPowerResources) -> PowerMeasurement {
-    const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES640_5;
+    const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES247_5;
     let mut adc_buffer = [0u16; 2];
 
     adc_power_resources
@@ -368,11 +371,11 @@ async fn control(tool_resources: &mut ToolResources, current: &ElectricCurrent) 
     }
 }
 
-fn no_tool() {
+fn display_state(message: &'static str) {
     POWER_MEASUREMENT_W_SIG.signal(NAN);
     POWER_RATIO_SIG.signal(NAN);
     TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(NAN);
-    TOOL_NAME_SIG.signal("No tool");
+    TOOL_NAME_SIG.signal(message);
 }
 
 /// Control the tool's heating element.
@@ -382,18 +385,32 @@ fn no_tool() {
 pub async fn tool_task(mut tool_resources: ToolResources) {
     info!("Maximum measurable voltage: {} V", MAX_ADC_V);
     info!("Maximum measurable detection resistor ratio: {}", MAX_ADC_RATIO);
-    no_tool();
+    display_state("Negotiating...");
 
-    // let max_supply_current = MAX_SUPPLY_CURRENT_SIG.wait().await.unwrap();
+    let safe_current = ElectricCurrent::new::<electric_current::ampere>(0.5);
+    let current = match MAX_SUPPLY_CURRENT_SIG.wait().await {
+        Some(x) => x,
+        None => safe_current,
+    };
 
-    Timer::after_millis(200).await;
-    let max_supply_current = ElectricCurrent::new::<electric_current::ampere>(5.0);
+    // let timeout_result = MAX_SUPPLY_CURRENT_SIG.wait().with_timeout(Duration::from_secs(1)).await;
+
+    // let max_supply_current = match timeout_result {
+    //     Ok(Some(x)) => {
+    //         Timer::after_millis(500).await;
+    //         x
+    //     }
+    //     _ => {
+    //         error!("Tool uses safe current as fall-back.");
+    //         safe_current
+    //     }
+    // };
 
     loop {
-        let result = control(&mut tool_resources, &max_supply_current).await;
+        let result = control(&mut tool_resources, &current).await;
 
         if result.is_err() {
-            no_tool();
+            display_state("No tool");
             debug!("Tool control error: {}", result);
             Timer::after_millis(100).await
         }

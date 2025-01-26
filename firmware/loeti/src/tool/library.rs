@@ -51,7 +51,7 @@ impl ToolProperties {
             Self {
                 name: "JBC C245",
                 tool_type: ToolType::JBCC245,
-                max_current_a: 5.0,
+                max_current_a: 6.0,
                 heater_resistance_ohm: 2.5,
                 detect_ratio: 0.5,
                 temperature_calibration: TemperatureCalibration {
@@ -60,7 +60,7 @@ impl ToolProperties {
                 },
 
                 p: 0.2,
-                i: 0.05,
+                i: 0.25,
                 d: 0.0,
             },
         ]
