@@ -8604,16 +8604,16 @@
 		(uuid "34ef4adc-0739-4647-a7fd-58689bc14874")
 	)
 	(junction
-		(at 377.19 177.8)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "36d4cbe4-88a6-419e-af57-21681c31d392")
-	)
-	(junction
 		(at 335.28 111.76)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "3f07560d-054e-43bb-8863-f0d153e2304e")
+	)
+	(junction
+		(at 364.49 177.8)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "46757d2e-89a1-48c0-a283-eaa5eca26880")
 	)
 	(junction
 		(at 25.4 69.85)
@@ -8680,12 +8680,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "74dc931d-b314-4de4-bb6a-d51f7a4f6bcb")
-	)
-	(junction
-		(at 386.08 187.96)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "7506001c-4b2b-4bd8-8b41-778e55ebc9ce")
 	)
 	(junction
 		(at 92.71 144.78)
@@ -8820,12 +8814,6 @@
 		(uuid "bf496ffc-3b24-47c5-8ae3-cfa8d76b720c")
 	)
 	(junction
-		(at 364.49 177.8)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "c00b31f0-7f92-4863-a5d8-386b26b75a63")
-	)
-	(junction
 		(at 127 72.39)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -8898,12 +8886,6 @@
 		(uuid "dd44cb25-0291-44a5-afd9-a86e4d405993")
 	)
 	(junction
-		(at 377.19 187.96)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "dfec9990-6185-4d10-9e5a-084d0822e718")
-	)
-	(junction
 		(at 370.84 111.76)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -8962,12 +8944,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "f7675fb6-cd79-40fd-937c-096e319a7fb8")
-	)
-	(junction
-		(at 386.08 177.8)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "f7eae170-dae0-42f0-8780-294eb4f24cbd")
 	)
 	(junction
 		(at 303.53 64.77)
@@ -9438,16 +9414,6 @@
 			(type default)
 		)
 		(uuid "19b3ece7-435e-489b-8389-8cdccb4a2dc4")
-	)
-	(wire
-		(pts
-			(xy 364.49 177.8) (xy 367.03 177.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "19ba0507-5aa3-4c8b-bc34-c47cef744856")
 	)
 	(wire
 		(pts
@@ -10381,16 +10347,6 @@
 	)
 	(wire
 		(pts
-			(xy 377.19 177.8) (xy 377.19 179.07)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4bd2d4d2-671a-47c1-b52f-6aab35b2b9f3")
-	)
-	(wire
-		(pts
 			(xy 198.12 24.13) (xy 198.12 22.86)
 		)
 		(stroke
@@ -10528,16 +10484,6 @@
 			(type default)
 		)
 		(uuid "55050d4e-aede-4e73-a15a-b66baea1edb3")
-	)
-	(wire
-		(pts
-			(xy 386.08 186.69) (xy 386.08 187.96)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "553da4a5-6dad-4f25-81ac-29de65d4b8d0")
 	)
 	(wire
 		(pts
@@ -10868,16 +10814,6 @@
 			(type default)
 		)
 		(uuid "7080e6b6-983c-446b-aa7d-c27a0acd8468")
-	)
-	(wire
-		(pts
-			(xy 377.19 186.69) (xy 377.19 187.96)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "71b16caf-45d1-464a-b4e9-a64490a0f078")
 	)
 	(wire
 		(pts
@@ -11441,26 +11377,6 @@
 	)
 	(wire
 		(pts
-			(xy 386.08 177.8) (xy 386.08 179.07)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "90c2deee-6904-47fb-9445-38117a1848fb")
-	)
-	(wire
-		(pts
-			(xy 374.65 177.8) (xy 377.19 177.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "910b2ed4-e620-4422-a920-fe46f08e0a7d")
-	)
-	(wire
-		(pts
 			(xy 340.36 39.37) (xy 340.36 40.64)
 		)
 		(stroke
@@ -11619,6 +11535,16 @@
 		)
 		(uuid "9a612f31-7a49-4d46-8dbe-cde06273e72f")
 	)
+	(wire
+		(pts
+			(xy 364.49 177.8) (xy 374.65 177.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9a947707-b31c-4c94-9560-38c375596c9d")
+	)
 	(polyline
 		(pts
 			(xy 16.51 12.7) (xy 16.51 280.67)
@@ -11741,7 +11667,7 @@
 	)
 	(wire
 		(pts
-			(xy 364.49 187.96) (xy 377.19 187.96)
+			(xy 364.49 187.96) (xy 374.65 187.96)
 		)
 		(stroke
 			(width 0)
@@ -12671,16 +12597,6 @@
 	)
 	(wire
 		(pts
-			(xy 386.08 177.8) (xy 397.51 177.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ceba5913-cd9f-4426-8337-487b43652385")
-	)
-	(wire
-		(pts
 			(xy 50.8 246.38) (xy 39.37 246.38)
 		)
 		(stroke
@@ -12991,16 +12907,6 @@
 	)
 	(wire
 		(pts
-			(xy 386.08 187.96) (xy 397.51 187.96)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e2c5ffd7-a571-4383-9cab-86791f5d6249")
-	)
-	(wire
-		(pts
 			(xy 161.29 143.51) (xy 167.64 143.51)
 		)
 		(stroke
@@ -13178,16 +13084,6 @@
 			(type default)
 		)
 		(uuid "ea7241b1-0050-4eda-a506-ef97865a00c7")
-	)
-	(wire
-		(pts
-			(xy 377.19 177.8) (xy 386.08 177.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ea8f08ed-88a7-4bb1-85ec-dfa1d6021b75")
 	)
 	(wire
 		(pts
@@ -13468,16 +13364,6 @@
 			(type default)
 		)
 		(uuid "fb4cd693-6548-4b5d-93bd-0c3e8e875d04")
-	)
-	(wire
-		(pts
-			(xy 377.19 187.96) (xy 386.08 187.96)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fb6a3fc8-666b-4c74-a119-c03b5817860c")
 	)
 	(wire
 		(pts
@@ -14047,7 +13933,6 @@
 	)
 	(label "SPI2_MOSI"
 		(at 266.7 52.07 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14057,8 +13942,7 @@
 		(uuid "0670b129-ff8e-4bb0-b82f-83ccb1ef5433")
 	)
 	(label "COM"
-		(at 397.51 187.96 180)
-		(fields_autoplaced yes)
+		(at 374.65 187.96 180)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14069,7 +13953,6 @@
 	)
 	(label "OLED_VCC"
 		(at 290.83 25.4 270)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14080,7 +13963,6 @@
 	)
 	(label "_USB_D_N"
 		(at 73.66 45.72 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14091,7 +13973,6 @@
 	)
 	(label "VDDA"
 		(at 245.11 30.48 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14102,7 +13983,6 @@
 	)
 	(label "ADC1_IN4"
 		(at 232.41 36.83 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14113,7 +13993,6 @@
 	)
 	(label "VOLTAGE"
 		(at 91.44 214.63 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14124,7 +14003,6 @@
 	)
 	(label "CC1"
 		(at 57.15 92.71 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14135,7 +14013,6 @@
 	)
 	(label "CURR_ALERT"
 		(at 325.12 232.41 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14146,7 +14023,6 @@
 	)
 	(label "DET"
 		(at 396.24 111.76 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14157,7 +14033,6 @@
 	)
 	(label "DET"
 		(at 292.1 134.62 90)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14168,7 +14043,6 @@
 	)
 	(label "UCPD_CC1"
 		(at 106.68 179.07 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14179,7 +14053,6 @@
 	)
 	(label "VREF+"
 		(at 173.99 29.21 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14190,7 +14063,6 @@
 	)
 	(label "ADC1_IN4"
 		(at 379.73 223.52 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14201,7 +14073,6 @@
 	)
 	(label "VDDA"
 		(at 205.74 16.51 270)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14212,7 +14083,6 @@
 	)
 	(label "USB_D_P"
 		(at 101.6 48.26 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14223,7 +14093,6 @@
 	)
 	(label "CURR_ALERT"
 		(at 264.16 180.34 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14234,7 +14103,6 @@
 	)
 	(label "SPI2_MISO"
 		(at 266.7 54.61 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14245,7 +14113,6 @@
 	)
 	(label "SPI2_NSS"
 		(at 166.37 87.63 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14256,7 +14123,6 @@
 	)
 	(label "SHUNT-"
 		(at 274.32 231.14 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14267,7 +14133,6 @@
 	)
 	(label "VREF+"
 		(at 237.49 77.47 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14278,7 +14143,6 @@
 	)
 	(label "USB_D_N"
 		(at 232.41 57.15 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14289,7 +14153,6 @@
 	)
 	(label "ROT_A"
 		(at 139.7 138.43 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14300,7 +14163,6 @@
 	)
 	(label "OLED_NRST"
 		(at 232.41 52.07 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14311,7 +14173,6 @@
 	)
 	(label "OLED_VCC"
 		(at 302.26 30.48 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14322,7 +14183,6 @@
 	)
 	(label "USB_D_N"
 		(at 101.6 45.72 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14333,7 +14193,6 @@
 	)
 	(label "TCK"
 		(at 140.97 38.1 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14344,7 +14203,6 @@
 	)
 	(label "ROT_A"
 		(at 166.37 59.69 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14355,7 +14213,6 @@
 	)
 	(label "TC+"
 		(at 276.86 134.62 90)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14366,7 +14223,6 @@
 	)
 	(label "SHUNT-"
 		(at 374.65 160.02 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14377,7 +14233,6 @@
 	)
 	(label "ADC2_IN1"
 		(at 232.41 29.21 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14388,7 +14243,6 @@
 	)
 	(label "TMS"
 		(at 140.97 33.02 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14399,7 +14253,6 @@
 	)
 	(label "NRST"
 		(at 173.99 34.29 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14410,7 +14263,6 @@
 	)
 	(label "TEMP_210"
 		(at 231.14 196.85 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14421,7 +14273,6 @@
 	)
 	(label "UCPD_DB"
 		(at 166.37 69.85 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14432,7 +14283,6 @@
 	)
 	(label "TIM1_CH1"
 		(at 232.41 49.53 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14443,7 +14293,6 @@
 	)
 	(label "SPI2_MISO"
 		(at 166.37 92.71 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14454,7 +14303,6 @@
 	)
 	(label "SLEEP"
 		(at 344.17 111.76 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14465,7 +14313,6 @@
 	)
 	(label "SLEEP"
 		(at 299.72 134.62 90)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14476,7 +14323,6 @@
 	)
 	(label "CC1"
 		(at 86.36 116.84 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14486,8 +14332,7 @@
 		(uuid "75b41449-a4eb-4a9a-98a9-aab42a47c8b6")
 	)
 	(label "HEATER"
-		(at 397.51 177.8 180)
-		(fields_autoplaced yes)
+		(at 374.65 177.8 180)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14498,7 +14343,6 @@
 	)
 	(label "COM"
 		(at 269.24 134.62 90)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14509,7 +14353,6 @@
 	)
 	(label "ROT_SW"
 		(at 166.37 57.15 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14520,7 +14363,6 @@
 	)
 	(label "CC2"
 		(at 57.15 95.25 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14531,7 +14373,6 @@
 	)
 	(label "UCPD_CC2"
 		(at 166.37 67.31 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14542,7 +14383,6 @@
 	)
 	(label "SPI2_MOSI"
 		(at 166.37 95.25 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14553,7 +14393,6 @@
 	)
 	(label "TCK"
 		(at 232.41 64.77 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14564,7 +14403,6 @@
 	)
 	(label "SHUNT+"
 		(at 374.65 156.21 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14575,7 +14413,6 @@
 	)
 	(label "ROT_SW"
 		(at 238.76 138.43 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14586,7 +14423,6 @@
 	)
 	(label "ADC2_IN2"
 		(at 356.87 111.76 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14597,7 +14433,6 @@
 	)
 	(label "NRST"
 		(at 140.97 35.56 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14608,7 +14443,6 @@
 	)
 	(label "NRST"
 		(at 130.81 72.39 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14619,7 +14453,6 @@
 	)
 	(label "I2C1_SDA"
 		(at 166.37 74.93 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14630,7 +14463,6 @@
 	)
 	(label "UCPD_DB"
 		(at 106.68 175.26 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14641,7 +14473,6 @@
 	)
 	(label "SWO"
 		(at 166.37 64.77 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14652,7 +14483,6 @@
 	)
 	(label "ADC2_IN2"
 		(at 232.41 31.75 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14663,7 +14493,6 @@
 	)
 	(label "_USB_D_P"
 		(at 73.66 48.26 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14674,7 +14503,6 @@
 	)
 	(label "TMS"
 		(at 232.41 62.23 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14685,7 +14513,6 @@
 	)
 	(label "CURR_OUT"
 		(at 365.76 223.52 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14696,7 +14523,6 @@
 	)
 	(label "OLED_D_C"
 		(at 266.7 62.23 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14707,7 +14533,6 @@
 	)
 	(label "I2C1_SCL"
 		(at 401.32 63.5 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14718,7 +14543,6 @@
 	)
 	(label "_SLEEP"
 		(at 166.37 82.55 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14729,7 +14553,6 @@
 	)
 	(label "ROT_B"
 		(at 139.7 143.51 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14740,7 +14563,6 @@
 	)
 	(label "SHUNT+"
 		(at 274.32 215.9 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14751,7 +14573,6 @@
 	)
 	(label "CURR_ALERT"
 		(at 166.37 85.09 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14762,7 +14583,6 @@
 	)
 	(label "ROT_B"
 		(at 166.37 62.23 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14773,7 +14593,6 @@
 	)
 	(label "DAC1_OUT1"
 		(at 330.2 227.33 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14784,7 +14603,6 @@
 	)
 	(label "OLED_NRST"
 		(at 266.7 59.69 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14795,7 +14613,6 @@
 	)
 	(label "I2C1_SDA"
 		(at 401.32 60.96 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14806,7 +14623,6 @@
 	)
 	(label "UCPD_CC1"
 		(at 166.37 72.39 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14817,7 +14633,6 @@
 	)
 	(label "HEATER"
 		(at 284.48 134.62 90)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14828,7 +14643,6 @@
 	)
 	(label "ADC2_IN1"
 		(at 245.11 196.85 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14839,7 +14653,6 @@
 	)
 	(label "BOOT0"
 		(at -358.14 231.14 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14850,7 +14663,6 @@
 	)
 	(label "SPI2_SCK"
 		(at 266.7 49.53 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14861,7 +14673,6 @@
 	)
 	(label "TIM1_CH1"
 		(at 264.16 175.26 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14872,7 +14683,6 @@
 	)
 	(label "BOOT0"
 		(at 166.37 77.47 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14883,7 +14693,6 @@
 	)
 	(label "TC+"
 		(at 129.54 194.31 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14894,7 +14703,6 @@
 	)
 	(label "ADC1_IN3"
 		(at 232.41 34.29 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14905,7 +14713,6 @@
 	)
 	(label "CC1"
 		(at 52.07 179.07 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14916,7 +14723,6 @@
 	)
 	(label "CURR_ALERT"
 		(at 378.46 246.38 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14927,7 +14733,6 @@
 	)
 	(label "DAC1_OUT1"
 		(at 232.41 39.37 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14938,7 +14743,6 @@
 	)
 	(label "I2C1_SCL"
 		(at 232.41 67.31 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14949,7 +14753,6 @@
 	)
 	(label "CC2"
 		(at 86.36 119.38 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14960,7 +14763,6 @@
 	)
 	(label "SPI2_SCK"
 		(at 166.37 90.17 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14971,7 +14773,6 @@
 	)
 	(label "SWO"
 		(at 140.97 43.18 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14982,7 +14783,6 @@
 	)
 	(label "_SLEEP"
 		(at 307.34 111.76 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -14993,7 +14793,6 @@
 	)
 	(label "SPI2_NSS"
 		(at 266.7 57.15 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -15004,7 +14803,6 @@
 	)
 	(label "CC2"
 		(at 52.07 181.61 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -15015,7 +14813,6 @@
 	)
 	(label "USB_D_P"
 		(at 232.41 59.69 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -15026,7 +14823,6 @@
 	)
 	(label "UCPD_CC2"
 		(at 106.68 181.61 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -15037,7 +14833,6 @@
 	)
 	(label "ADC1_IN3"
 		(at 105.41 214.63 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -15048,7 +14843,6 @@
 	)
 	(label "BOOT0"
 		(at 119.38 72.39 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -15059,7 +14853,6 @@
 	)
 	(label "OLED_D_C"
 		(at 232.41 54.61 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -20207,74 +20000,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:L")
-		(at 370.84 177.8 90)
-		(mirror x)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "364315c4-4581-4362-9f7f-82d0065dec30")
-		(property "Reference" "L2"
-			(at 370.84 182.88 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "10u"
-			(at 370.84 180.34 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Inductor_SMD:L_Abracon_ASPI-0630LR"
-			(at 370.84 177.8 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 370.84 177.8 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Inductor"
-			(at 370.84 177.8 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "54a5a777-5d72-43f5-a7c0-b3b27cc59d6d")
-		)
-		(pin "1"
-			(uuid "999dee20-915a-46d4-b08f-c13bfbd83e98")
-		)
-		(instances
-			(project ""
-				(path "/e4270527-a28c-4130-b442-7148380c12e2"
-					(reference "L2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:C")
 		(at 151.13 149.86 0)
 		(unit 1)
@@ -20681,120 +20406,6 @@
 			(project "loeti"
 				(path "/e4270527-a28c-4130-b442-7148380c12e2"
 					(reference "#PWR070")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C")
-		(at 386.08 182.88 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "3cf82788-94d1-4669-b7bf-e07bc5f5d324")
-		(property "Reference" "C29"
-			(at 389.001 181.7116 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "10u"
-			(at 389.001 184.023 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_1206_3216Metric"
-			(at 387.0452 186.69 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 386.08 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Unpolarized capacitor"
-			(at 386.08 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Mfr.Nr." ""
-			(at 386.08 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "MPN" "C13585"
-			(at 386.08 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Position Offset" ""
-			(at 386.08 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Library" ""
-			(at 386.08 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Name" ""
-			(at 386.08 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "9a9f09ee-2f8f-44ad-91b3-0b7d428965d0")
-		)
-		(pin "2"
-			(uuid "1e5bd013-c56e-4f6c-9ef1-08650c9d26f7")
-		)
-		(instances
-			(project "loeti"
-				(path "/e4270527-a28c-4130-b442-7148380c12e2"
-					(reference "C29")
 					(unit 1)
 				)
 			)
@@ -27229,120 +26840,6 @@
 			(project "loeti"
 				(path "/e4270527-a28c-4130-b442-7148380c12e2"
 					(reference "C7")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C")
-		(at 377.19 182.88 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "ac027af9-352e-4556-a71d-dc5c569b48a3")
-		(property "Reference" "C8"
-			(at 380.111 181.7116 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "10u"
-			(at 380.111 184.023 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_1206_3216Metric"
-			(at 378.1552 186.69 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 377.19 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Unpolarized capacitor"
-			(at 377.19 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Mfr.Nr." ""
-			(at 377.19 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "MPN" "C13585"
-			(at 377.19 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Position Offset" ""
-			(at 377.19 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Library" ""
-			(at 377.19 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Sim.Name" ""
-			(at 377.19 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "d7dc796b-9566-423b-8757-81e240ba8f02")
-		)
-		(pin "2"
-			(uuid "aee667ca-c735-43f6-a241-236d3d4e30bc")
-		)
-		(instances
-			(project "loeti"
-				(path "/e4270527-a28c-4130-b442-7148380c12e2"
-					(reference "C8")
 					(unit 1)
 				)
 			)

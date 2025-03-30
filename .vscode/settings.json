@@ -1,7 +1,5 @@
 {
     "rust-analyzer.linkedProjects": [
-        // "firmware/loeti/Cargo.toml",
-        "embassy-nucleo-h563zi/Cargo.toml",
-        // "firmware/usbpd/Cargo.toml",
+        "firmware/loeti/Cargo.toml",
     ]
 }

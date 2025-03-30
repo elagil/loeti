@@ -1,21 +1,20 @@
 #![no_std]
 #![no_main]
 
-use defmt::{info, unwrap};
+use defmt::unwrap;
 use embassy_executor::Spawner;
 use embassy_stm32::exti::ExtiInput;
 use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
 use embassy_stm32::time::Hertz;
-use embassy_stm32::ucpd::{self, Ucpd};
-use embassy_stm32::{bind_interrupts, dma, i2c, peripherals, usb, Config};
-use loeti::eeprom;
-use loeti::tool::{AdcPowerResources, AdcToolResources, ToolResources};
+use embassy_stm32::{bind_interrupts, i2c, peripherals, usb, Config};
+use loeti::power::{AssignedResources, UcpdResources};
+use loeti::tool::{AdcResources, ToolResources};
 use loeti::ui::{self, RotaryEncoderResources};
-use loeti::{display, tool, usb_pd};
+use loeti::{display, split_resources, tool};
+use loeti::{eeprom, power};
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
-    UCPD1 => ucpd::InterruptHandler<peripherals::UCPD1>;
     USB_LP => usb::InterruptHandler<peripherals::USB>;
     I2C1_EV => i2c::EventInterruptHandler<peripherals::I2C1>;
     I2C1_ER => i2c::ErrorInterruptHandler<peripherals::I2C1>;
@@ -31,14 +30,14 @@ async fn main(spawner: Spawner) {
         config.rcc.pll = Some(Pll {
             source: PllSource::HSI,
             prediv: PllPreDiv::DIV4,
-            mul: PllMul::MUL48,
-            divp: Some(PllPDiv::DIV30), // 6.4 MHz ADC sampling clock
-            divq: Some(PllQDiv::DIV4),
-            divr: Some(PllRDiv::DIV2), // 96 MHz system clock
+            mul: PllMul::MUL85,
+            divp: Some(PllPDiv::DIV30),
+            divq: None,
+            divr: Some(PllRDiv::DIV2), // 170 MHz system clock
         });
         config.rcc.hsi48 = Some(Hsi48Config { sync_from_usb: true });
         config.rcc.mux.adc12sel = mux::Adcsel::PLL1_P;
-        config.rcc.mux.clk48sel = mux::Clk48sel::PLL1_Q;
+        config.rcc.mux.clk48sel = mux::Clk48sel::HSI48;
         config.rcc.sys = Sysclk::PLL1_R;
         config.enable_debug_during_sleep = true;
     }
@@ -46,9 +45,9 @@ async fn main(spawner: Spawner) {
 
     // Launch USB PD power negotiation
     {
-        let ucpd = Ucpd::new(p.UCPD1, Irqs, p.PB6, p.PB4, Default::default());
+        let resources = split_resources!(p);
         let ndb_pin = Output::new(p.PB5, Level::Low, Speed::Low);
-        unwrap!(spawner.spawn(usb_pd::ucpd_task(ucpd, p.DMA1_CH1, p.DMA1_CH2, ndb_pin)));
+        unwrap!(spawner.spawn(power::ucpd_task(resources.ucpd, ndb_pin)));
     }
 
     // Launch EEPROM config storage
@@ -110,34 +109,26 @@ async fn main(spawner: Spawner) {
             w.set_vrs(embassy_stm32::pac::vrefbuf::vals::Vrs::VREF2);
         });
 
-        let adc_power = Adc::new(p.ADC1);
-        let adc_temp = Adc::new(p.ADC2);
-
-        let dac_current_limit = DacCh1::new(p.DAC1, dma::NoDma, p.PA4);
-
-        let pwm_pin = PwmPin::new_ch1(p.PA8, OutputType::PushPull);
-
         let tool_resources = ToolResources {
-            adc_tool_resources: AdcToolResources {
-                adc_temp,
-                adc_pin_temperature: p.PA0.degrade_adc(),
-                adc_pin_detect: p.PA1.degrade_adc(),
-                adc_temperature_dma: p.DMA1_CH4,
+            adc_resources: AdcResources {
+                adc: Adc::new(p.ADC1),
+                pin_temperature: p.PA0.degrade_adc(),
+                pin_detect: p.PA1.degrade_adc(),
+                pin_voltage: p.PA2.degrade_adc(),
+                pin_current: p.PA3.degrade_adc(),
+                adc_dma: p.DMA1_CH6,
             },
-
-            adc_power_resources: AdcPowerResources {
-                adc_power,
-                adc_pin_voltage: p.PA2.degrade_adc(),
-                adc_pin_current: p.PA3.degrade_adc(),
-                adc_power_dma: p.DMA1_CH6,
-            },
-
-            dac_current_limit,
-
+            dac_current_limit: DacCh1::new_blocking(p.DAC1, p.PA4),
             exti_current_alert: ExtiInput::new(p.PB11, p.EXTI11, Pull::None),
-
-            pwm_heater: SimplePwm::new(p.TIM1, Some(pwm_pin), None, None, None, khz(34), Default::default()),
-
+            pwm_heater: SimplePwm::new(
+                p.TIM1,
+                Some(PwmPin::new_ch1(p.PA8, OutputType::PushPull)),
+                None,
+                None,
+                None,
+                khz(34),
+                Default::default(),
+            ),
             pin_sleep: Input::new(p.PB10, Pull::None),
         };
         unwrap!(spawner.spawn(tool::tool_task(tool_resources)));

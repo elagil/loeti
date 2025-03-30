@@ -8,13 +8,12 @@ use defmt::Format;
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, signal::Signal};
 use serde::{Deserialize, Serialize};
-use uom::si::f32::ElectricCurrent;
 
 pub mod display;
 pub mod eeprom;
+pub mod power;
 pub mod tool;
 pub mod ui;
-pub mod usb_pd;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
 struct Persistent {
@@ -31,11 +30,11 @@ impl Persistent {
     }
 }
 
-static MAX_SUPPLY_CURRENT_SIG: Signal<ThreadModeRawMutex, Option<ElectricCurrent>> = Signal::new();
+static MAX_SUPPLY_CURRENT_MA_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
 
 static POWER_MEASUREMENT_W_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
 static TEMPERATURE_MEASUREMENT_DEG_C_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
-static POWER_RATIO_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
+static POWER_BARGRAPH_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
 static TOOL_NAME_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();
 
 static PERSISTENT: Mutex<ThreadModeRawMutex, RefCell<Persistent>> = Mutex::new(RefCell::new(Persistent::default()));

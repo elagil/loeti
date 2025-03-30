@@ -59,8 +59,8 @@ impl ToolProperties {
                     offset_c: 4.4, // Compensates for heat up of the handle and cold junction itself - around 20 °C
                 },
 
-                p: 0.2,
-                i: 0.25,
+                p: 0.1,
+                i: 0.125,
                 d: 0.0,
             },
         ]

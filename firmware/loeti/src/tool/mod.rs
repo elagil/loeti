@@ -3,10 +3,11 @@ use core::f32::NAN;
 
 use defmt::{debug, error, info, warn, Format};
 use embassy_futures::select::{select, Either};
-use embassy_stm32::dma;
+use embassy_stm32::dac::Ch1;
+use embassy_stm32::mode::Blocking;
+use embassy_stm32::Peri;
 use embassy_stm32::{adc, dac, exti::ExtiInput, gpio::Input, peripherals, timer::simple_pwm::SimplePwm};
 use embassy_time::{Duration, Ticker, Timer};
-use micromath::F32Ext;
 use pid::{self, Pid};
 use uom::si::electric_potential;
 use uom::si::electric_potential::volt;
@@ -27,13 +28,13 @@ mod library;
 use library::ToolProperties;
 
 use crate::{
-    MAX_SUPPLY_CURRENT_SIG, PERSISTENT, POWER_MEASUREMENT_W_SIG, POWER_RATIO_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
-    TOOL_NAME_SIG,
+    MAX_SUPPLY_CURRENT_MA_SIG, PERSISTENT, POWER_BARGRAPH_SIG, POWER_MEASUREMENT_W_SIG,
+    TEMPERATURE_MEASUREMENT_DEG_C_SIG, TOOL_NAME_SIG,
 };
 
 const ADC_RESOLUTION: adc::Resolution = adc::Resolution::BITS12;
-const CURRENT_CONTROL_CYCLE_COUNT: u64 = 10;
-const LOOP_PERIOD_MS: u64 = 200;
+const CURRENT_CONTROL_CYCLE_COUNT: u64 = 5;
+const LOOP_PERIOD_MS: u64 = 100;
 const CURRENT_LOOP_PERIOD_MS: u64 = LOOP_PERIOD_MS / CURRENT_CONTROL_CYCLE_COUNT;
 
 const VREFBUF_V: f32 = 2.9;
@@ -53,40 +54,29 @@ fn adc_value_to_potential(value: u16) -> ElectricPotential {
     ElectricPotential::new::<volt>(VREFBUF_V * (value as f32) / (adc::resolution_to_max_count(ADC_RESOLUTION) as f32))
 }
 
-/// Resources for the tool ADC, for temperature measurement and tool detection.
-pub struct AdcToolResources {
-    /// The ADC for temperature measurements.
-    pub adc_temp: adc::Adc<'static, peripherals::ADC2>,
+/// Resources for the ADC.
+pub struct AdcResources {
+    /// The ADC.
+    pub adc: adc::Adc<'static, peripherals::ADC1>,
     /// The ADC temperature input pin.
-    pub adc_pin_temperature: adc::AnyAdcChannel<peripherals::ADC2>,
+    pub pin_temperature: adc::AnyAdcChannel<peripherals::ADC1>,
     /// The ADC detection input pin.
-    pub adc_pin_detect: adc::AnyAdcChannel<peripherals::ADC2>,
-    /// The DMA for the temperature ADC.
-    pub adc_temperature_dma: peripherals::DMA1_CH4,
-}
-
-/// Resources for the power ADC, for tool voltage and current measurement.
-pub struct AdcPowerResources {
-    /// The ADC for power (voltage and current) measurements.
-    pub adc_power: adc::Adc<'static, peripherals::ADC1>,
+    pub pin_detect: adc::AnyAdcChannel<peripherals::ADC1>,
     /// The ADC input for voltage on the bus.
-    pub adc_pin_voltage: adc::AnyAdcChannel<peripherals::ADC1>,
+    pub pin_voltage: adc::AnyAdcChannel<peripherals::ADC1>,
     /// The ADC input for heater current.
-    pub adc_pin_current: adc::AnyAdcChannel<peripherals::ADC1>,
-    /// The DMA for the power ADC.
-    pub adc_power_dma: peripherals::DMA1_CH6,
+    pub pin_current: adc::AnyAdcChannel<peripherals::ADC1>,
+    /// The DMA for the ADC.
+    pub adc_dma: Peri<'static, peripherals::DMA1_CH6>,
 }
 
 /// Resources for driving the tool's heater and taking associated measurements.
 pub struct ToolResources {
-    /// ADC for tool detection and temperature.
-    pub adc_tool_resources: AdcToolResources,
-
-    /// ADC for tool voltage and current.
-    pub adc_power_resources: AdcPowerResources,
+    /// ADC for measurements.
+    pub adc_resources: AdcResources,
 
     /// The DAC that sets the current limit for the current sensing IC (INA301A).
-    pub dac_current_limit: dac::DacChannel<'static, peripherals::DAC1, 1, dma::NoDma>,
+    pub dac_current_limit: dac::DacChannel<'static, peripherals::DAC1, Ch1, Blocking>,
 
     /// External interrupt for current alerts.
     pub exti_current_alert: ExtiInput<'static>,
@@ -115,20 +105,20 @@ impl ToolMeasurement {
 }
 
 async fn measure_tool(
-    adc_tool_resources: &mut AdcToolResources,
+    adc_resources: &mut AdcResources,
     detect_ratio_threshold: Ratio,
     temperature_potential_threshold: ElectricPotential,
 ) -> Result<ToolMeasurement, Error> {
     const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES247_5;
     let mut adc_buffer = [0u16; 2];
 
-    adc_tool_resources
-        .adc_temp
+    adc_resources
+        .adc
         .read(
-            &mut adc_tool_resources.adc_temperature_dma,
+            adc_resources.adc_dma.reborrow(),
             [
-                (&mut adc_tool_resources.adc_pin_detect, SAMPLE_TIME),
-                (&mut adc_tool_resources.adc_pin_temperature, SAMPLE_TIME),
+                (&mut adc_resources.pin_detect, SAMPLE_TIME),
+                (&mut adc_resources.pin_temperature, SAMPLE_TIME),
             ]
             .into_iter(),
             &mut adc_buffer,
@@ -161,17 +151,17 @@ impl PowerMeasurement {
     }
 }
 
-async fn measure_tool_power(adc_power_resources: &mut AdcPowerResources) -> PowerMeasurement {
+async fn measure_tool_power(adc_power_resources: &mut AdcResources) -> PowerMeasurement {
     const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES247_5;
     let mut adc_buffer = [0u16; 2];
 
     adc_power_resources
-        .adc_power
+        .adc
         .read(
-            &mut adc_power_resources.adc_power_dma,
+            adc_power_resources.adc_dma.reborrow(),
             [
-                (&mut adc_power_resources.adc_pin_current, SAMPLE_TIME),
-                (&mut adc_power_resources.adc_pin_voltage, SAMPLE_TIME),
+                (&mut adc_power_resources.pin_current, SAMPLE_TIME),
+                (&mut adc_power_resources.pin_voltage, SAMPLE_TIME),
             ]
             .into_iter(),
             &mut adc_buffer,
@@ -184,6 +174,11 @@ async fn measure_tool_power(adc_power_resources: &mut AdcPowerResources) -> Powe
     const VOLTAGE_DIVIDER_RATIO: f32 = 7.667;
     let potential = VOLTAGE_DIVIDER_RATIO * adc_value_to_potential(adc_buffer[1]);
 
+    // info!(
+    //     "{} mA, {} mV",
+    //     current.get::<electric_current::milliampere>(),
+    //     potential.get::<electric_potential::millivolt>()
+    // );
     let measurement = PowerMeasurement { current, potential };
 
     POWER_MEASUREMENT_W_SIG.signal(measurement.power().get::<power::watt>());
@@ -192,6 +187,7 @@ async fn measure_tool_power(adc_power_resources: &mut AdcPowerResources) -> Powe
 
 struct Tool {
     tool_properties: &'static ToolProperties,
+    max_supply_current_a: f32,
     temperature_pid: Pid<f32>,
     current_pid: Pid<f32>,
     pwm_ratio: Ratio,
@@ -203,10 +199,10 @@ impl Tool {
 
         let max_supply_current_a = max_supply_current.get::<electric_current::ampere>();
         let max_current_a = tool_properties.max_current_a.min(max_supply_current_a);
-        info!("Maximum tool current: {} A", max_current_a);
 
         let mut tool = Self {
             tool_properties,
+            max_supply_current_a,
             temperature_pid: Pid::new(300.0, max_current_a),
             current_pid: Pid::new(0.0, 1.0),
             pwm_ratio: Ratio::new::<percent>(0.0),
@@ -268,26 +264,24 @@ impl Tool {
         let current_setpoint_a = control_output.output;
         self.current_pid.setpoint(current_setpoint_a);
 
-        let is_current_limited = current_setpoint_a.abs() == self.tool_properties.max_current_a;
+        let is_current_limited =
+            current_setpoint_a.abs() == self.tool_properties.max_current_a.min(self.max_supply_current_a);
         self.setup_temperature_pid(is_current_limited);
+
+        POWER_BARGRAPH_SIG.signal(current_setpoint_a / self.max_supply_current_a);
 
         Ok(tool_temperature_deg_c)
     }
 
     fn control_power(&mut self, power_measurement: PowerMeasurement) {
-        let output = self
-            .current_pid
-            .next_control_output(power_measurement.current.get::<electric_current::ampere>())
-            .output
-            .max(0.0);
+        let measured_current_a = power_measurement.current.get::<electric_current::ampere>();
+        let output = self.current_pid.next_control_output(measured_current_a).output.max(0.0);
 
         self.pwm_ratio = Ratio::new::<ratio::ratio>(output);
-
-        POWER_RATIO_SIG.signal(self.pwm_ratio.get::<ratio::ratio>());
     }
 }
 
-async fn control(tool_resources: &mut ToolResources, current: &ElectricCurrent) -> Result<(), Error> {
+async fn control(tool_resources: &mut ToolResources, max_supply_current: &ElectricCurrent) -> Result<(), Error> {
     let detect_threshold_ratio = Ratio::new::<ratio::ratio>(MAX_ADC_RATIO);
     let temperature_threshold_potential = ElectricPotential::new::<volt>(MAX_ADC_V);
 
@@ -314,14 +308,14 @@ async fn control(tool_resources: &mut ToolResources, current: &ElectricCurrent) 
         // Wait for temperature sensor value to settle after disabling the heating element.
         Timer::after_millis(10).await;
         let tool_measurement = measure_tool(
-            &mut tool_resources.adc_tool_resources,
+            &mut tool_resources.adc_resources,
             detect_threshold_ratio,
             temperature_threshold_potential,
         )
         .await?;
 
         if tool.is_none() {
-            tool = Some(Tool::new(tool_measurement, current)?)
+            tool = Some(Tool::new(tool_measurement, max_supply_current)?)
         }
 
         let tool = tool.as_mut().unwrap();
@@ -351,7 +345,7 @@ async fn control(tool_resources: &mut ToolResources, current: &ElectricCurrent) 
                 // Measure current and voltage after the low-pass filter settles - in the middle of the loop period.
                 Timer::after_millis(CURRENT_LOOP_PERIOD_MS / 2).await;
 
-                let power_measurement = measure_tool_power(&mut tool_resources.adc_power_resources).await;
+                let power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
 
                 // Wait for the end of this cycle.
                 current_loop_ticker.next().await;
@@ -373,7 +367,7 @@ async fn control(tool_resources: &mut ToolResources, current: &ElectricCurrent) 
 
 fn display_state(message: &'static str) {
     POWER_MEASUREMENT_W_SIG.signal(NAN);
-    POWER_RATIO_SIG.signal(NAN);
+    POWER_BARGRAPH_SIG.signal(NAN);
     TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(NAN);
     TOOL_NAME_SIG.signal(message);
 }
@@ -387,24 +381,11 @@ pub async fn tool_task(mut tool_resources: ToolResources) {
     info!("Maximum measurable detection resistor ratio: {}", MAX_ADC_RATIO);
     display_state("Negotiating...");
 
-    let safe_current = ElectricCurrent::new::<electric_current::ampere>(0.5);
-    let current = match MAX_SUPPLY_CURRENT_SIG.wait().await {
-        Some(x) => x,
-        None => safe_current,
-    };
+    // Some margin to prevent over current.
+    let current_ma = MAX_SUPPLY_CURRENT_MA_SIG.wait().await - 100.0;
+    let current = ElectricCurrent::new::<electric_current::milliampere>(current_ma);
 
-    // let timeout_result = MAX_SUPPLY_CURRENT_SIG.wait().with_timeout(Duration::from_secs(1)).await;
-
-    // let max_supply_current = match timeout_result {
-    //     Ok(Some(x)) => {
-    //         Timer::after_millis(500).await;
-    //         x
-    //     }
-    //     _ => {
-    //         error!("Tool uses safe current as fall-back.");
-    //         safe_current
-    //     }
-    // };
+    info!("Current limit: {} mA", current_ma);
 
     loop {
         let result = control(&mut tool_resources, &current).await;

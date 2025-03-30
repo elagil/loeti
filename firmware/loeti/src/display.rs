@@ -18,7 +18,9 @@ use panic_probe as _;
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize128x64, SPIInterface};
 use ssd1306::Ssd1306;
 
-use crate::{PERSISTENT, POWER_MEASUREMENT_W_SIG, POWER_RATIO_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG, TOOL_NAME_SIG};
+use crate::{
+    PERSISTENT, POWER_BARGRAPH_SIG, POWER_MEASUREMENT_W_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG, TOOL_NAME_SIG,
+};
 
 /// Resources for driving the display.
 pub struct DisplayResources {
@@ -69,7 +71,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     let mut power_string: heapless::String<10> = heapless::String::new();
     let mut tool_name_string: &str = "";
 
-    let mut ticker = Ticker::every(Duration::from_hz(20));
+    let mut ticker = Ticker::every(Duration::from_hz(10));
 
     loop {
         let persistent = PERSISTENT.lock(|x| *x.borrow());
@@ -95,8 +97,8 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             }
         }
 
-        if let Some(power_ratio) = POWER_RATIO_SIG.try_take() {
-            power_bar_width = (power_ratio * 112.0) as i32;
+        if let Some(power_ratio) = POWER_BARGRAPH_SIG.try_take() {
+            power_bar_width = ((power_ratio * 112.0) as i32).max(0);
         }
 
         display.clear_buffer();

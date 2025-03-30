@@ -18,7 +18,6 @@ embassy-executor = { path = "../embassy/embassy-executor", features = [
     "arch-cortex-m",
     "executor-thread",
     "defmt",
-    "task-arena-size-8192",
 ] }
 embassy-time = { path = "../embassy/embassy-time", features = [
     "defmt",
@@ -40,17 +39,18 @@ heapless = { version = "0.8", default-features = false }
 static_cell = "2"
 embedded-graphics = "0.8.1"
 ssd1306 = "0.8.4"
-pid = "4.0.0"
+pid = "4.1.0"
 micromath = "2.1.0"
 
 uom = { version = "0.36.0", default-features = false, features = ["si", "f32"] }
-usb-pd = { path = "../usb-pd/usb-pd" }
-rotary-encoder-embedded = "0.3.1"
+rotary-encoder-embedded = "0.4"
 
 serde = { version = "1.0.217", default-features = false, features = ["derive"] }
 postcard = { version = "1.1.1", features = ["use-crc"] }
 crc = "3.2.1"
 eeprom24x = "0.7.2"
+usbpd = { version = "0.2.1", features = ["defmt"] }
+assign-resources = "0.5"
 
 # cargo build/run
 [profile.dev]
