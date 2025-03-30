@@ -42,6 +42,10 @@ async fn main(spawner: Spawner) {
         config.enable_debug_during_sleep = true;
     }
     let p = embassy_stm32::init(config);
+    let mut core_peri = cortex_m::Peripherals::take().unwrap();
+
+    // Enable instruction cache.
+    core_peri.SCB.enable_icache();
 
     // Launch USB PD power negotiation
     {

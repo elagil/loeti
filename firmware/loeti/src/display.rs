@@ -3,7 +3,6 @@ use core::fmt::Write;
 use embassy_stm32::spi::Spi;
 use embassy_stm32::{gpio::Output, mode::Async};
 use embassy_time::{Duration, Ticker};
-use embedded_graphics::mono_font::iso_8859_1::{FONT_10X20, FONT_5X7, FONT_6X13};
 use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::primitives::{StyledDrawable, Triangle};
 use embedded_graphics::text::Alignment;
@@ -15,6 +14,7 @@ use embedded_graphics::{
 };
 use micromath::F32Ext;
 use panic_probe as _;
+use profont::{PROFONT_12_POINT, PROFONT_24_POINT, PROFONT_9_POINT};
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize128x64, SPIInterface};
 use ssd1306::Ssd1306;
 
@@ -71,7 +71,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     let mut power_string: heapless::String<10> = heapless::String::new();
     let mut tool_name_string: &str = "";
 
-    let mut ticker = Ticker::every(Duration::from_hz(10));
+    let mut ticker = Ticker::every(Duration::from_hz(20));
 
     loop {
         let persistent = PERSISTENT.lock(|x| *x.borrow());
@@ -122,8 +122,8 @@ pub async fn display_task(mut display_resources: DisplayResources) {
 
         Text::new(
             &temperature_string,
-            Point::new(15, 36),
-            MonoTextStyle::new(&FONT_10X20, BinaryColor::On),
+            Point::new(15, 40),
+            MonoTextStyle::new(&PROFONT_24_POINT, BinaryColor::On),
         )
         .draw(&mut display)
         .unwrap();
@@ -131,7 +131,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         Text::new(
             &set_temperature_string,
             Point::new(23, set_temp_y),
-            MonoTextStyle::new(&FONT_6X13, BinaryColor::On),
+            MonoTextStyle::new(&PROFONT_12_POINT, BinaryColor::On),
         )
         .draw(&mut display)
         .unwrap();
@@ -139,7 +139,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         Text::new(
             tool_name_string,
             Point::new(15, 59),
-            MonoTextStyle::new(&FONT_5X7, BinaryColor::On),
+            MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
         )
         .draw(&mut display)
         .unwrap();
@@ -147,7 +147,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         Text::with_alignment(
             &power_string,
             Point::new(112, 59),
-            MonoTextStyle::new(&FONT_5X7, BinaryColor::On),
+            MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
             Alignment::Right,
         )
         .draw(&mut display)

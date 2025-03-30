@@ -51,6 +51,7 @@ crc = "3.2.1"
 eeprom24x = "0.7.2"
 usbpd = { version = "0.2.1", features = ["defmt"] }
 assign-resources = "0.5"
+profont = "0.7.0"
 
 # cargo build/run
 [profile.dev]
