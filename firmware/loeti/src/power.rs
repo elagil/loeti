@@ -12,7 +12,7 @@ use usbpd::protocol_layer::message::request;
 use usbpd::sink::device_policy_manager::DevicePolicyManager;
 use usbpd::sink::policy_engine::Sink;
 use usbpd::timers::Timer as SinkTimer;
-use usbpd::Driver as SinkDriver;
+use usbpd_traits::Driver as SinkDriver;
 
 use {defmt_rtt as _, panic_probe as _};
 
@@ -54,24 +54,24 @@ impl SinkDriver for UcpdSinkDriver<'_> {
         // The sink policy engine is only running when attached. Therefore VBus is present.
     }
 
-    async fn receive(&mut self, buffer: &mut [u8]) -> Result<usize, usbpd::DriverRxError> {
+    async fn receive(&mut self, buffer: &mut [u8]) -> Result<usize, usbpd_traits::DriverRxError> {
         self.pd_phy.receive(buffer).await.map_err(|err| match err {
-            ucpd::RxError::Crc | ucpd::RxError::Overrun => usbpd::DriverRxError::Discarded,
-            ucpd::RxError::HardReset => usbpd::DriverRxError::HardReset,
+            ucpd::RxError::Crc | ucpd::RxError::Overrun => usbpd_traits::DriverRxError::Discarded,
+            ucpd::RxError::HardReset => usbpd_traits::DriverRxError::HardReset,
         })
     }
 
-    async fn transmit(&mut self, data: &[u8]) -> Result<(), usbpd::DriverTxError> {
+    async fn transmit(&mut self, data: &[u8]) -> Result<(), usbpd_traits::DriverTxError> {
         self.pd_phy.transmit(data).await.map_err(|err| match err {
-            ucpd::TxError::Discarded => usbpd::DriverTxError::Discarded,
-            ucpd::TxError::HardReset => usbpd::DriverTxError::HardReset,
+            ucpd::TxError::Discarded => usbpd_traits::DriverTxError::Discarded,
+            ucpd::TxError::HardReset => usbpd_traits::DriverTxError::HardReset,
         })
     }
 
-    async fn transmit_hard_reset(&mut self) -> Result<(), usbpd::DriverTxError> {
+    async fn transmit_hard_reset(&mut self) -> Result<(), usbpd_traits::DriverTxError> {
         self.pd_phy.transmit_hardreset().await.map_err(|err| match err {
-            ucpd::TxError::Discarded => usbpd::DriverTxError::Discarded,
-            ucpd::TxError::HardReset => usbpd::DriverTxError::HardReset,
+            ucpd::TxError::Discarded => usbpd_traits::DriverTxError::Discarded,
+            ucpd::TxError::HardReset => usbpd_traits::DriverTxError::HardReset,
         })
     }
 }

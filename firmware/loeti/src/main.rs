@@ -7,6 +7,7 @@ use embassy_stm32::exti::ExtiInput;
 use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
 use embassy_stm32::time::Hertz;
 use embassy_stm32::{bind_interrupts, i2c, peripherals, usb, Config};
+use embassy_time::Timer;
 use loeti::power::{AssignedResources, UcpdResources};
 use loeti::tool::{AdcResources, ToolResources};
 use loeti::ui::{self, RotaryEncoderResources};
@@ -53,6 +54,8 @@ async fn main(spawner: Spawner) {
         let ndb_pin = Output::new(p.PB5, Level::Low, Speed::Low);
         unwrap!(spawner.spawn(power::ucpd_task(resources.ucpd, ndb_pin)));
     }
+
+    Timer::after_millis(500).await;
 
     // Launch EEPROM config storage
     {

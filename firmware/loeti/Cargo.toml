@@ -28,13 +28,13 @@ embassy-usb = { path = "../embassy/embassy-usb", features = ["defmt"] }
 embassy-futures = { path = "../embassy/embassy-futures" }
 usbd-hid = "0.8.1"
 
-defmt = "0.3"
-defmt-rtt = "0.4"
+defmt = "1.0.1"
+defmt-rtt = "1.0.0"
 
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7"
 embedded-hal = "1"
-panic-probe = { version = "0.3", features = ["print-defmt"] }
+panic-probe = { version = "1.0.0", features = ["print-defmt"] }
 heapless = { version = "0.8", default-features = false }
 static_cell = "2"
 embedded-graphics = "0.8.1"
@@ -49,7 +49,8 @@ serde = { version = "1.0.217", default-features = false, features = ["derive"] }
 postcard = { version = "1.1.1", features = ["use-crc"] }
 crc = "3.2.1"
 eeprom24x = "0.7.2"
-usbpd = { version = "0.2.1", features = ["defmt"] }
+usbpd = { version = "1.0.0", features = ["defmt"] }
+usbpd-traits = { version = "1.0.0", features = ["defmt"] }
 assign-resources = "0.5"
 profont = "0.7.0"
 
