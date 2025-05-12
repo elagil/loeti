@@ -129,10 +129,9 @@ impl DevicePolicyManager for Device {
     ///
     /// The device is informed about the request that was accepted by the source.
     async fn transition_power(&mut self, accepted: &request::PowerSource) {
-        match accepted {
-            request::PowerSource::FixedVariableSupply(supply) => MAX_SUPPLY_CURRENT_MA_SIG
-                .signal(supply.max_operating_current().get::<electric_current::milliampere>() as f32),
-            _ => (),
+        if let request::PowerSource::FixedVariableSupply(supply) = accepted {
+            MAX_SUPPLY_CURRENT_MA_SIG
+                .signal(supply.max_operating_current().get::<electric_current::milliampere>() as f32)
         }
     }
 }
