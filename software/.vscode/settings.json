@@ -11,6 +11,8 @@
         "usb_pd.h": "c",
         "events.h": "c",
         "lcd.h": "c",
-        "limits": "c"
+        "limits": "c",
+        "sensor.h": "c",
+        "diagnostic.h": "c"
     }
 }

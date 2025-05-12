@@ -4,6 +4,7 @@
 #include "heater.h"
 
 #define DEBOUNCE 5
+#define TEMPERATURE_SET_INTERVAL 25
 
 event_source_t switch_event_source;
 switches_t switches;
@@ -16,10 +17,11 @@ THD_FUNCTION(uiThread, arg)
     chRegSetThreadName("ui");
     uint8_t debounce = 0;
 
+    heater_level = DEFAULT_HEATER_LEVEL;
+
     while (true)
     {
-        switches.current.id.sw0 = palReadLine(LINE_SW0);
-        switches.current.id.sw1 = palReadLine(LINE_SW1);
+        switches.current.id.sw0 = palReadLine(LINE_SW);
 
         if (switches.current.raw < switches.previous.raw)
         {
@@ -27,41 +29,12 @@ THD_FUNCTION(uiThread, arg)
             {
                 chBSemWait(&heater.bsem);
 
-                if (!switches.current.id.sw0 && !switches.current.id.sw1)
+                if (!switches.current.id.sw0)
                 {
-                    heater.sleep = true;
-                }
-                else if (!switches.current.id.sw1)
-                {
-                    if (heater.sleep)
+                    if (++heater_level == HEATER_LEVEL_COUNT)
                     {
-                        heater.sleep = false;
+                        heater_level = 0;
                     }
-                    else
-                    {
-                        heater.temperature_control.set += TEMPERATURE_SET_INTERVAL;
-                    }
-                }
-                else if (!switches.current.id.sw0)
-                {
-                    if (heater.sleep)
-                    {
-                        heater.sleep = false;
-                    }
-                    else
-                    {
-                        heater.temperature_control.set -= TEMPERATURE_SET_INTERVAL;
-                    }
-                }
-
-                if (heater.temperature_control.set > heater.temperatures.max)
-                {
-                    heater.temperature_control.set = heater.temperatures.max;
-                }
-
-                if (heater.temperature_control.set < heater.temperatures.min)
-                {
-                    heater.temperature_control.set = heater.temperatures.min;
                 }
 
                 chBSemSignal(&heater.bsem);

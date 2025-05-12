@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "research"
+version = "0.1.0"
+description = ""
+authors = ["elagil <elagil@takanome.de>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+matplotlib = "^3.9.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -7,12 +7,12 @@
 
 extern THD_WORKING_AREA(waUiThread, UI_THREAD_STACK_SIZE);
 
-typedef union {
+typedef union
+{
     uint8_t raw;
     struct
     {
         bool sw0 : 1;
-        bool sw1 : 1;
     } id;
 } switch_state_t;
 

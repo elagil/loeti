@@ -1,0 +1,75 @@
+[package]
+edition = "2021"
+name = "loeti"
+version = "0.1.0"
+license = "GPL-3.0"
+
+[dependencies]
+embassy-stm32 = { path = "../embassy/embassy-stm32", features = [
+    "defmt",
+    "time-driver-any",
+    "stm32g431cb",
+    "memory-x",
+    "unstable-pac",
+    "exti",
+] }
+embassy-sync = { path = "../embassy/embassy-sync", features = ["defmt"] }
+embassy-executor = { path = "../embassy/embassy-executor", features = [
+    "arch-cortex-m",
+    "executor-thread",
+    "defmt",
+] }
+embassy-time = { path = "../embassy/embassy-time", features = [
+    "defmt",
+    "defmt-timestamp-uptime",
+    "tick-hz-100_000",
+] }
+embassy-usb = { path = "../embassy/embassy-usb", features = ["defmt"] }
+embassy-futures = { path = "../embassy/embassy-futures" }
+usbd-hid = "0.8.1"
+
+defmt = "1.0.1"
+defmt-rtt = "1.0.0"
+
+cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7"
+embedded-hal = "1"
+panic-probe = { version = "1.0.0", features = ["print-defmt"] }
+heapless = { version = "0.8", default-features = false }
+static_cell = "2"
+embedded-graphics = "0.8.1"
+ssd1306 = "0.8.4"
+pid = "4.1.0"
+micromath = "2.1.0"
+
+uom = { version = "0.36.0", default-features = false, features = ["si", "f32"] }
+rotary-encoder-embedded = "0.4"
+
+serde = { version = "1.0.217", default-features = false, features = ["derive"] }
+postcard = { version = "1.1.1", features = ["use-crc"] }
+crc = "3.2.1"
+eeprom24x = "0.7.2"
+usbpd = { version = "1.0.0", features = ["defmt"] }
+usbpd-traits = { version = "1.0.0", features = ["defmt"] }
+assign-resources = "0.5"
+profont = "0.7.0"
+
+# cargo build/run
+[profile.dev]
+codegen-units = 1
+debug = 2
+debug-assertions = true # <-
+incremental = false
+lto = true
+opt-level = 'z'         # <-
+overflow-checks = true  # <-
+
+# cargo build/run --release
+[profile.release]
+codegen-units = 1
+debug = 2
+debug-assertions = false # <-
+incremental = false
+lto = true
+opt-level = 'z'          # <-
+overflow-checks = false  # <-

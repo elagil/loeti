@@ -18,23 +18,23 @@
   <ports>
     <GPIOA>
       <pin0
-        ID="SW0"
+        ID="CURR_RESET"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="PullUp"
-        Mode="Input"
+        Resistor="Floating"
+        Mode="Output"
         Alternate="0" />
       <pin1
-        ID="SW1"
+        ID="CURRENT"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="PullUp"
+        Resistor="Floating"
         Mode="Input"
         Alternate="0" />
       <pin2
-        ID="CUR"
+        ID="TEMPERATURE"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
@@ -42,23 +42,23 @@
         Mode="Input"
         Alternate="0" />
       <pin3
-        ID="TC_SEL1"
+        ID="VOLTAGE"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
         Resistor="Floating"
-        Mode="Output"
+        Mode="Input"
         Alternate="0" />
       <pin4
-        ID="TC_SEL0"
+        ID=""
         Type="PushPull"
         Level="High"
         Speed="Maximum"
         Resistor="Floating"
-        Mode="Output"
+        Mode="Input"
         Alternate="0" />
       <pin5
-        ID="PA5"
+        ID=""
         Type="PushPull"
         Level="Low"
         Speed="Maximum"
@@ -66,15 +66,15 @@
         Mode="Input"
         Alternate="0" />
       <pin6
-        ID="LCD_NRST"
+        ID=""
         Type="PushPull"
         Level="High"
         Speed="Maximum"
         Resistor="Floating"
-        Mode="Output"
+        Mode="Input"
         Alternate="0" />
       <pin7
-        ID="VOL"
+        ID="CURRENT_ALERT"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
@@ -82,15 +82,15 @@
         Mode="Input"
         Alternate="0" />
       <pin8
-        ID="PWM"
+        ID=""
         Type="PushPull"
         Level="High"
         Speed="Maximum"
         Resistor="Floating"
-        Mode="Alternate"
-        Alternate="2" />
+        Mode="Input"
+        Alternate="0" />
       <pin9
-        ID="VCP_RX"
+        ID="VCP_TX"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
@@ -98,7 +98,7 @@
         Mode="Alternate"
         Alternate="1" />
       <pin10
-        ID="VCP_TX"
+        ID="VCP_RX"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
@@ -114,12 +114,12 @@
         Mode="Input"
         Alternate="0" />
       <pin12
-        ID="SPI1_NSS2"
+        ID=""
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="PullUp"
-        Mode="Output"
+        Resistor="Floating"
+        Mode="Input"
         Alternate="0" />
       <pin13
         ID="SWDIO"
@@ -138,23 +138,23 @@
         Mode="Alternate"
         Alternate="0" />
       <pin15
-        ID="SPI1_NSS1"
+        ID="LED0"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="PullUp"
+        Resistor="Floating"
         Mode="Output"
         Alternate="0" />
     </GPIOA>
     <GPIOB>
       <pin0
-        ID=""
+        ID="PWM"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="PullUp"
-        Mode="Input"
-        Alternate="0" />
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="1" />
       <pin1
         ID="PD_RST"
         Type="PushPull"
@@ -172,31 +172,31 @@
         Mode="Input"
         Alternate="0" />
       <pin3
-        ID="SPI1_SCK"
+        ID="LED1"
         Type="PushPull"
-        Level="Low"
+        Level="High"
         Speed="Maximum"
         Resistor="Floating"
-        Mode="Alternate"
+        Mode="Output"
         Alternate="0" />
       <pin4
-        ID="SPI1_MISO"
+        ID="LED2"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="PullUp"
-        Mode="Alternate"
+        Resistor="Floating"
+        Mode="Output"
         Alternate="0" />
       <pin5
-        ID="SPI1_MOSI"
+        ID=""
         Type="PushPull"
         Level="High"
         Speed="Maximum"
-        Resistor="PullUp"
-        Mode="Alternate"
+        Resistor="Floating"
+        Mode="Input"
         Alternate="0" />
       <pin6
-        ID="I2C1_SVL"
+        ID="I2C1_SCL"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
@@ -668,15 +668,15 @@
     </GPIOE>
     <GPIOF>
       <pin0
-        ID="CUR_RESET"
+        ID="SW"
         Type="PushPull"
         Level="High"
         Speed="Maximum"
         Resistor="PullUp"
-        Mode="Output"
+        Mode="Input"
         Alternate="0" />
       <pin1
-        ID="CUR_NALERT"
+        ID=""
         Type="PushPull"
         Level="High"
         Speed="Maximum"

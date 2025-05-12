@@ -6,6 +6,7 @@
 #include "events.h"
 
 #define USB_PD_TIMEOUT 50
+#define USB_PD_TRIES 10
 #define USB_PD_TIMEOUT_TICKS TIME_MS2I(USB_PD_TIMEOUT)
 
 event_source_t power_event_source;
@@ -42,10 +43,12 @@ static void toggleAlarmManagement(void *arg)
  * 
  * After the alert pin is toggled, as a result of soft reset, the alarm management can handle messages
  */
-static void exchangeSrc(void)
+static bool exchangeSrc(void)
 {
+    bool valid = false;
+    uint32_t tries = USB_PD_TRIES;
 
-    while (true)
+    while (tries > 0)
     {
         Send_Soft_reset_Message();
 
@@ -61,17 +64,25 @@ static void exchangeSrc(void)
 
                 if (PDO_FROM_SRC_Valid)
                 {
-                    return;
+                    valid = true;
+                    break;
                 }
                 else if (chVTTimeElapsedSinceX(start_time) >= USB_PD_TIMEOUT_TICKS)
                 {
                     break;
                 }
+                else
+                {
+                    // Wait until the PD timeout is reached. Do nothing.
+                }
             }
         }
 
+        tries--;
         chThdSleepMilliseconds(USB_PD_TIMEOUT);
     }
+
+    return valid;
 }
 
 THD_FUNCTION(usbPdThread, arg)
@@ -94,13 +105,19 @@ THD_FUNCTION(usbPdThread, arg)
     Read_RDO();
 
     // Get power profiles from source
-    exchangeSrc();
+    if (!exchangeSrc())
+    {
+        SW_reset_by_Reg();
+    }
 
     // Select source profile with highest power output
     uint8_t pdo = FindHighestSrcPower();
 
     // Wait for source to accept selected profile
-    exchangeSrc();
+    if (!exchangeSrc())
+    {
+        SW_reset_by_Reg();
+    }
 
     // Calculate provided power from source voltage and current
     uint32_t current = getPdoCurrent(pdo);
@@ -112,6 +129,7 @@ THD_FUNCTION(usbPdThread, arg)
     heater.power.voltage_negotiated = voltage / 1000;
     heater.power.current_negotiated = current / 1000;
     heater.power.power_negotiated = heater.power.current_negotiated * heater.power.voltage_negotiated;
+    heater.power.current_target = heater.power.current_negotiated * HEATER_CURRENT_LIMIT;
 
     chBSemSignal(&heater.bsem);
 

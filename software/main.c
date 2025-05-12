@@ -18,9 +18,9 @@
 #include "hal.h"
 
 #include "heater.h"
-#include "tc_adc.h"
+#include "sensor.h"
 #include "usb_pd.h"
-#include "lcd.h"
+#include "diagnostic.h"
 #include "ui.h"
 #include "events.h"
 
@@ -32,8 +32,8 @@ static const SerialConfig serialConfig = {
     USART_CR2_STOP1_BITS | USART_CR2_SWAP,
     0};
 
-/*
- * Application entry point.=
+/**
+ * @brief Application entry point.
  */
 int main(void)
 {
@@ -56,9 +56,12 @@ int main(void)
   chEvtObjectInit(&temp_event_source);
   chEvtObjectInit(&power_event_source);
   chEvtObjectInit(&pwm_done_event_source);
+  chEvtObjectInit(&cur_alert_event_source);
 
   palClearLine(LINE_PD_RST);
   palClearLine(LINE_PWM);
+  palSetLine(LINE_LED1);
+  palSetLine(LINE_LED2);
 
   /*
    * Creates the switch checker thread.
@@ -66,9 +69,9 @@ int main(void)
   chThdCreateStatic(waUiThread, sizeof(waUiThread), NORMALPRIO, uiThread, NULL);
 
   /*
-   * Creates the LCD thread.
+   * Creates the diagnostic thread.
    */
-  chThdCreateStatic(waLcdThread, sizeof(waLcdThread), NORMALPRIO, lcdThread, NULL);
+  chThdCreateStatic(waDiagThread, sizeof(waDiagThread), NORMALPRIO, diagThread, NULL);
 
   /*
    * Creates the USB PD control thread.
@@ -81,9 +84,9 @@ int main(void)
   chThdCreateStatic(waHeaterThread, sizeof(waHeaterThread), NORMALPRIO, heaterThread, NULL);
 
   /*
-   * Creates the temperature ADC read thread.
+   * Creates the temperature sensing thread.
    */
-  chThdCreateStatic(waAdcThread, sizeof(waAdcThread), NORMALPRIO, adcThread, NULL);
+  chThdCreateStatic(waSensorThread, sizeof(waSensorThread), NORMALPRIO, sensorThread, NULL);
 
   /*
    * Start serial driver

@@ -1,0 +1,5 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "firmware/loeti/Cargo.toml",
+    ]
+}
