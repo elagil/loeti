@@ -1,5 +1,4 @@
 //! Drives the tool's heating element, based on target and actual temperature.
-use core::f32::NAN;
 
 use defmt::{debug, error, info, warn, Format};
 use embassy_futures::select::{select, Either};
@@ -366,9 +365,9 @@ async fn control(tool_resources: &mut ToolResources, max_supply_current: &Electr
 }
 
 fn display_state(message: &'static str) {
-    POWER_MEASUREMENT_W_SIG.signal(NAN);
-    POWER_BARGRAPH_SIG.signal(NAN);
-    TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(NAN);
+    POWER_MEASUREMENT_W_SIG.signal(f32::NAN);
+    POWER_BARGRAPH_SIG.signal(f32::NAN);
+    TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(f32::NAN);
     TOOL_NAME_SIG.signal(message);
 }
 

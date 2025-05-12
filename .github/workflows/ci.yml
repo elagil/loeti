@@ -1,0 +1,27 @@
+on:
+  push:
+  workflow_dispatch:
+
+name: CI
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Cache build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            firmware/loeti
+
+      - name: Build
+        run: bash .github/ci/build.sh
