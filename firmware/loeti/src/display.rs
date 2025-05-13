@@ -16,7 +16,7 @@ use micromath::F32Ext;
 use panic_probe as _;
 use profont::{PROFONT_12_POINT, PROFONT_24_POINT, PROFONT_9_POINT};
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize128x64, SPIInterface};
-use ssd1306::Ssd1306;
+use ssd1306::Ssd1306Async;
 
 use crate::{
     PERSISTENT, POWER_BARGRAPH_SIG, POWER_MEASUREMENT_W_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG, TOOL_NAME_SIG,
@@ -37,21 +37,21 @@ pub struct DisplayResources {
 /// Handle displaying the UI.
 #[embassy_executor::task]
 pub async fn display_task(mut display_resources: DisplayResources) {
-    let spi_interface = SPIInterface::new(
-        display_resources.spi,
-        display_resources.pin_dc,
-        display_resources.pin_cs,
-    );
+    let spi =
+        embedded_hal_bus::spi::ExclusiveDevice::new_no_delay(display_resources.spi, display_resources.pin_cs).unwrap();
+    let interface = SPIInterface::new(spi, display_resources.pin_dc);
     let mut display =
-        Ssd1306::new(spi_interface, DisplaySize128x64, DisplayRotation::Rotate0).into_buffered_graphics_mode();
+        Ssd1306Async::new(interface, DisplaySize128x64, DisplayRotation::Rotate0).into_buffered_graphics_mode();
 
     display
         .reset(&mut display_resources.pin_reset, &mut embassy_time::Delay {})
+        .await
         .unwrap();
     display
         .init_with_addr_mode(ssd1306::command::AddrMode::Horizontal)
+        .await
         .unwrap();
-    display.set_brightness(Brightness::BRIGHTEST).unwrap();
+    display.set_brightness(Brightness::BRIGHTEST).await.unwrap();
 
     let filled_style = PrimitiveStyleBuilder::new()
         .stroke_width(1)
@@ -157,7 +157,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             .draw_styled(&filled_style, &mut display)
             .unwrap();
 
-        display.flush().unwrap();
+        display.flush().await.unwrap();
 
         ticker.next().await;
     }

@@ -79,9 +79,13 @@ async fn main(spawner: Spawner) {
         use embassy_stm32::spi;
 
         let display_resources = {
-            let spi_config = spi::Config::default();
+            let mut spi_config = spi::Config::default();
+            spi_config.frequency = Hertz(10_000_000);
+
+            let spi = spi::Spi::new_txonly(p.SPI2, p.PB13, p.PB15, p.DMA2_CH1, spi_config);
+
             display::DisplayResources {
-                spi: spi::Spi::new(p.SPI2, p.PB13, p.PB15, p.PB14, p.DMA2_CH1, p.DMA2_CH2, spi_config),
+                spi,
                 pin_dc: Output::new(p.PA10, Level::Low, Speed::High),
                 pin_reset: Output::new(p.PA9, Level::Low, Speed::High),
                 pin_cs: Output::new(p.PB12, Level::Low, Speed::High),
