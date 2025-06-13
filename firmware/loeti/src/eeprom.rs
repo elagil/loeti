@@ -7,7 +7,7 @@ use postcard::from_bytes_cobs;
 use crate::{Persistent, PERSISTENT, STORE_PERSISTENT};
 
 type Eeprom = eeprom24x::Eeprom24x<
-    i2c::I2c<'static, embassy_stm32::mode::Async>,
+    i2c::I2c<'static, embassy_stm32::mode::Async, embassy_stm32::i2c::mode::Master>,
     eeprom24x::page_size::B32,
     eeprom24x::addr_size::TwoBytes,
     eeprom24x::unique_serial::No,
