@@ -4,8 +4,9 @@ use embassy_stm32::i2c::{self};
 use embassy_time::Timer;
 use postcard::from_bytes_cobs;
 
-use crate::{Persistent, PERSISTENT, STORE_PERSISTENT};
+use crate::{Persistent, PERSISTENT, STORE_PERSISTENT_SIG};
 
+/// The type of EEPROM on this device.
 type Eeprom = eeprom24x::Eeprom24x<
     i2c::I2c<'static, embassy_stm32::mode::Async, embassy_stm32::i2c::mode::Master>,
     eeprom24x::page_size::B32,
@@ -13,6 +14,7 @@ type Eeprom = eeprom24x::Eeprom24x<
     eeprom24x::unique_serial::No,
 >;
 
+/// Load persistent data from EEPROM.
 async fn load_persistent(eeprom: &mut Eeprom) {
     let mut buf = [0u8; 32];
 
@@ -37,6 +39,7 @@ async fn load_persistent(eeprom: &mut Eeprom) {
     PERSISTENT.lock(|x| x.replace(persistent));
 }
 
+/// Store persistent data to EEPROM.
 async fn store_persistent(eeprom: &mut Eeprom) {
     let persistent = PERSISTENT.lock(|x| *x.borrow());
 
@@ -57,7 +60,7 @@ pub async fn eeprom_task(mut eeprom: Eeprom) {
     load_persistent(&mut eeprom).await;
 
     loop {
-        let _ = STORE_PERSISTENT.wait().await;
+        let _ = STORE_PERSISTENT_SIG.wait().await;
         store_persistent(&mut eeprom).await;
     }
 }

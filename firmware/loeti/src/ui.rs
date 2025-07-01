@@ -4,7 +4,7 @@ use embassy_stm32::gpio::Input;
 use embassy_time::{Duration, Instant, Ticker};
 use rotary_encoder_embedded::{Direction, RotaryEncoder};
 
-use crate::{PERSISTENT, STORE_PERSISTENT};
+use crate::{PERSISTENT, STORE_PERSISTENT_SIG};
 
 /// Resources for reading a rotary encoder.
 pub struct RotaryEncoderResources {
@@ -16,16 +16,24 @@ pub struct RotaryEncoderResources {
     pub pin_b: Input<'static>,
 }
 
+/// The state of the switch.
 #[derive(Clone, Copy)]
 enum SwitchState {
+    /// Switch is released.
     Released,
+    /// Switch is pressed and waiting to be released.
     WaitForRelease,
+    /// Switch is being pressed long.
     LongPress,
 }
 
+/// Events that can be detected for the switch.
 enum SwitchEvent {
+    /// No interaction.
     None,
+    /// A short press was registered (at least 25 ms).
     ShortPress,
+    /// A long press was registered (at least 500 ms).
     LongPress,
 }
 
@@ -96,7 +104,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                     let mut persistent = x.borrow_mut();
                     persistent.set_temperature_pending = false;
                 });
-                STORE_PERSISTENT.signal(true);
+                STORE_PERSISTENT_SIG.signal(true);
             }
             SwitchEvent::LongPress => info!("long"),
             _ => (),

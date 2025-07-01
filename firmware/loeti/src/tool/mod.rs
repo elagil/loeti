@@ -27,25 +27,40 @@ mod library;
 use library::ToolProperties;
 
 use crate::{
-    MAX_SUPPLY_CURRENT_MA_SIG, PERSISTENT, POWER_BARGRAPH_SIG, POWER_MEASUREMENT_W_SIG,
-    TEMPERATURE_MEASUREMENT_DEG_C_SIG, TOOL_NAME_SIG,
+    MAX_SUPPLY_CURRENT_MA_SIG, MESSAGE_SIG, PERSISTENT, POWER_BARGRAPH_SIG, POWER_MEASUREMENT_SIG,
+    TEMPERATURE_MEASUREMENT_DEG_C_SIG,
 };
 
+/// ADC resolution in bit.
 const ADC_RESOLUTION: adc::Resolution = adc::Resolution::BITS12;
+/// The number of current control iterations per temperature control iteration.
 const CURRENT_CONTROL_CYCLE_COUNT: u64 = 5;
+/// The total loop period in ms (temperature loop).
 const LOOP_PERIOD_MS: u64 = 100;
+/// The current loop period in ms.
 const CURRENT_LOOP_PERIOD_MS: u64 = LOOP_PERIOD_MS / CURRENT_CONTROL_CYCLE_COUNT;
 
+/// The current margin to leave unused until the supply's maximum current.
+const OVERCURRENT_MARGIN_MA: f32 = 100.0;
+/// The ADC reference voltage.
 const VREFBUF_V: f32 = 2.9;
+/// The analog supply voltage.
 const SUPPLY_V: f32 = 3.3;
+/// The value at which an ADC voltage is considered to be at the upper limit.
 const MAX_ADC_V: f32 = VREFBUF_V - 0.1;
+/// The ratio between the defined maximum ADC voltage and analog supply voltage.
 const MAX_ADC_RATIO: f32 = MAX_ADC_V / SUPPLY_V;
 
+/// Errors during tool detection.
 #[derive(Debug, Format)]
 enum Error {
+    /// No tool was found.
     NoTool,
+    /// Tool was detected, but no tip.
     NoTip,
+    /// The detected tool is unknown.
     UnknownTool,
+    /// Tool type mismatch during control loop operation.
     ToolMismatch,
 }
 
@@ -87,13 +102,19 @@ pub struct ToolResources {
     pub pin_sleep: Input<'static>,
 }
 
+/// A tool's raw measurements.
 #[derive(Clone, Copy)]
-struct ToolMeasurement {
+struct RawToolMeasurement {
+    /// The result of measuring the detection circuit.
+    ///
+    /// The detection ratio is used for assigning a certain tool from the library of supported tools.
     detect_ratio: Ratio,
+    /// The raw thermocouple voltage.
     temperature_potential: ElectricPotential,
 }
 
-impl ToolMeasurement {
+impl RawToolMeasurement {
+    /// Derive a tool's temperature, given its unique properties.
     fn temperature(&self, tool_properties: &ToolProperties) -> ThermodynamicTemperature {
         ThermodynamicTemperature::new::<degree_celsius>(
             tool_properties
@@ -103,11 +124,14 @@ impl ToolMeasurement {
     }
 }
 
+/// Take raw measurements of a tool.
+///
+/// When the tool properties are known, they can be translated to useful values (e.g. temperature).
 async fn measure_tool(
     adc_resources: &mut AdcResources,
     detect_ratio_threshold: Ratio,
     temperature_potential_threshold: ElectricPotential,
-) -> Result<ToolMeasurement, Error> {
+) -> Result<RawToolMeasurement, Error> {
     const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES247_5;
     let mut adc_buffer = [0u16; 2];
 
@@ -132,24 +156,29 @@ async fn measure_tool(
     } else if temperature_potential > temperature_potential_threshold {
         Err(Error::NoTip)
     } else {
-        Ok(ToolMeasurement {
+        Ok(RawToolMeasurement {
             detect_ratio,
             temperature_potential,
         })
     }
 }
 
+/// A tool power measurement.
 struct PowerMeasurement {
+    /// The electric current through the tool.
     current: ElectricCurrent,
+    /// The supply voltage.
     potential: ElectricPotential,
 }
 
 impl PowerMeasurement {
+    /// Calculate the tool's power dissipation.
     fn power(&self) -> Power {
         self.potential * self.current
     }
 }
 
+/// Measure the tool's power (voltage and current).
 async fn measure_tool_power(adc_power_resources: &mut AdcResources) -> PowerMeasurement {
     const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES247_5;
     let mut adc_buffer = [0u16; 2];
@@ -180,20 +209,32 @@ async fn measure_tool_power(adc_power_resources: &mut AdcResources) -> PowerMeas
     // );
     let measurement = PowerMeasurement { current, potential };
 
-    POWER_MEASUREMENT_W_SIG.signal(measurement.power().get::<power::watt>());
+    POWER_MEASUREMENT_SIG.signal((
+        measurement.power().get::<power::watt>(),
+        measurement.potential.get::<electric_potential::volt>(),
+    ));
     measurement
 }
 
+/// A tool (soldering iron).
 struct Tool {
+    /// Unique properties of the tool.
     tool_properties: &'static ToolProperties,
+    /// The maximum allowed supply current. Depends on the tool itself, and the power supply.
     max_supply_current_a: f32,
+    /// The temperature control.
     temperature_pid: Pid<f32>,
+    /// The current control.
     current_pid: Pid<f32>,
+    /// The current  PWM ratio of the heater switch (MOSFET).
     pwm_ratio: Ratio,
 }
 
 impl Tool {
-    pub fn new(tool_measurement: ToolMeasurement, max_supply_current: &ElectricCurrent) -> Result<Self, Error> {
+    /// Create a new tool from a measurement.
+    ///
+    /// Limits the tool's current capability to the maximum available supply current.
+    pub fn new(tool_measurement: RawToolMeasurement, max_supply_current: &ElectricCurrent) -> Result<Self, Error> {
         let tool_properties = Tool::detect(tool_measurement)?;
 
         let max_supply_current_a = max_supply_current.get::<electric_current::ampere>();
@@ -212,12 +253,15 @@ impl Tool {
             0.25 * tool_properties.heater_resistance_ohm / (CURRENT_LOOP_PERIOD_MS as f32),
             1.0,
         );
-        tool.setup_temperature_pid(false);
+        tool.configure_temperature_control(false);
 
         Ok(tool)
     }
 
-    fn setup_temperature_pid(&mut self, is_current_limited: bool) {
+    /// Configures the temperaure control.
+    ///
+    /// If the device is current limited, disable the PID's I-component temporarily (prevent windup).
+    fn configure_temperature_control(&mut self, is_current_limited: bool) {
         let max_current_a = self.temperature_pid.output_limit;
         self.temperature_pid
             .p(self.tool_properties.p, max_current_a)
@@ -231,21 +275,23 @@ impl Tool {
         }
     }
 
-    fn detect(tool_measurement: ToolMeasurement) -> Result<&'static ToolProperties, Error> {
+    /// Detect a tool, based on a measurement.
+    fn detect(tool_measurement: RawToolMeasurement) -> Result<&'static ToolProperties, Error> {
         for tool_properties in ToolProperties::all() {
             if (tool_measurement.detect_ratio.get::<ratio::ratio>() - tool_properties.detect_ratio).abs() < 0.05 {
-                TOOL_NAME_SIG.signal(tool_properties.name);
+                show_message(tool_properties.name);
+
                 return Ok(tool_properties);
             }
         }
 
-        TOOL_NAME_SIG.signal("Unknown tool");
         Err(Error::UnknownTool)
     }
 
+    /// Runs a temperature control step.
     fn control_temperature(
         &mut self,
-        tool_measurement: ToolMeasurement,
+        tool_measurement: RawToolMeasurement,
         set_temperature_degree_c: f32,
     ) -> Result<f32, Error> {
         let tool_properties = Tool::detect(tool_measurement)?;
@@ -265,13 +311,14 @@ impl Tool {
 
         let is_current_limited =
             current_setpoint_a.abs() == self.tool_properties.max_current_a.min(self.max_supply_current_a);
-        self.setup_temperature_pid(is_current_limited);
+        self.configure_temperature_control(is_current_limited);
 
         POWER_BARGRAPH_SIG.signal(current_setpoint_a / self.max_supply_current_a);
 
         Ok(tool_temperature_deg_c)
     }
 
+    /// Runs a power control step.
     fn control_power(&mut self, power_measurement: PowerMeasurement) {
         let measured_current_a = power_measurement.current.get::<electric_current::ampere>();
         let output = self.current_pid.next_control_output(measured_current_a).output.max(0.0);
@@ -280,7 +327,12 @@ impl Tool {
     }
 }
 
-async fn control(tool_resources: &mut ToolResources, max_supply_current: &ElectricCurrent) -> Result<(), Error> {
+/// Handles the main tool control loop.
+///
+/// - Detects whether a tool is present
+/// - Runs temperature (outer) control loop, while measuring tool temperature
+/// - Runs current (inner) control loop, while measuring voltage and current on the tool
+async fn control(tool_resources: &mut ToolResources, current_limit: &ElectricCurrent) -> Result<(), Error> {
     let detect_threshold_ratio = Ratio::new::<ratio::ratio>(MAX_ADC_RATIO);
     let temperature_threshold_potential = ElectricPotential::new::<volt>(MAX_ADC_V);
 
@@ -314,7 +366,7 @@ async fn control(tool_resources: &mut ToolResources, max_supply_current: &Electr
         .await?;
 
         if tool.is_none() {
-            tool = Some(Tool::new(tool_measurement, max_supply_current)?)
+            tool = Some(Tool::new(tool_measurement, current_limit)?)
         }
 
         let tool = tool.as_mut().unwrap();
@@ -364,11 +416,18 @@ async fn control(tool_resources: &mut ToolResources, max_supply_current: &Electr
     }
 }
 
-fn display_state(message: &'static str) {
-    POWER_MEASUREMENT_W_SIG.signal(f32::NAN);
+/// Displays a message.
+fn show_message(message: &'static str) {
+    MESSAGE_SIG.signal(message);
+}
+
+/// Displays a message, while being idle (not heating).
+fn show_idle_message(message: &'static str) {
+    POWER_MEASUREMENT_SIG.signal((f32::NAN, f32::NAN));
     POWER_BARGRAPH_SIG.signal(f32::NAN);
     TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(f32::NAN);
-    TOOL_NAME_SIG.signal(message);
+
+    MESSAGE_SIG.signal(message);
 }
 
 /// Control the tool's heating element.
@@ -378,20 +437,25 @@ fn display_state(message: &'static str) {
 pub async fn tool_task(mut tool_resources: ToolResources) {
     info!("Maximum measurable voltage: {} V", MAX_ADC_V);
     info!("Maximum measurable detection resistor ratio: {}", MAX_ADC_RATIO);
-    display_state("Negotiating...");
+    show_idle_message("Negotiating...");
 
-    // Some margin to prevent over current.
-    let current_ma = MAX_SUPPLY_CURRENT_MA_SIG.wait().await - 100.0;
-    let current = ElectricCurrent::new::<electric_current::milliampere>(current_ma);
+    let current_limit_ma = MAX_SUPPLY_CURRENT_MA_SIG.wait().await - OVERCURRENT_MARGIN_MA;
+    let current_limit = ElectricCurrent::new::<electric_current::milliampere>(current_limit_ma);
 
-    info!("Current limit: {} mA", current_ma);
+    info!("Current limit: {} mA", current_limit_ma);
 
     loop {
-        let result = control(&mut tool_resources, &current).await;
+        let result = control(&mut tool_resources, &current_limit).await;
 
-        if result.is_err() {
-            display_state("No tool");
-            debug!("Tool control error: {}", result);
+        if let Err(error) = result {
+            match error {
+                Error::NoTool => show_idle_message("No tool"),
+                Error::NoTip => show_idle_message("No tip"),
+                Error::UnknownTool => show_idle_message("Unknown"),
+                Error::ToolMismatch => show_idle_message("Mismatch"),
+            }
+
+            debug!("Tool control error: {}", error);
             Timer::after_millis(100).await
         }
     }

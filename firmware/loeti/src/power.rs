@@ -32,18 +32,21 @@ assign_resources! {
 }
 
 #[derive(Debug, Format)]
+#[allow(clippy::missing_docs_in_private_items)]
 enum CableOrientation {
     Normal,
     Flipped,
     DebugAccessoryMode,
 }
 
+/// The sink driver.
 struct UcpdSinkDriver<'d> {
     /// The UCPD PD phy instance.
     pd_phy: PdPhy<'d, peripherals::UCPD1>,
 }
 
 impl<'d> UcpdSinkDriver<'d> {
+    /// Create a new sink driver.
     fn new(pd_phy: PdPhy<'d, peripherals::UCPD1>) -> Self {
         Self { pd_phy }
     }
@@ -76,6 +79,7 @@ impl SinkDriver for UcpdSinkDriver<'_> {
     }
 }
 
+/// Waits until the cable was detached.
 async fn wait_detached<T: ucpd::Instance>(cc_phy: &mut CcPhy<'_, T>) {
     loop {
         let (cc1, cc2) = cc_phy.vstate();
@@ -86,7 +90,7 @@ async fn wait_detached<T: ucpd::Instance>(cc_phy: &mut CcPhy<'_, T>) {
     }
 }
 
-// Returns true when the cable was attached.
+/// Waits until the cable was attached.
 async fn wait_attached<T: ucpd::Instance>(cc_phy: &mut CcPhy<'_, T>) -> CableOrientation {
     loop {
         let (cc1, cc2) = cc_phy.vstate();
@@ -114,6 +118,7 @@ async fn wait_attached<T: ucpd::Instance>(cc_phy: &mut CcPhy<'_, T>) -> CableOri
     }
 }
 
+/// Timer implementation for usbpd.
 struct EmbassySinkTimer {}
 
 impl SinkTimer for EmbassySinkTimer {
@@ -122,6 +127,7 @@ impl SinkTimer for EmbassySinkTimer {
     }
 }
 
+/// This device.
 struct Device {}
 
 impl DevicePolicyManager for Device {

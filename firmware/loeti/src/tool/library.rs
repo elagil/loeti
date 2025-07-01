@@ -1,36 +1,56 @@
+//! A library of supported tools (soldering irons).
+
+/// Supported tool types.
 #[derive(Clone, Copy, PartialEq)]
 pub enum ToolType {
+    /// The JBC C210.
     JBCC210,
+    /// The JBC C245.
     JBCC245,
 }
 
+/// Temperature calibration settings.
 #[derive(Clone, Copy)]
 pub struct TemperatureCalibration {
+    /// Conversion factor from thermocouple voltage to temperature.
     slope_k_per_v: f32,
+    /// A temperature offset.
     offset_c: f32,
 }
 
 impl TemperatureCalibration {
+    /// Calculate temperature from thermocouple voltage.
     pub fn calc_temperature_c(&self, tc_potential_v: f32) -> f32 {
         self.slope_k_per_v * tc_potential_v + self.offset_c
     }
 }
 
+/// Properties of a tool (soldering iron).
 #[derive(Clone, Copy)]
 pub struct ToolProperties {
+    /// The tool's name.
     pub name: &'static str,
+    /// The type of a tool.
     pub tool_type: ToolType,
+    /// Maximum allowed current.
     pub max_current_a: f32,
+    /// Heater resistance in Ohm.
     pub heater_resistance_ohm: f32,
+    /// The detection ratio for distinguishing between tools.
     pub detect_ratio: f32,
+    /// Temperature calibration settings.
     pub temperature_calibration: TemperatureCalibration,
 
+    /// Temperature control P-value.
     pub p: f32,
-    pub i: f32, // In units of 1/(°C * ms)
+    /// Temperature control I-value in units of 1/(°C * ms)
+    pub i: f32,
+    /// Temperature control D-value.
     pub d: f32,
 }
 
 impl ToolProperties {
+    /// A list of all supported tools.
     pub const fn all() -> &'static [Self] {
         &[
             Self {
