@@ -58,12 +58,7 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [
-        [
-          "hole_clearance|114043900|80165000|c9562ea6-8c78-4c87-b64b-f10657c17d14|8b707c74-d9a3-4e28-a8a4-d812c0e90c60",
-          ""
-        ]
-      ],
+      "drc_exclusions": [],
       "meta": {
         "filename": "board_design_settings.json",
         "version": 2

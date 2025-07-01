@@ -1,7 +1,7 @@
 (footprint "MiniXLR-4_Switchcraft_TRAPCS_Horizontal"
-	(version 20240108)
+	(version 20241229)
 	(generator "pcbnew")
-	(generator_version "8.0")
+	(generator_version "9.0")
 	(layer "F.Cu")
 	(descr "http://www.switchcraft.com/ProductSummary.aspx?Parent=620 http://www.switchcraft.com/Drawings/TRAPC_X-TRASM_X_SERIES_CD.PDF")
 	(tags "THT Mini XLR 5Pin right angle")
@@ -23,19 +23,6 @@
 		(effects
 			(font
 				(size 1 1)
-				(thickness 0.15)
-			)
-		)
-	)
-	(property "Footprint" ""
-		(at 0 0 0)
-		(unlocked yes)
-		(layer "F.Fab")
-		(hide yes)
-		(uuid "0fe143f6-1f2f-4f50-bdd9-388daa9a6cb0")
-		(effects
-			(font
-				(size 1.27 1.27)
 				(thickness 0.15)
 			)
 		)
@@ -483,7 +470,7 @@
 		(layers "*.Cu" "*.Mask")
 		(uuid "fd1fc0bb-4347-4398-bf18-fc34f69d4b7c")
 	)
-	(pad "1" thru_hole rect
+	(pad "1" thru_hole circle
 		(at 3.81 0 180)
 		(size 1.8 1.8)
 		(drill 1.016)
@@ -492,14 +479,6 @@
 		(uuid "b68457aa-a490-4e0e-90c7-cd05448c51b7")
 	)
 	(pad "2" thru_hole circle
-		(at 1.27 0 180)
-		(size 1.8 1.8)
-		(drill 1.016)
-		(layers "*.Cu" "*.Mask")
-		(remove_unused_layers no)
-		(uuid "9ad7c4fb-d1f8-4a6a-ae2e-c5117d63cb74")
-	)
-	(pad "3" thru_hole circle
 		(at -1.27 0 180)
 		(size 1.8 1.8)
 		(drill 1)
@@ -507,7 +486,7 @@
 		(remove_unused_layers no)
 		(uuid "574feec4-7d48-411d-9237-0757ebefe80c")
 	)
-	(pad "4" thru_hole circle
+	(pad "3" thru_hole circle
 		(at -3.81 0 180)
 		(size 1.8 1.8)
 		(drill 1.016)
@@ -515,6 +494,15 @@
 		(remove_unused_layers no)
 		(uuid "8eef680d-d2a7-4983-9c3d-6330556417f2")
 	)
+	(pad "4" thru_hole circle
+		(at 1.27 0 180)
+		(size 1.8 1.8)
+		(drill 1.016)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "9ad7c4fb-d1f8-4a6a-ae2e-c5117d63cb74")
+	)
+	(embedded_fonts no)
 	(model "${KICAD8_3DMODEL_DIR}/Connector_Audio.3dshapes/MiniXLR-5_Switchcraft_TRAPC_Horizontal.wrl"
 		(offset
 			(xyz 0 0 0)

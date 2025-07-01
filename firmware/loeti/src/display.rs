@@ -41,7 +41,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         embedded_hal_bus::spi::ExclusiveDevice::new_no_delay(display_resources.spi, display_resources.pin_cs).unwrap();
     let interface = SPIInterface::new(spi, display_resources.pin_dc);
     let mut display =
-        Ssd1306Async::new(interface, DisplaySize128x64, DisplayRotation::Rotate0).into_buffered_graphics_mode();
+        Ssd1306Async::new(interface, DisplaySize128x64, DisplayRotation::Rotate180).into_buffered_graphics_mode();
 
     display
         .reset(&mut display_resources.pin_reset, &mut embassy_time::Delay {})
