@@ -6,7 +6,7 @@
 	(paper "A3")
 	(title_block
 		(title "loeti v6")
-		(date "2025-06-18")
+		(date "2025-07-01")
 		(rev "c")
 		(company "elagil")
 	)
@@ -9157,6 +9157,12 @@
 		(uuid "34ef4adc-0739-4647-a7fd-58689bc14874")
 	)
 	(junction
+		(at 59.69 30.48)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "3ac63cb3-e956-4ee8-983d-4e9cbd73148f")
+	)
+	(junction
 		(at 364.49 177.8)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -9601,6 +9607,16 @@
 			(type default)
 		)
 		(uuid "01b6907e-939e-4d6f-af7d-7d7758c3067f")
+	)
+	(wire
+		(pts
+			(xy 59.69 30.48) (xy 59.69 31.75)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "01ec1e3a-8c52-4513-a4df-846c51f8da47")
 	)
 	(wire
 		(pts
@@ -11054,6 +11070,16 @@
 	)
 	(wire
 		(pts
+			(xy 59.69 39.37) (xy 59.69 40.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5a311bd1-2342-434d-b7a7-f9716a805b3f")
+	)
+	(wire
+		(pts
 			(xy 82.55 168.91) (xy 95.25 168.91)
 		)
 		(stroke
@@ -11431,6 +11457,16 @@
 			(type default)
 		)
 		(uuid "7b0b3726-aa65-4c61-9f28-a8bd9c877b81")
+	)
+	(wire
+		(pts
+			(xy 59.69 30.48) (xy 68.58 30.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7b1e2fcb-e264-4638-8adf-923083d8b8db")
 	)
 	(wire
 		(pts
@@ -11854,7 +11890,7 @@
 	)
 	(wire
 		(pts
-			(xy 48.26 30.48) (xy 68.58 30.48)
+			(xy 48.26 30.48) (xy 59.69 30.48)
 		)
 		(stroke
 			(width 0)
@@ -25263,6 +25299,120 @@
 	)
 	(symbol
 		(lib_id "Device:C")
+		(at 59.69 35.56 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "909f2761-8d53-46de-b3f9-5a97c06177e6")
+		(property "Reference" "C34"
+			(at 62.611 34.3916 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10u"
+			(at 62.611 36.703 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_1206_3216Metric"
+			(at 60.6552 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 59.69 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 59.69 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Mfr.Nr." ""
+			(at 59.69 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MPN" "C13585"
+			(at 59.69 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB Position Offset" ""
+			(at 59.69 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Library" ""
+			(at 59.69 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Name" ""
+			(at 59.69 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "c9db15dd-3bb9-4a4e-8733-da40423cb0ef")
+		)
+		(pin "2"
+			(uuid "e75cc6a7-9083-40ca-a9ae-c49802eab806")
+		)
+		(instances
+			(project "loeti"
+				(path "/e4270527-a28c-4130-b442-7148380c12e2"
+					(reference "C34")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
 		(at 242.57 86.36 180)
 		(unit 1)
 		(exclude_from_sim no)
@@ -30356,6 +30506,71 @@
 			(project "loeti"
 				(path "/e4270527-a28c-4130-b442-7148380c12e2"
 					(reference "#PWR043")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 59.69 40.64 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "eced6d1e-d319-4bf5-8efa-6dcc6b3ef6e5")
+		(property "Reference" "#PWR032"
+			(at 59.69 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 59.69 44.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 59.69 40.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 59.69 40.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 59.69 40.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "21a31c12-1153-4be5-a01f-8d60fa6db4ff")
+		)
+		(instances
+			(project "loeti"
+				(path "/e4270527-a28c-4130-b442-7148380c12e2"
+					(reference "#PWR032")
 					(unit 1)
 				)
 			)
