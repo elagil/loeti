@@ -14,13 +14,11 @@ use embedded_graphics::{
 };
 use micromath::F32Ext;
 use panic_probe as _;
-use profont::{PROFONT_12_POINT, PROFONT_24_POINT, PROFONT_9_POINT};
+use profont::{PROFONT_12_POINT, PROFONT_24_POINT, PROFONT_7_POINT};
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize128x64, SPIInterface};
 use ssd1306::Ssd1306Async;
 
-use crate::{
-    PERSISTENT, POWER_BARGRAPH_SIG, POWER_MEASUREMENT_W_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG, TOOL_NAME_SIG,
-};
+use crate::{MESSAGE_SIG, PERSISTENT, POWER_BARGRAPH_SIG, POWER_MEASUREMENT_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG};
 
 /// Resources for driving the display.
 pub struct DisplayResources {
@@ -69,31 +67,37 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     let mut temperature_string: heapless::String<10> = heapless::String::new();
     let mut set_temperature_string: heapless::String<10> = heapless::String::new();
     let mut power_string: heapless::String<10> = heapless::String::new();
-    let mut tool_name_string: &str = "";
+    let mut voltage_string: heapless::String<10> = heapless::String::new();
+    let mut message_string: &str = "";
 
-    let mut ticker = Ticker::every(Duration::from_hz(20));
+    let mut refresh_ticker = Ticker::every(Duration::from_hz(20));
 
     loop {
         let persistent = PERSISTENT.lock(|x| *x.borrow());
         set_temperature_string.clear();
-        write!(&mut set_temperature_string, "{} °C", persistent.set_temperature_deg_c).unwrap();
+        write!(&mut set_temperature_string, "{}", persistent.set_temperature_deg_c).unwrap();
 
         if let Some(temperature_deg_c) = TEMPERATURE_MEASUREMENT_DEG_C_SIG.try_take() {
             temperature_string.clear();
 
             if !temperature_deg_c.is_nan() {
-                write!(&mut temperature_string, "{} °C", temperature_deg_c.round() as usize).unwrap();
+                write!(&mut temperature_string, "{}", temperature_deg_c.round() as usize).unwrap();
             }
         }
 
-        if let Some(name) = TOOL_NAME_SIG.try_take() {
-            tool_name_string = name;
+        if let Some(message) = MESSAGE_SIG.try_take() {
+            message_string = message;
         }
 
-        if let Some(power) = POWER_MEASUREMENT_W_SIG.try_take() {
+        if let Some((power, voltage)) = POWER_MEASUREMENT_SIG.try_take() {
             power_string.clear();
             if !(power.is_nan()) {
-                write!(&mut power_string, "{} W", power.round() as usize).unwrap();
+                write!(&mut power_string, "{} W", power.round() as usize,).unwrap();
+            }
+
+            voltage_string.clear();
+            if !(voltage.is_nan()) {
+                write!(&mut voltage_string, "{} V", voltage.round() as usize,).unwrap();
             }
         }
 
@@ -120,10 +124,11 @@ pub async fn display_task(mut display_resources: DisplayResources) {
                 .unwrap();
         }
 
-        Text::new(
+        Text::with_alignment(
             &temperature_string,
-            Point::new(15, 40),
+            Point::new(112, 30),
             MonoTextStyle::new(&PROFONT_24_POINT, BinaryColor::On),
+            Alignment::Right,
         )
         .draw(&mut display)
         .unwrap();
@@ -137,28 +142,37 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         .unwrap();
 
         Text::new(
-            tool_name_string,
-            Point::new(15, 59),
-            MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
+            message_string,
+            Point::new(15, 48),
+            MonoTextStyle::new(&PROFONT_7_POINT, BinaryColor::On),
+        )
+        .draw(&mut display)
+        .unwrap();
+
+        Rectangle::new(Point::new(15, 52), Size::new(power_bar_width as u32, 2))
+            .draw_styled(&filled_style, &mut display)
+            .unwrap();
+
+        Text::with_alignment(
+            &voltage_string,
+            Point::new(15, 62),
+            MonoTextStyle::new(&PROFONT_7_POINT, BinaryColor::On),
+            Alignment::Left,
         )
         .draw(&mut display)
         .unwrap();
 
         Text::with_alignment(
             &power_string,
-            Point::new(112, 59),
-            MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
+            Point::new(112, 62),
+            MonoTextStyle::new(&PROFONT_7_POINT, BinaryColor::On),
             Alignment::Right,
         )
         .draw(&mut display)
         .unwrap();
 
-        Rectangle::new(Point::new(15, 62), Size::new(power_bar_width as u32, 2))
-            .draw_styled(&filled_style, &mut display)
-            .unwrap();
-
         display.flush().await.unwrap();
 
-        ticker.next().await;
+        refresh_ticker.next().await;
     }
 }

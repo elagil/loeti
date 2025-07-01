@@ -133,7 +133,7 @@ async fn main(spawner: Spawner) {
             exti_current_alert: ExtiInput::new(p.PB11, p.EXTI11, Pull::None),
             pwm_heater: SimplePwm::new(
                 p.TIM1,
-                Some(PwmPin::new_ch1(p.PA8, OutputType::PushPull)),
+                Some(PwmPin::new(p.PA8, OutputType::PushPull)),
                 None,
                 None,
                 None,
