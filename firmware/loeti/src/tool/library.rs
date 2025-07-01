@@ -40,7 +40,7 @@ impl ToolProperties {
                 heater_resistance_ohm: 2.0,
                 detect_ratio: 0.7,
                 temperature_calibration: TemperatureCalibration {
-                    slope_k_per_v: 165.41,
+                    slope_k_per_v: 180.0,
                     offset_c: 4.4,
                 },
 
@@ -55,7 +55,7 @@ impl ToolProperties {
                 heater_resistance_ohm: 2.5,
                 detect_ratio: 0.5,
                 temperature_calibration: TemperatureCalibration {
-                    slope_k_per_v: 165.41,
+                    slope_k_per_v: 180.0,
                     offset_c: 4.4, // Compensates for heat up of the handle and cold junction itself - around 20 °C
                 },
 
