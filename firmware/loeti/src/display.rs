@@ -113,10 +113,8 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             power_string.clear();
             if operational_state.manual_sleep {
                 write!(&mut power_string, "sleep").unwrap();
-            } else {
-                if !(power.is_nan()) {
-                    write!(&mut power_string, "{} W", power.round() as usize).unwrap();
-                }
+            } else if !(power.is_nan()) {
+                write!(&mut power_string, "{} W", power.round() as usize).unwrap();
             }
 
             voltage_string.clear();
