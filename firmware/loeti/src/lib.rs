@@ -36,7 +36,7 @@ impl Persistent {
 #[derive(Debug, Format, Clone, Copy, Default)]
 struct OperationalState {
     /// The iron is in sleep mode (manual).
-    manual_sleep: bool,
+    is_sleeping: bool,
     /// If true, the new set temperature was not confirmed yet.
     set_temperature_is_pending: bool,
 }
@@ -45,7 +45,7 @@ impl OperationalState {
     /// Default persistent settings.
     const fn default() -> Self {
         Self {
-            manual_sleep: false,
+            is_sleeping: false,
             set_temperature_is_pending: false,
         }
     }
@@ -61,7 +61,7 @@ static POWER_MEASUREMENT_SIG: Signal<ThreadModeRawMutex, (f32, f32)> = Signal::n
 static TEMPERATURE_MEASUREMENT_DEG_C_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
 
 /// Signals a new power bargraph value.
-static POWER_BARGRAPH_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
+static POWER_RATIO_BARGRAPH_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
 
 /// Signals a new message to display.
 static MESSAGE_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();

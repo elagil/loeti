@@ -27,8 +27,8 @@ mod library;
 use library::ToolProperties;
 
 use crate::{
-    MAX_SUPPLY_CURRENT_MA_SIG, MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, POWER_BARGRAPH_SIG,
-    POWER_MEASUREMENT_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
+    MAX_SUPPLY_CURRENT_MA_SIG, MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, POWER_MEASUREMENT_SIG,
+    POWER_RATIO_BARGRAPH_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
 };
 
 /// ADC resolution in bit.
@@ -176,6 +176,11 @@ impl PowerMeasurement {
     fn power(&self) -> Power {
         self.potential * self.current
     }
+
+    /// Compensate current with an idle power measurement.
+    fn compensate(&mut self, idle: &Self) {
+        self.current -= idle.current;
+    }
 }
 
 /// Measure the tool's power (voltage and current).
@@ -202,18 +207,7 @@ async fn measure_tool_power(adc_power_resources: &mut AdcResources) -> PowerMeas
     const VOLTAGE_DIVIDER_RATIO: f32 = 7.667;
     let potential = VOLTAGE_DIVIDER_RATIO * adc_value_to_potential(adc_buffer[1]);
 
-    // info!(
-    //     "{} mA, {} mV",
-    //     current.get::<electric_current::milliampere>(),
-    //     potential.get::<electric_potential::millivolt>()
-    // );
-    let measurement = PowerMeasurement { current, potential };
-
-    POWER_MEASUREMENT_SIG.signal((
-        measurement.power().get::<power::watt>(),
-        measurement.potential.get::<electric_potential::volt>(),
-    ));
-    measurement
+    PowerMeasurement { current, potential }
 }
 
 /// A tool (soldering iron).
@@ -288,29 +282,23 @@ impl Tool {
         Err(Error::UnknownTool)
     }
 
-    /// Runs a temperature control step.
-    fn control_temperature(
-        &mut self,
-        tool_measurement: RawToolMeasurement,
-        set_temperature_degree_c: f32,
-        sleep: bool,
-    ) -> Result<f32, Error> {
+    /// Calculate tool temperature from a raw tool measurement.
+    fn calculate_temperature(&self, tool_measurement: RawToolMeasurement) -> Result<f32, Error> {
         let tool_properties = Tool::detect(tool_measurement)?;
         if tool_properties.tool_type != self.tool_properties.tool_type {
             return Err(Error::ToolMismatch);
         }
 
-        let tool_temperature_deg_c = tool_measurement
+        Ok(tool_measurement
             .temperature(self.tool_properties)
-            .get::<thermodynamic_temperature::degree_celsius>();
+            .get::<thermodynamic_temperature::degree_celsius>())
+    }
 
-        self.temperature_pid.setpoint(set_temperature_degree_c);
+    /// Runs a temperature control step.
+    fn control_temperature(&mut self, tool_temperature_deg_c: f32, set_temperature_deg_c: f32) -> Result<f32, Error> {
+        self.temperature_pid.setpoint(set_temperature_deg_c);
 
-        let current_setpoint_a = if sleep {
-            0.0
-        } else {
-            self.temperature_pid.next_control_output(tool_temperature_deg_c).output
-        };
+        let current_setpoint_a = self.temperature_pid.next_control_output(tool_temperature_deg_c).output;
 
         self.current_pid.setpoint(current_setpoint_a);
 
@@ -318,15 +306,23 @@ impl Tool {
             current_setpoint_a.abs() == self.tool_properties.max_current_a.min(self.max_supply_current_a);
         self.configure_temperature_control(is_current_limited);
 
-        POWER_BARGRAPH_SIG.signal(current_setpoint_a / self.max_supply_current_a);
-
         Ok(tool_temperature_deg_c)
     }
 
+    /// The ratio of the current setpoint and the maximum current that can be supplied.
+    ///
+    /// This is a measure for relative output power.
+    fn power_ratio(&self) -> f32 {
+        self.current_pid.setpoint / self.max_supply_current_a
+    }
+
     /// Runs a power control step.
-    fn control_power(&mut self, power_measurement: PowerMeasurement) {
-        let measured_current_a = power_measurement.current.get::<electric_current::ampere>();
-        let output = self.current_pid.next_control_output(measured_current_a).output.max(0.0);
+    fn control_power(&mut self, power_measurement: &PowerMeasurement) {
+        let output = self
+            .current_pid
+            .next_control_output(power_measurement.current.get::<electric_current::ampere>())
+            .output
+            .max(0.0);
 
         self.pwm_ratio = Ratio::new::<ratio::ratio>(output);
     }
@@ -365,6 +361,10 @@ async fn control(tool_resources: &mut ToolResources, current_limit: &ElectricCur
 
         // Wait for temperature sensor value to settle after disabling the heating element.
         Timer::after_millis(10).await;
+
+        // Measure idle current for potential offset compensation.
+        let idle_power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
+
         let tool_measurement = measure_tool(
             &mut tool_resources.adc_resources,
             detect_threshold_ratio,
@@ -389,12 +389,20 @@ async fn control(tool_resources: &mut ToolResources, current_limit: &ElectricCur
             continue;
         }
 
-        let tool_temperature_deg_c = tool.control_temperature(
-            tool_measurement,
-            set_temperature_deg_c.unwrap(),
-            operational_state.manual_sleep,
-        )?;
+        let tool_temperature_deg_c = tool.calculate_temperature(tool_measurement)?;
         TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(tool_temperature_deg_c);
+
+        if operational_state.is_sleeping {
+            let mut power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
+            power_measurement.compensate(&idle_power_measurement);
+            show_power(&power_measurement, None);
+
+            // Skip the rest of the control loop.
+            Timer::after_millis(LOOP_PERIOD_MS).await;
+            continue;
+        }
+
+        tool.control_temperature(tool_temperature_deg_c, set_temperature_deg_c.unwrap())?;
 
         let mut current_loop_ticker = Ticker::every(Duration::from_millis(CURRENT_LOOP_PERIOD_MS));
         for _ in 0..CURRENT_CONTROL_CYCLE_COUNT {
@@ -406,7 +414,9 @@ async fn control(tool_resources: &mut ToolResources, current_limit: &ElectricCur
                 // Measure current and voltage after the low-pass filter settles - in the middle of the loop period.
                 Timer::after_millis(CURRENT_LOOP_PERIOD_MS / 2).await;
 
-                let power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
+                let mut power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
+                power_measurement.compensate(&idle_power_measurement);
+                show_power(&power_measurement, Some(tool.power_ratio()));
 
                 // Wait for the end of this cycle.
                 current_loop_ticker.next().await;
@@ -414,7 +424,7 @@ async fn control(tool_resources: &mut ToolResources, current_limit: &ElectricCur
             };
 
             match select(tool_power_fut, tool_resources.exti_current_alert.wait_for_low()).await {
-                Either::First(power_measurement) => tool.control_power(power_measurement),
+                Either::First(power_measurement) => tool.control_power(&power_measurement),
                 Either::Second(_) => {
                     warn!("Current alert");
                     break;
@@ -426,6 +436,20 @@ async fn control(tool_resources: &mut ToolResources, current_limit: &ElectricCur
     }
 }
 
+/// Display a power measurement and relative power bargraph.
+fn show_power(measurement: &PowerMeasurement, power_ratio: Option<f32>) {
+    POWER_MEASUREMENT_SIG.signal((
+        measurement.power().get::<power::watt>(),
+        measurement.potential.get::<electric_potential::volt>(),
+    ));
+
+    let power_ratio = match power_ratio {
+        None => f32::NAN,
+        Some(x) => x,
+    };
+    POWER_RATIO_BARGRAPH_SIG.signal(power_ratio)
+}
+
 /// Displays a message.
 fn show_message(message: &'static str) {
     MESSAGE_SIG.signal(message);
@@ -434,7 +458,7 @@ fn show_message(message: &'static str) {
 /// Displays a message, while being idle (not heating).
 fn show_idle_message(message: &'static str) {
     POWER_MEASUREMENT_SIG.signal((f32::NAN, f32::NAN));
-    POWER_BARGRAPH_SIG.signal(f32::NAN);
+    POWER_RATIO_BARGRAPH_SIG.signal(f32::NAN);
     TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(f32::NAN);
 
     MESSAGE_SIG.signal(message);
