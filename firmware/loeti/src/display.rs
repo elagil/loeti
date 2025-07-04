@@ -19,20 +19,24 @@ use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize128x64, SPIInterf
 use ssd1306::Ssd1306Async;
 
 use crate::{
-    MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, POWER_BARGRAPH_SIG, POWER_MEASUREMENT_SIG,
+    MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, POWER_MEASUREMENT_SIG, POWER_RATIO_BARGRAPH_SIG,
     TEMPERATURE_MEASUREMENT_DEG_C_SIG,
 };
 
 /// Display width in pixels (internal buffer size).
 const DISPLAY_BUFFER_WIDTH: i32 = 128;
+/// Display height in pixels (internal buffer size, and shown).
+const DISPLAY_HEIGHT: i32 = 64;
 /// Display width in pixels (shown).
 const DISPLAY_WIDTH: i32 = 102;
 /// Empty display area (outside of physical display).
 const DISPLAY_MARGIN_X: i32 = (DISPLAY_BUFFER_WIDTH - DISPLAY_WIDTH) / 2;
-/// The first visible column's index in pixels.
+/// The first visible column index in pixels.
 const DISPLAY_FIRST_COL_INDEX: i32 = DISPLAY_MARGIN_X;
-/// The last visible column's index in pixels.
+/// The last visible column index in pixels.
 const DISPLAY_LAST_COL_INDEX: i32 = DISPLAY_BUFFER_WIDTH - DISPLAY_MARGIN_X - 1;
+/// The last visible row index in pixels.
+const DISPLAY_LAST_ROW_INDEX: i32 = DISPLAY_HEIGHT - 1;
 
 /// Resources for driving the display.
 pub struct DisplayResources {
@@ -111,9 +115,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
 
         if let Some((power, voltage)) = POWER_MEASUREMENT_SIG.try_take() {
             power_string.clear();
-            if operational_state.manual_sleep {
-                write!(&mut power_string, "sleep").unwrap();
-            } else if !(power.is_nan()) {
+            if !(power.is_nan()) {
                 write!(&mut power_string, "{} W", power.round() as usize).unwrap();
             }
 
@@ -123,14 +125,14 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             }
         }
 
-        if let Some(power_ratio) = POWER_BARGRAPH_SIG.try_take() {
+        if let Some(power_ratio) = POWER_RATIO_BARGRAPH_SIG.try_take() {
             power_bar_width = ((power_ratio * DISPLAY_WIDTH as f32) as i32).max(0);
         }
 
         display.clear_buffer();
 
-        const SET_TEMP_ARROW_Y: i32 = 10;
-        const SET_TEMP_Y: i32 = 11;
+        const SET_TEMP_ARROW_Y: i32 = 9;
+        const SET_TEMP_Y: i32 = 10;
         const ARROW_WIDTH: i32 = 4;
 
         let set_temperature_triangle = Triangle::new(
@@ -149,11 +151,22 @@ pub async fn display_task(mut display_resources: DisplayResources) {
                 .unwrap();
         }
 
+        if operational_state.is_sleeping {
+            Text::with_alignment(
+                "OFF",
+                Point::new(DISPLAY_LAST_COL_INDEX, SET_TEMP_Y),
+                MonoTextStyle::new(&PROFONT_14_POINT, BinaryColor::On),
+                Alignment::Right,
+            )
+            .draw(&mut display)
+            .unwrap();
+        }
+
         Text::with_alignment(
             &temperature_string,
-            Point::new(DISPLAY_LAST_COL_INDEX, 30),
+            Point::new(DISPLAY_BUFFER_WIDTH / 2, 36),
             MonoTextStyle::new(&PROFONT_24_POINT, BinaryColor::On),
-            Alignment::Right,
+            Alignment::Center,
         )
         .draw(&mut display)
         .unwrap();
@@ -168,14 +181,14 @@ pub async fn display_task(mut display_resources: DisplayResources) {
 
         Text::new(
             message_string,
-            Point::new(DISPLAY_FIRST_COL_INDEX, 45),
+            Point::new(DISPLAY_FIRST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 15),
             MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
         )
         .draw(&mut display)
         .unwrap();
 
         Rectangle::new(
-            Point::new(DISPLAY_FIRST_COL_INDEX, 49),
+            Point::new(DISPLAY_FIRST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 11),
             Size::new(power_bar_width as u32, 2),
         )
         .draw_styled(&filled_style, &mut display)
@@ -183,7 +196,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
 
         Text::with_alignment(
             &voltage_string,
-            Point::new(DISPLAY_FIRST_COL_INDEX, 60),
+            Point::new(DISPLAY_FIRST_COL_INDEX, DISPLAY_LAST_ROW_INDEX),
             MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
             Alignment::Left,
         )
@@ -192,7 +205,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
 
         Text::with_alignment(
             &power_string,
-            Point::new(DISPLAY_LAST_COL_INDEX, 60),
+            Point::new(DISPLAY_LAST_COL_INDEX, DISPLAY_LAST_ROW_INDEX),
             MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
             Alignment::Right,
         )

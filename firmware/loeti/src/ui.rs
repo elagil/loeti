@@ -114,8 +114,8 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
             SwitchEvent::LongPress => {
                 let manual_sleep = OPERATIONAL_STATE_MUTEX.lock(|x| {
                     let mut operational_state = x.borrow_mut();
-                    operational_state.manual_sleep = !operational_state.manual_sleep;
-                    operational_state.manual_sleep
+                    operational_state.is_sleeping = !operational_state.is_sleeping;
+                    operational_state.is_sleeping
                 });
                 info!("toggle manual sleep ({})", manual_sleep);
             }
