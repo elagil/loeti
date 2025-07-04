@@ -21,8 +21,6 @@ pub mod ui;
 struct Persistent {
     /// The temperature set point in °C.
     set_temperature_deg_c: isize,
-    /// If true, the new set temperature was not confirmed yet.
-    set_temperature_pending: bool,
 }
 
 impl Persistent {
@@ -30,7 +28,25 @@ impl Persistent {
     const fn default() -> Self {
         Self {
             set_temperature_deg_c: 300,
-            set_temperature_pending: false,
+        }
+    }
+}
+
+/// The operational state of the soldering station (not persistent).
+#[derive(Debug, Format, Clone, Copy, Default)]
+struct OperationalState {
+    /// The iron is in sleep mode (manual).
+    manual_sleep: bool,
+    /// If true, the new set temperature was not confirmed yet.
+    set_temperature_is_pending: bool,
+}
+
+impl OperationalState {
+    /// Default persistent settings.
+    const fn default() -> Self {
+        Self {
+            manual_sleep: false,
+            set_temperature_is_pending: false,
         }
     }
 }
@@ -50,8 +66,13 @@ static POWER_BARGRAPH_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
 /// Signals a new message to display.
 static MESSAGE_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();
 
-/// Persistently stored data (on EEPROM)
-static PERSISTENT: Mutex<ThreadModeRawMutex, RefCell<Persistent>> = Mutex::new(RefCell::new(Persistent::default()));
-
 /// Signals storage of persistent data.
 static STORE_PERSISTENT_SIG: Signal<ThreadModeRawMutex, bool> = Signal::new();
+
+/// Persistently stored data (on EEPROM).
+static PERSISTENT_MUTEX: Mutex<ThreadModeRawMutex, RefCell<Persistent>> =
+    Mutex::new(RefCell::new(Persistent::default()));
+
+/// Operational state (not persistent).
+static OPERATIONAL_STATE_MUTEX: Mutex<ThreadModeRawMutex, RefCell<OperationalState>> =
+    Mutex::new(RefCell::new(OperationalState::default()));

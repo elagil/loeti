@@ -4,7 +4,7 @@ use embassy_stm32::gpio::Input;
 use embassy_time::{Duration, Instant, Ticker};
 use rotary_encoder_embedded::{Direction, RotaryEncoder};
 
-use crate::{PERSISTENT, STORE_PERSISTENT_SIG};
+use crate::{OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
 
 /// Resources for reading a rotary encoder.
 pub struct RotaryEncoderResources {
@@ -60,17 +60,23 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
         };
 
         if step != 0 {
-            PERSISTENT.lock(|x| {
+            let set_temperature_pending = PERSISTENT_MUTEX.lock(|x| {
                 let mut persistent = x.borrow_mut();
 
                 if persistent.set_temperature_deg_c >= 450 && step > 0 {
                     // Upper temperature limit.
+                    false
                 } else if persistent.set_temperature_deg_c <= 100 && step < 0 {
                     // Lower temperature limit.
+                    false
                 } else {
                     persistent.set_temperature_deg_c += step * 10;
-                    persistent.set_temperature_pending = true;
+                    true
                 }
+            });
+
+            OPERATIONAL_STATE_MUTEX.lock(|x| {
+                x.borrow_mut().set_temperature_is_pending = set_temperature_pending;
             });
         }
 
@@ -99,14 +105,20 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
 
         match switch_event {
             SwitchEvent::ShortPress => {
-                info!("short");
-                PERSISTENT.lock(|x| {
-                    let mut persistent = x.borrow_mut();
-                    persistent.set_temperature_pending = false;
+                OPERATIONAL_STATE_MUTEX.lock(|x| {
+                    x.borrow_mut().set_temperature_is_pending = false;
                 });
                 STORE_PERSISTENT_SIG.signal(true);
+                info!("store temperature");
             }
-            SwitchEvent::LongPress => info!("long"),
+            SwitchEvent::LongPress => {
+                let manual_sleep = OPERATIONAL_STATE_MUTEX.lock(|x| {
+                    let mut operational_state = x.borrow_mut();
+                    operational_state.manual_sleep = !operational_state.manual_sleep;
+                    operational_state.manual_sleep
+                });
+                info!("toggle manual sleep ({})", manual_sleep);
+            }
             _ => (),
         }
 

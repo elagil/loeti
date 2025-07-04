@@ -27,8 +27,8 @@ mod library;
 use library::ToolProperties;
 
 use crate::{
-    MAX_SUPPLY_CURRENT_MA_SIG, MESSAGE_SIG, PERSISTENT, POWER_BARGRAPH_SIG, POWER_MEASUREMENT_SIG,
-    TEMPERATURE_MEASUREMENT_DEG_C_SIG,
+    MAX_SUPPLY_CURRENT_MA_SIG, MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, POWER_BARGRAPH_SIG,
+    POWER_MEASUREMENT_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
 };
 
 /// ADC resolution in bit.
@@ -293,6 +293,7 @@ impl Tool {
         &mut self,
         tool_measurement: RawToolMeasurement,
         set_temperature_degree_c: f32,
+        sleep: bool,
     ) -> Result<f32, Error> {
         let tool_properties = Tool::detect(tool_measurement)?;
         if tool_properties.tool_type != self.tool_properties.tool_type {
@@ -304,9 +305,13 @@ impl Tool {
             .get::<thermodynamic_temperature::degree_celsius>();
 
         self.temperature_pid.setpoint(set_temperature_degree_c);
-        let control_output = self.temperature_pid.next_control_output(tool_temperature_deg_c);
 
-        let current_setpoint_a = control_output.output;
+        let current_setpoint_a = if sleep {
+            0.0
+        } else {
+            self.temperature_pid.next_control_output(tool_temperature_deg_c).output
+        };
+
         self.current_pid.setpoint(current_setpoint_a);
 
         let is_current_limited =
@@ -356,6 +361,8 @@ async fn control(tool_resources: &mut ToolResources, current_limit: &ElectricCur
     let mut set_temperature_deg_c = None;
 
     loop {
+        let operational_state = OPERATIONAL_STATE_MUTEX.lock(|x| *x.borrow());
+
         // Wait for temperature sensor value to settle after disabling the heating element.
         Timer::after_millis(10).await;
         let tool_measurement = measure_tool(
@@ -371,19 +378,22 @@ async fn control(tool_resources: &mut ToolResources, current_limit: &ElectricCur
 
         let tool = tool.as_mut().unwrap();
 
-        PERSISTENT.lock(|x| {
-            let persistent = x.borrow();
-            if !persistent.set_temperature_pending {
-                set_temperature_deg_c = Some(persistent.set_temperature_deg_c as f32);
-            }
-        });
+        if !operational_state.set_temperature_is_pending {
+            PERSISTENT_MUTEX.lock(|x| {
+                set_temperature_deg_c = Some(x.borrow().set_temperature_deg_c as f32);
+            });
+        }
 
         if set_temperature_deg_c.is_none() {
             error!("No set temperature available.");
             continue;
         }
 
-        let tool_temperature_deg_c = tool.control_temperature(tool_measurement, set_temperature_deg_c.unwrap())?;
+        let tool_temperature_deg_c = tool.control_temperature(
+            tool_measurement,
+            set_temperature_deg_c.unwrap(),
+            operational_state.manual_sleep,
+        )?;
         TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(tool_temperature_deg_c);
 
         let mut current_loop_ticker = Ticker::every(Duration::from_millis(CURRENT_LOOP_PERIOD_MS));
