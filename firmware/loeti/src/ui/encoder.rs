@@ -6,6 +6,17 @@ use rotary_encoder_embedded::{Direction, RotaryEncoder};
 
 use crate::{OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
 
+/// The state of the user interface (controlled instance).
+#[derive(Debug, Clone, Copy)]
+enum UiState {
+    /// Default control: idle.
+    Idle,
+    /// Temperature is being controlled.
+    Temperature,
+    /// The menu is being controlled.
+    Menu,
+}
+
 /// Resources for reading a rotary encoder.
 pub struct RotaryEncoderResources {
     /// The pin for the encoder's push button.
@@ -40,7 +51,9 @@ enum SwitchEvent {
 /// Reads the rotary encoder and switch.
 #[embassy_executor::task]
 pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
-    let mut rotary_encoder = RotaryEncoder::new(resources.pin_a, resources.pin_b).into_standard_mode();
+    let mut ui_state = UiState::Idle;
+    let mut rotary_encoder =
+        RotaryEncoder::new(resources.pin_a, resources.pin_b).into_standard_mode();
     rotary_encoder.update();
 
     let mut ticker = Ticker::every(Duration::from_millis(1));
@@ -49,7 +62,6 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
     const LONG_PRESS_DURATION: Duration = Duration::from_millis(500);
 
     let mut release_instant = Instant::now();
-
     let mut switch_state = SwitchState::Released;
 
     loop {
@@ -60,31 +72,41 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
         };
 
         if step != 0 {
-            let set_temperature_pending = PERSISTENT_MUTEX.lock(|x| {
-                let mut persistent = x.borrow_mut();
+            ui_state = match ui_state {
+                UiState::Idle | UiState::Temperature => {
+                    let set_temperature_pending = PERSISTENT_MUTEX.lock(|x| {
+                        let mut persistent = x.borrow_mut();
 
-                if persistent.set_temperature_deg_c >= 450 && step > 0 {
-                    // Upper temperature limit.
-                    false
-                } else if persistent.set_temperature_deg_c <= 100 && step < 0 {
-                    // Lower temperature limit.
-                    false
-                } else {
-                    persistent.set_temperature_deg_c += step * 10;
-                    true
+                        if persistent.set_temperature_deg_c >= 450 && step > 0 {
+                            // Upper temperature limit.
+                            false
+                        } else if persistent.set_temperature_deg_c <= 100 && step < 0 {
+                            // Lower temperature limit.
+                            false
+                        } else {
+                            persistent.set_temperature_deg_c += step * 10;
+                            true
+                        }
+                    });
+
+                    OPERATIONAL_STATE_MUTEX.lock(|x| {
+                        x.borrow_mut().set_temperature_is_pending = set_temperature_pending;
+                    });
+
+                    UiState::Temperature
                 }
-            });
-
-            OPERATIONAL_STATE_MUTEX.lock(|x| {
-                x.borrow_mut().set_temperature_is_pending = set_temperature_pending;
-            });
+                UiState::Menu => ui_state,
+            };
         }
 
         let pressed = resources.pin_sw.is_low();
-
         let mut switch_event: SwitchEvent = SwitchEvent::None;
 
-        if matches!(switch_state, SwitchState::Released | SwitchState::WaitForRelease) && pressed {
+        if matches!(
+            switch_state,
+            SwitchState::Released | SwitchState::WaitForRelease
+        ) && pressed
+        {
             let press_duration = Instant::now().duration_since(release_instant);
 
             if press_duration >= LONG_PRESS_DURATION {
@@ -103,24 +125,44 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
             switch_state = SwitchState::Released;
         };
 
-        match switch_event {
-            SwitchEvent::ShortPress => {
+        ui_state = match (switch_event, ui_state) {
+            (SwitchEvent::ShortPress, UiState::Temperature) => {
                 OPERATIONAL_STATE_MUTEX.lock(|x| {
                     x.borrow_mut().set_temperature_is_pending = false;
                 });
                 STORE_PERSISTENT_SIG.signal(true);
                 info!("store temperature");
+
+                UiState::Idle
             }
-            SwitchEvent::LongPress => {
+            (SwitchEvent::ShortPress, UiState::Idle) => {
                 let manual_sleep = OPERATIONAL_STATE_MUTEX.lock(|x| {
                     let mut operational_state = x.borrow_mut();
                     operational_state.is_sleeping = !operational_state.is_sleeping;
                     operational_state.is_sleeping
                 });
                 info!("toggle manual sleep ({})", manual_sleep);
+
+                ui_state
             }
-            _ => (),
-        }
+            (SwitchEvent::LongPress, UiState::Idle) => {
+                OPERATIONAL_STATE_MUTEX.lock(|x| {
+                    x.borrow_mut().menu_is_open = true;
+                });
+                info!("open menu");
+
+                UiState::Menu
+            }
+            (SwitchEvent::LongPress, UiState::Menu) => {
+                OPERATIONAL_STATE_MUTEX.lock(|x| {
+                    x.borrow_mut().menu_is_open = false;
+                });
+                info!("close menu");
+
+                UiState::Idle
+            }
+            _ => ui_state,
+        };
 
         ticker.next().await;
     }

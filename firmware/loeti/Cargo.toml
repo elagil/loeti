@@ -39,12 +39,12 @@ panic-probe = { version = "1.0.0", features = ["print-defmt"] }
 heapless = { version = "0.8", default-features = false }
 static_cell = "2"
 embedded-graphics = "0.8.1"
-ssd1306 = { version = "0.10", features = ["async"] }
+ssd1306 = { path = "../ssd1306", features = ["async"] }
 pid = "4.0.0"
 micromath = "2.1.0"
 
 uom = { version = "0.36.0", default-features = false, features = ["si", "f32"] }
-rotary-encoder-embedded = "0.4"
+rotary-encoder-embedded = "0.5"
 
 serde = { version = "1.0.217", default-features = false, features = ["derive"] }
 postcard = { version = "1.1.1", features = ["use-crc"] }
@@ -55,6 +55,8 @@ usbpd-traits = { version = "1.0.0", features = ["defmt"] }
 assign-resources = "0.5"
 profont = "0.7.0"
 embedded-hal-bus = { version = "0.3.0", features = ["async"] }
+embedded-menu = "0.6.1"
+display-interface = "0.5.0"
 
 # cargo build/run
 [profile.dev]

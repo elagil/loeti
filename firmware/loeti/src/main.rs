@@ -10,9 +10,9 @@ use embassy_stm32::{bind_interrupts, i2c, peripherals, usb, Config};
 use embassy_time::Timer;
 use loeti::power::{AssignedResources, UcpdResources};
 use loeti::tool::{AdcResources, ToolResources};
-use loeti::ui::{self, RotaryEncoderResources};
-use loeti::{display, split_resources, tool};
+use loeti::ui::{self, encoder::RotaryEncoderResources};
 use loeti::{eeprom, power};
+use loeti::{split_resources, tool, ui::display};
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
@@ -36,7 +36,9 @@ async fn main(spawner: Spawner) {
             divq: None,
             divr: Some(PllRDiv::DIV2), // 170 MHz system clock
         });
-        config.rcc.hsi48 = Some(Hsi48Config { sync_from_usb: true });
+        config.rcc.hsi48 = Some(Hsi48Config {
+            sync_from_usb: true,
+        });
         config.rcc.mux.adc12sel = mux::Adcsel::PLL1_P;
         config.rcc.mux.clk48sel = mux::Clk48sel::HSI48;
         config.rcc.sys = Sysclk::PLL1_R;
@@ -102,7 +104,7 @@ async fn main(spawner: Spawner) {
             pin_b: Input::new(p.PB2, Pull::None),
         };
 
-        unwrap!(spawner.spawn(ui::rotary_encoder_task(rotary_encoder_resources)));
+        unwrap!(spawner.spawn(ui::encoder::rotary_encoder_task(rotary_encoder_resources)));
     }
 
     // Launch iron control

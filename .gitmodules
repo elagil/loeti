@@ -4,3 +4,6 @@
 [submodule "firmware/embassy"]
 	path = firmware/embassy
 	url = https://github.com/embassy-rs/embassy.git
+[submodule "firmware/ssd1306"]
+	path = firmware/ssd1306
+	url = git@github.com:elagil/ssd1306.git
