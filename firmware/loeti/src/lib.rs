@@ -10,7 +10,6 @@ use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, signal::Signal};
 use serde::{Deserialize, Serialize};
 
-pub mod display;
 pub mod eeprom;
 pub mod power;
 pub mod tool;
@@ -35,6 +34,8 @@ impl Persistent {
 /// The operational state of the soldering station (not persistent).
 #[derive(Debug, Format, Clone, Copy, Default)]
 struct OperationalState {
+    /// The configuration menu is open.
+    menu_is_open: bool,
     /// The iron is in sleep mode (manual).
     is_sleeping: bool,
     /// If true, the new set temperature was not confirmed yet.
@@ -45,6 +46,7 @@ impl OperationalState {
     /// Default persistent settings.
     const fn default() -> Self {
         Self {
+            menu_is_open: false,
             is_sleeping: false,
             set_temperature_is_pending: false,
         }
