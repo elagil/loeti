@@ -4,7 +4,7 @@ use embassy_stm32::gpio::Input;
 use embassy_time::{Duration, Instant, Ticker};
 use rotary_encoder_embedded::{Direction, RotaryEncoder};
 
-use crate::{OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
+use crate::{ui::MENU_STEP_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
 
 /// The state of the user interface (controlled instance).
 #[derive(Debug, Clone, Copy)]
@@ -95,7 +95,11 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
 
                     UiState::Temperature
                 }
-                UiState::Menu => ui_state,
+                UiState::Menu => {
+                    MENU_STEP_SIG.signal(step);
+
+                    ui_state
+                }
             };
         }
 
@@ -130,7 +134,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                 OPERATIONAL_STATE_MUTEX.lock(|x| {
                     x.borrow_mut().set_temperature_is_pending = false;
                 });
-                STORE_PERSISTENT_SIG.signal(true);
+                STORE_PERSISTENT_SIG.signal(());
                 info!("store temperature");
 
                 UiState::Idle
@@ -145,9 +149,16 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
 
                 ui_state
             }
+            (SwitchEvent::ShortPress, UiState::Menu) => {
+                OPERATIONAL_STATE_MUTEX.lock(|x| {
+                    x.borrow_mut().menu_state.toggle_pending = true;
+                });
+
+                ui_state
+            }
             (SwitchEvent::LongPress, UiState::Idle) => {
                 OPERATIONAL_STATE_MUTEX.lock(|x| {
-                    x.borrow_mut().menu_is_open = true;
+                    x.borrow_mut().menu_state.is_open = true;
                 });
                 info!("open menu");
 
@@ -155,7 +166,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
             }
             (SwitchEvent::LongPress, UiState::Menu) => {
                 OPERATIONAL_STATE_MUTEX.lock(|x| {
-                    x.borrow_mut().menu_is_open = false;
+                    x.borrow_mut().menu_state.is_open = false;
                 });
                 info!("close menu");
 
