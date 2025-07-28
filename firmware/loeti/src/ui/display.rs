@@ -1,5 +1,7 @@
 //! Controls the display of the soldering controller.
+use core::cmp::Ordering::{Greater, Less};
 use core::fmt::Write;
+use defmt::info;
 use embassy_stm32::spi::Spi;
 use embassy_stm32::{gpio::Output, mode::Async};
 use embassy_time::{Duration, Ticker};
@@ -12,16 +14,18 @@ use embedded_graphics::{
     prelude::*,
     primitives::{PrimitiveStyleBuilder, Rectangle},
 };
-use embedded_menu::{Menu, MenuState, MenuStyle, SelectValue};
+use embedded_menu::interaction::{Action, Interaction, Navigation};
+use embedded_menu::{Menu, MenuStyle};
 use micromath::F32Ext;
 use panic_probe as _;
 use profont::{PROFONT_14_POINT, PROFONT_24_POINT, PROFONT_9_POINT};
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize102x64, SPIInterface};
 use ssd1306::Ssd1306Async;
 
+use crate::ui::MENU_STEP_SIG;
 use crate::{
     MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, POWER_MEASUREMENT_SIG,
-    POWER_RATIO_BARGRAPH_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
+    POWER_RATIO_BARGRAPH_SIG, STORE_PERSISTENT_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
 };
 
 /// Display height in pixels.
@@ -47,24 +51,33 @@ pub struct DisplayResources {
     pub pin_reset: Output<'static>,
 }
 
-#[derive(Copy, Clone, PartialEq, SelectValue)]
-pub enum TestEnum {
-    A,
-    B,
-    C,
+/// Possible results from menu item modifications.
+pub enum MenuResult {
+    /// Display rotation was changed.
+    DisplayRotation(DisplayRotation),
 }
 
 /// Handle displaying the UI.
 #[embassy_executor::task]
 pub async fn display_task(mut display_resources: DisplayResources) {
+    let display_is_rotated = PERSISTENT_MUTEX.lock(|x| x.borrow().display_is_rotated);
+
     let spi = embedded_hal_bus::spi::ExclusiveDevice::new_no_delay(
         display_resources.spi,
         display_resources.pin_cs,
     )
     .unwrap();
     let interface = SPIInterface::new(spi, display_resources.pin_dc);
-    let mut display = Ssd1306Async::new(interface, DisplaySize102x64, DisplayRotation::Rotate180)
-        .into_buffered_graphics_mode();
+    let mut display = Ssd1306Async::new(
+        interface,
+        DisplaySize102x64,
+        if display_is_rotated {
+            DisplayRotation::Rotate180
+        } else {
+            DisplayRotation::Rotate0
+        },
+    )
+    .into_buffered_graphics_mode();
 
     display
         .reset(
@@ -101,12 +114,18 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     let mut refresh_ticker = Ticker::every(Duration::from_hz(20));
 
     let mut menu = Menu::with_style(
-        "Menu",
+        "Setup",
         MenuStyle::default()
-            .with_font(&PROFONT_9_POINT)
-            .with_title_font(&PROFONT_14_POINT),
+            .with_title_font(&PROFONT_14_POINT)
+            .with_font(&PROFONT_9_POINT),
     )
-    .add_item("Rotate", false, |b| 20 + b as i32)
+    .add_item("Rotate", display_is_rotated, |b| {
+        if b {
+            MenuResult::DisplayRotation(DisplayRotation::Rotate180)
+        } else {
+            MenuResult::DisplayRotation(DisplayRotation::Rotate0)
+        }
+    })
     .build();
 
     loop {
@@ -160,7 +179,42 @@ pub async fn display_task(mut display_resources: DisplayResources) {
 
         display.clear_buffer();
 
-        if operational_state.menu_is_open {
+        if operational_state.menu_state.is_open {
+            let step = MENU_STEP_SIG.try_take().unwrap_or_default();
+
+            match step.cmp(&0) {
+                Greater => {
+                    menu.interact(Interaction::Navigation(Navigation::Previous));
+                }
+                Less => {
+                    menu.interact(Interaction::Navigation(Navigation::Next));
+                }
+                _ => (),
+            };
+
+            if operational_state.menu_state.toggle_pending {
+                OPERATIONAL_STATE_MUTEX.lock(|x| {
+                    x.borrow_mut().menu_state.toggle_pending = false;
+                });
+
+                if let Some(MenuResult::DisplayRotation(r)) =
+                    menu.interact(Interaction::Action(Action::Select))
+                {
+                    PERSISTENT_MUTEX.lock(|x| {
+                        x.borrow_mut().display_is_rotated = match r {
+                            DisplayRotation::Rotate0 => false,
+                            DisplayRotation::Rotate180 => true,
+                            _ => unreachable!(),
+                        };
+                    });
+
+                    STORE_PERSISTENT_SIG.signal(());
+
+                    display.set_rotation(r).await.unwrap();
+                    info!("set rotation")
+                };
+            }
+
             menu.update(&display);
             menu.draw(&mut display).unwrap();
         } else {

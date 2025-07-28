@@ -17,25 +17,37 @@ pub mod ui;
 
 /// Persistent storage data.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
-struct Persistent {
+struct PersistentData {
+    /// If true, display is rotated 180°.
+    display_is_rotated: bool,
     /// The temperature set point in °C.
     set_temperature_deg_c: isize,
 }
 
-impl Persistent {
+impl PersistentData {
     /// Default persistent settings.
     const fn default() -> Self {
         Self {
+            display_is_rotated: false,
             set_temperature_deg_c: 300,
         }
     }
 }
 
+/// The state of the setup menu.
+#[derive(Debug, Format, Clone, Copy, Default)]
+struct MenuState {
+    /// The menu is currently open.
+    is_open: bool,
+    /// An item was toggled and evaluation is pending.
+    toggle_pending: bool,
+}
+
 /// The operational state of the soldering station (not persistent).
 #[derive(Debug, Format, Clone, Copy, Default)]
 struct OperationalState {
-    /// The configuration menu is open.
-    menu_is_open: bool,
+    /// The state of the control menu.
+    menu_state: MenuState,
     /// The iron is in sleep mode (manual).
     is_sleeping: bool,
     /// If true, the new set temperature was not confirmed yet.
@@ -46,7 +58,10 @@ impl OperationalState {
     /// Default persistent settings.
     const fn default() -> Self {
         Self {
-            menu_is_open: false,
+            menu_state: MenuState {
+                is_open: false,
+                toggle_pending: false,
+            },
             is_sleeping: false,
             set_temperature_is_pending: false,
         }
@@ -69,11 +84,11 @@ static POWER_RATIO_BARGRAPH_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new()
 static MESSAGE_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();
 
 /// Signals storage of persistent data.
-static STORE_PERSISTENT_SIG: Signal<ThreadModeRawMutex, bool> = Signal::new();
+static STORE_PERSISTENT_SIG: Signal<ThreadModeRawMutex, ()> = Signal::new();
 
 /// Persistently stored data (on EEPROM).
-static PERSISTENT_MUTEX: Mutex<ThreadModeRawMutex, RefCell<Persistent>> =
-    Mutex::new(RefCell::new(Persistent::default()));
+static PERSISTENT_MUTEX: Mutex<ThreadModeRawMutex, RefCell<PersistentData>> =
+    Mutex::new(RefCell::new(PersistentData::default()));
 
 /// Operational state (not persistent).
 static OPERATIONAL_STATE_MUTEX: Mutex<ThreadModeRawMutex, RefCell<OperationalState>> =

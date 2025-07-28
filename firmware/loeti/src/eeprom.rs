@@ -1,10 +1,10 @@
 //! Handles user inputs by means of a rotary encoder.
-use defmt::{debug, trace};
+use defmt::debug;
 use embassy_stm32::i2c::{self};
 use embassy_time::Timer;
 use postcard::from_bytes_cobs;
 
-use crate::{Persistent, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
+use crate::{PersistentData, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
 
 /// The type of EEPROM on this device.
 type Eeprom = eeprom24x::Eeprom24x<
@@ -14,53 +14,53 @@ type Eeprom = eeprom24x::Eeprom24x<
     eeprom24x::unique_serial::No,
 >;
 
+/// Size of a page.
+const SIZE: usize = 32;
+
 /// Load persistent data from EEPROM.
-async fn load_persistent(eeprom: &mut Eeprom) {
-    let mut buf = [0u8; 32];
+pub async fn load_persistent(eeprom: &mut Eeprom) {
+    let mut buf = [0u8; SIZE];
 
     while eeprom.read_data(0, &mut buf).is_err() {
-        debug!("Retry EEPROM read.");
+        debug!("Retry EEPROM read");
         Timer::after_millis(10).await;
     }
 
-    trace!("EEPROM read: {}", buf);
+    debug!("EEPROM read: {}", buf);
 
-    let persistent: Persistent = match from_bytes_cobs(&mut buf) {
+    let data: PersistentData = match from_bytes_cobs(&mut buf) {
         Ok(x) => {
-            debug!("Loaded persistent storage {}.", x);
+            debug!("Loaded persistent storage {}", x);
             x
         }
         Err(_) => {
-            debug!("Initialize new persistent storage.");
-            Persistent::default()
+            debug!("Initialize new persistent storage");
+            PersistentData::default()
         }
     };
 
-    PERSISTENT_MUTEX.lock(|x| x.replace(persistent));
+    PERSISTENT_MUTEX.lock(|x| x.replace(data));
 }
 
 /// Store persistent data to EEPROM.
 async fn store_persistent(eeprom: &mut Eeprom) {
-    let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
+    let data = PERSISTENT_MUTEX.lock(|x| *x.borrow());
 
-    let mut buf = [0u8; 32];
-    postcard::to_slice_cobs(&persistent, &mut buf).unwrap();
-    trace!("EEPROM write: {}", buf);
+    let mut buf = [0u8; SIZE];
+    let used = postcard::to_slice_cobs(&data, &mut buf).unwrap();
 
-    while eeprom.write_page(0, &buf).is_err() {
-        debug!("Retry EEPROM write.");
+    while eeprom.write_page(0, used).is_err() {
+        debug!("Retry EEPROM write");
         Timer::after_millis(10).await;
     }
-    debug!("Wrote persistent storage.");
+    debug!("EEPROM wrote: {}", used);
 }
 
 /// Handles reading and writing EEPROM.
 #[embassy_executor::task]
 pub async fn eeprom_task(mut eeprom: Eeprom) {
-    load_persistent(&mut eeprom).await;
-
     loop {
-        let _ = STORE_PERSISTENT_SIG.wait().await;
+        STORE_PERSISTENT_SIG.wait().await;
         store_persistent(&mut eeprom).await;
     }
 }

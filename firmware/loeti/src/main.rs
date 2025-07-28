@@ -71,8 +71,10 @@ async fn main(spawner: Spawner) {
             Hertz(100_000),
             Default::default(),
         );
-        let eeprom = eeprom24x::Eeprom24x::new_24x64(i2c, eeprom24x::SlaveAddr::Default);
+        let mut eeprom = eeprom24x::Eeprom24x::new_24x64(i2c, eeprom24x::SlaveAddr::Default);
 
+        // Load data before any other tasks access persistent storage.
+        eeprom::load_persistent(&mut eeprom).await;
         unwrap!(spawner.spawn(eeprom::eeprom_task(eeprom)));
     }
 
