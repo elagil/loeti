@@ -4,7 +4,7 @@ use embassy_stm32::i2c::{self};
 use embassy_time::Timer;
 use postcard::from_bytes_cobs;
 
-use crate::{PersistentData, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
+use crate::{Persistent, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
 
 /// The type of EEPROM on this device.
 type Eeprom = eeprom24x::Eeprom24x<
@@ -28,14 +28,14 @@ pub async fn load_persistent(eeprom: &mut Eeprom) {
 
     debug!("EEPROM read: {}", buf);
 
-    let data: PersistentData = match from_bytes_cobs(&mut buf) {
+    let data: Persistent = match from_bytes_cobs(&mut buf) {
         Ok(x) => {
             debug!("Loaded persistent storage {}", x);
             x
         }
         Err(_) => {
             debug!("Initialize new persistent storage");
-            PersistentData::default()
+            Persistent::default()
         }
     };
 

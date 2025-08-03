@@ -7,3 +7,6 @@
 [submodule "firmware/ssd1306"]
 	path = firmware/ssd1306
 	url = git@github.com:elagil/ssd1306.git
+[submodule "firmware/embedded-menu"]
+	path = firmware/embedded-menu
+	url = git@github.com:elagil/embedded-menu.git

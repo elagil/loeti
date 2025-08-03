@@ -6,4 +6,4 @@ pub mod display;
 pub mod encoder;
 
 /// Signals encoder steps for menu operation.
-static MENU_STEP_SIG: Signal<ThreadModeRawMutex, isize> = Signal::new();
+static MENU_STEPS_SIG: Signal<ThreadModeRawMutex, isize> = Signal::new();

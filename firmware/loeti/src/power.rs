@@ -8,7 +8,7 @@ use embassy_stm32::ucpd::{self, CcPhy, CcPull, CcSel, CcVState, PdPhy, Ucpd};
 use embassy_stm32::{bind_interrupts, peripherals, Peri};
 use embassy_time::{with_timeout, Duration, Timer};
 use uom::si::electric_current;
-use usbpd::protocol_layer::message::request;
+use usbpd::protocol_layer::message::{pdo, request};
 use usbpd::sink::device_policy_manager::DevicePolicyManager;
 use usbpd::sink::policy_engine::Sink;
 use usbpd::timers::Timer as SinkTimer;
@@ -72,10 +72,13 @@ impl SinkDriver for UcpdSinkDriver<'_> {
     }
 
     async fn transmit_hard_reset(&mut self) -> Result<(), usbpd_traits::DriverTxError> {
-        self.pd_phy.transmit_hardreset().await.map_err(|err| match err {
-            ucpd::TxError::Discarded => usbpd_traits::DriverTxError::Discarded,
-            ucpd::TxError::HardReset => usbpd_traits::DriverTxError::HardReset,
-        })
+        self.pd_phy
+            .transmit_hardreset()
+            .await
+            .map_err(|err| match err {
+                ucpd::TxError::Discarded => usbpd_traits::DriverTxError::Discarded,
+                ucpd::TxError::HardReset => usbpd_traits::DriverTxError::HardReset,
+            })
     }
 }
 
@@ -111,9 +114,9 @@ async fn wait_attached<T: ucpd::Instance>(cc_phy: &mut CcPhy<'_, T>) -> CableOri
 
         // State was stable for the complete debounce period, check orientation.
         return match (cc1, cc2) {
-            (_, CcVState::LOWEST) => CableOrientation::Normal,  // CC1 connected
+            (_, CcVState::LOWEST) => CableOrientation::Normal, // CC1 connected
             (CcVState::LOWEST, _) => CableOrientation::Flipped, // CC2 connected
-            _ => CableOrientation::DebugAccessoryMode,          // Both connected (special cable)
+            _ => CableOrientation::DebugAccessoryMode,         // Both connected (special cable)
         };
     }
 }
@@ -131,13 +134,28 @@ impl SinkTimer for EmbassySinkTimer {
 struct Device {}
 
 impl DevicePolicyManager for Device {
+    async fn request(
+        &mut self,
+        source_capabilities: &pdo::SourceCapabilities,
+    ) -> request::PowerSource {
+        request::PowerSource::new_fixed(
+            request::CurrentRequest::Highest,
+            request::VoltageRequest::Highest,
+            source_capabilities,
+        )
+        .unwrap()
+    }
+
     /// Notify the device that it shall transition to a new power level.
     ///
     /// The device is informed about the request that was accepted by the source.
     async fn transition_power(&mut self, accepted: &request::PowerSource) {
         if let request::PowerSource::FixedVariableSupply(supply) = accepted {
-            MAX_SUPPLY_CURRENT_MA_SIG
-                .signal(supply.max_operating_current().get::<electric_current::milliampere>() as f32)
+            MAX_SUPPLY_CURRENT_MA_SIG.signal(
+                supply
+                    .max_operating_current()
+                    .get::<electric_current::milliampere>() as f32,
+            )
         }
     }
 }

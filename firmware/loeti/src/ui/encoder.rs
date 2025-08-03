@@ -4,7 +4,7 @@ use embassy_stm32::gpio::Input;
 use embassy_time::{Duration, Instant, Ticker};
 use rotary_encoder_embedded::{Direction, RotaryEncoder};
 
-use crate::{ui::MENU_STEP_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
+use crate::{ui::MENU_STEPS_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
 
 /// The state of the user interface (controlled instance).
 #[derive(Debug, Clone, Copy)]
@@ -65,26 +65,26 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
     let mut switch_state = SwitchState::Released;
 
     loop {
-        let step = match rotary_encoder.update() {
+        let steps = match rotary_encoder.update() {
             Direction::Clockwise => 1,
             Direction::Anticlockwise => -1,
             _ => 0,
         };
 
-        if step != 0 {
+        if steps != 0 {
             ui_state = match ui_state {
                 UiState::Idle | UiState::Temperature => {
                     let set_temperature_pending = PERSISTENT_MUTEX.lock(|x| {
                         let mut persistent = x.borrow_mut();
 
-                        if persistent.set_temperature_deg_c >= 450 && step > 0 {
+                        if persistent.set_temperature_deg_c >= 450 && steps > 0 {
                             // Upper temperature limit.
                             false
-                        } else if persistent.set_temperature_deg_c <= 100 && step < 0 {
+                        } else if persistent.set_temperature_deg_c <= 100 && steps < 0 {
                             // Lower temperature limit.
                             false
                         } else {
-                            persistent.set_temperature_deg_c += step * 10;
+                            persistent.set_temperature_deg_c += steps * 10;
                             true
                         }
                     });
@@ -96,7 +96,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                     UiState::Temperature
                 }
                 UiState::Menu => {
-                    MENU_STEP_SIG.signal(step);
+                    MENU_STEPS_SIG.signal(steps);
 
                     ui_state
                 }
