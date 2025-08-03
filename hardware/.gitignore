@@ -8,15 +8,21 @@
 *.kicad_pcb-bak
 *.kicad_sch-bak
 *-backups
-*.kicad_prl
-*.sch-bak
+*-cache*
+*-bak
+*-bak*
 *~
+~*
 _autosave-*
+\#auto_saved_files\#
 *.tmp
 *-save.pro
 *-save.kicad_pcb
 fp-info-cache
+~*.lck
+\#auto_saved_files#
 *.log
+*.plt
 
 # Netlist files (exported from Eeschema)
 *.net
@@ -31,3 +37,9 @@ fp-info-cache
 
 # Simulation results
 *.raw
+
+# Archived Backups (KiCad 6.0)
+**/*-backups/*.zip
+
+# Local project settings
+*.kicad_prl
