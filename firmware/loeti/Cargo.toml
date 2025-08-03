@@ -50,12 +50,12 @@ serde = { version = "1.0.217", default-features = false, features = ["derive"] }
 postcard = { version = "1.1.1", features = ["use-crc"] }
 crc = "3.3.0"
 eeprom24x = "0.7.2"
-usbpd = { version = "1.0.0", features = ["defmt"] }
-usbpd-traits = { version = "1.0.0", features = ["defmt"] }
+usbpd = { version = "1.1.1", features = ["defmt"] }
+usbpd-traits = { version = "1.1.0", features = ["defmt"] }
 assign-resources = "0.5"
 profont = "0.7.0"
 embedded-hal-bus = { version = "0.3.0", features = ["async"] }
-embedded-menu = "0.6.1"
+embedded-menu = { path = "../embedded-menu" }
 display-interface = "0.5.0"
 
 # cargo build/run

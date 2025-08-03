@@ -17,19 +17,22 @@ pub mod ui;
 
 /// Persistent storage data.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
-struct PersistentData {
+struct Persistent {
     /// If true, display is rotated 180°.
     display_is_rotated: bool,
     /// The temperature set point in °C.
     set_temperature_deg_c: isize,
+    /// Current margin to leave until max. supply current.
+    current_margin_ma: u16,
 }
 
-impl PersistentData {
+impl Persistent {
     /// Default persistent settings.
     const fn default() -> Self {
         Self {
             display_is_rotated: false,
             set_temperature_deg_c: 300,
+            current_margin_ma: 150,
         }
     }
 }
@@ -87,8 +90,8 @@ static MESSAGE_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();
 static STORE_PERSISTENT_SIG: Signal<ThreadModeRawMutex, ()> = Signal::new();
 
 /// Persistently stored data (on EEPROM).
-static PERSISTENT_MUTEX: Mutex<ThreadModeRawMutex, RefCell<PersistentData>> =
-    Mutex::new(RefCell::new(PersistentData::default()));
+static PERSISTENT_MUTEX: Mutex<ThreadModeRawMutex, RefCell<Persistent>> =
+    Mutex::new(RefCell::new(Persistent::default()));
 
 /// Operational state (not persistent).
 static OPERATIONAL_STATE_MUTEX: Mutex<ThreadModeRawMutex, RefCell<OperationalState>> =

@@ -15,6 +15,7 @@ use embedded_graphics::{
     primitives::{PrimitiveStyleBuilder, Rectangle},
 };
 use embedded_menu::interaction::{Action, Interaction, Navigation};
+use embedded_menu::items::menu_item::SelectValue;
 use embedded_menu::{Menu, MenuStyle};
 use micromath::F32Ext;
 use panic_probe as _;
@@ -22,7 +23,7 @@ use profont::{PROFONT_14_POINT, PROFONT_24_POINT, PROFONT_9_POINT};
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize102x64, SPIInterface};
 use ssd1306::Ssd1306Async;
 
-use crate::ui::MENU_STEP_SIG;
+use crate::ui::MENU_STEPS_SIG;
 use crate::{
     MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, POWER_MEASUREMENT_SIG,
     POWER_RATIO_BARGRAPH_SIG, STORE_PERSISTENT_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
@@ -55,12 +56,43 @@ pub struct DisplayResources {
 pub enum MenuResult {
     /// Display rotation was changed.
     DisplayRotation(DisplayRotation),
+    /// The current margin in mA.
+    CurrentMargin(CurrentMargin),
+}
+
+/// Adjust current margin (from max. supply current).
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct CurrentMargin {
+    /// The margin in units of mA.
+    current_ma: u16,
+}
+
+impl SelectValue for CurrentMargin {
+    fn marker(&self) -> &str {
+        match self.current_ma {
+            150 => "0.15",
+            250 => "0.25",
+            500 => "0.5",
+            1000 => "1.0",
+            _ => unreachable!(),
+        }
+    }
+
+    fn next(&mut self) {
+        self.current_ma = match self.current_ma {
+            150 => 250,
+            250 => 500,
+            500 => 1000,
+            1000 => 150,
+            _ => unreachable!(),
+        };
+    }
 }
 
 /// Handle displaying the UI.
 #[embassy_executor::task]
 pub async fn display_task(mut display_resources: DisplayResources) {
-    let display_is_rotated = PERSISTENT_MUTEX.lock(|x| x.borrow().display_is_rotated);
+    let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
 
     let spi = embedded_hal_bus::spi::ExclusiveDevice::new_no_delay(
         display_resources.spi,
@@ -71,7 +103,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     let mut display = Ssd1306Async::new(
         interface,
         DisplaySize102x64,
-        if display_is_rotated {
+        if persistent.display_is_rotated {
             DisplayRotation::Rotate180
         } else {
             DisplayRotation::Rotate0
@@ -119,13 +151,20 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             .with_title_font(&PROFONT_14_POINT)
             .with_font(&PROFONT_9_POINT),
     )
-    .add_item("Rotate", display_is_rotated, |b| {
+    .add_item("Rotate", persistent.display_is_rotated, |b| {
         if b {
             MenuResult::DisplayRotation(DisplayRotation::Rotate180)
         } else {
             MenuResult::DisplayRotation(DisplayRotation::Rotate0)
         }
     })
+    .add_item(
+        "Margin / A",
+        CurrentMargin {
+            current_ma: persistent.current_margin_ma,
+        },
+        |v| MenuResult::CurrentMargin(v),
+    )
     .build();
 
     loop {
@@ -180,14 +219,18 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         display.clear_buffer();
 
         if operational_state.menu_state.is_open {
-            let step = MENU_STEP_SIG.try_take().unwrap_or_default();
+            let steps = MENU_STEPS_SIG.try_take().unwrap_or_default();
 
-            match step.cmp(&0) {
+            match steps.cmp(&0) {
                 Greater => {
-                    menu.interact(Interaction::Navigation(Navigation::Previous));
+                    menu.interact(Interaction::Navigation(Navigation::BackwardWrapping(
+                        steps as usize,
+                    )));
                 }
                 Less => {
-                    menu.interact(Interaction::Navigation(Navigation::Next));
+                    menu.interact(Interaction::Navigation(Navigation::ForwardWrapping(
+                        -steps as usize,
+                    )));
                 }
                 _ => (),
             };
@@ -197,21 +240,25 @@ pub async fn display_task(mut display_resources: DisplayResources) {
                     x.borrow_mut().menu_state.toggle_pending = false;
                 });
 
-                if let Some(MenuResult::DisplayRotation(r)) =
-                    menu.interact(Interaction::Action(Action::Select))
-                {
-                    PERSISTENT_MUTEX.lock(|x| {
-                        x.borrow_mut().display_is_rotated = match r {
-                            DisplayRotation::Rotate0 => false,
-                            DisplayRotation::Rotate180 => true,
-                            _ => unreachable!(),
-                        };
-                    });
+                match menu.interact(Interaction::Action(Action::Select)) {
+                    Some(MenuResult::DisplayRotation(r)) => {
+                        PERSISTENT_MUTEX.lock(|x| {
+                            x.borrow_mut().display_is_rotated = match r {
+                                DisplayRotation::Rotate0 => false,
+                                DisplayRotation::Rotate180 => true,
+                                _ => unreachable!(),
+                            };
+                        });
+                        STORE_PERSISTENT_SIG.signal(());
 
-                    STORE_PERSISTENT_SIG.signal(());
-
-                    display.set_rotation(r).await.unwrap();
-                    info!("set rotation")
+                        display.set_rotation(r).await.unwrap();
+                        info!("set rotation");
+                    }
+                    Some(MenuResult::CurrentMargin(c)) => {
+                        PERSISTENT_MUTEX.lock(|x| x.borrow_mut().current_margin_ma = c.current_ma);
+                        STORE_PERSISTENT_SIG.signal(());
+                    }
+                    _ => (),
                 };
             }
 
