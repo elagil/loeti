@@ -163,7 +163,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         CurrentMargin {
             current_ma: persistent.current_margin_ma,
         },
-        |v| MenuResult::CurrentMargin(v),
+        MenuResult::CurrentMargin,
     )
     .build();
 
