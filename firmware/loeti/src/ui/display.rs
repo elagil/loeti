@@ -19,7 +19,7 @@ use embedded_menu::items::menu_item::SelectValue;
 use embedded_menu::{Menu, MenuStyle};
 use micromath::F32Ext;
 use panic_probe as _;
-use profont::{PROFONT_14_POINT, PROFONT_24_POINT, PROFONT_9_POINT};
+use profont::{PROFONT_12_POINT, PROFONT_24_POINT, PROFONT_9_POINT};
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize102x64, SPIInterface};
 use ssd1306::Ssd1306Async;
 
@@ -148,7 +148,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     let mut menu = Menu::with_style(
         "Setup",
         MenuStyle::default()
-            .with_title_font(&PROFONT_14_POINT)
+            .with_title_font(&PROFONT_12_POINT)
             .with_font(&PROFONT_9_POINT),
     )
     .add_item("Rotate", persistent.display_is_rotated, |b| {
@@ -265,8 +265,8 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             menu.update(&display);
             menu.draw(&mut display).unwrap();
         } else {
-            const SET_TEMP_ARROW_Y: i32 = 12;
-            const SET_TEMP_Y: i32 = 13;
+            const SET_TEMP_ARROW_Y: i32 = 11;
+            const SET_TEMP_Y: i32 = 11;
             const ARROW_WIDTH: i32 = 4;
 
             let set_temperature_triangle = Triangle::new(
@@ -292,7 +292,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
                 Text::with_alignment(
                     "OFF",
                     Point::new(DISPLAY_LAST_COL_INDEX, SET_TEMP_Y),
-                    MonoTextStyle::new(&PROFONT_14_POINT, BinaryColor::On),
+                    MonoTextStyle::new(&PROFONT_12_POINT, BinaryColor::On),
                     Alignment::Right,
                 )
                 .draw(&mut display)
@@ -301,7 +301,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
 
             Text::with_alignment(
                 &temperature_string,
-                Point::new(DISPLAY_WIDTH / 2, 36),
+                Point::new(DISPLAY_WIDTH / 2, 35),
                 MonoTextStyle::new(&PROFONT_24_POINT, BinaryColor::On),
                 Alignment::Center,
             )
@@ -311,29 +311,14 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             Text::new(
                 &set_temperature_string,
                 Point::new(DISPLAY_FIRST_COL_INDEX + 2 * ARROW_WIDTH, SET_TEMP_Y),
-                MonoTextStyle::new(&PROFONT_14_POINT, BinaryColor::On),
+                MonoTextStyle::new(&PROFONT_12_POINT, BinaryColor::On),
             )
             .draw(&mut display)
-            .unwrap();
-
-            Text::new(
-                message_string,
-                Point::new(DISPLAY_FIRST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 15),
-                MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
-            )
-            .draw(&mut display)
-            .unwrap();
-
-            Rectangle::new(
-                Point::new(DISPLAY_FIRST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 11),
-                Size::new(power_bar_width as u32, 2),
-            )
-            .draw_styled(&filled_style, &mut display)
             .unwrap();
 
             Text::with_alignment(
-                &voltage_string,
-                Point::new(DISPLAY_FIRST_COL_INDEX, DISPLAY_LAST_ROW_INDEX),
+                &power_string,
+                Point::new(DISPLAY_FIRST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 20),
                 MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
                 Alignment::Left,
             )
@@ -341,10 +326,26 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             .unwrap();
 
             Text::with_alignment(
-                &power_string,
-                Point::new(DISPLAY_LAST_COL_INDEX, DISPLAY_LAST_ROW_INDEX),
+                &voltage_string,
+                Point::new(DISPLAY_LAST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 20),
                 MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
                 Alignment::Right,
+            )
+            .draw(&mut display)
+            .unwrap();
+
+            Rectangle::new(
+                Point::new(DISPLAY_FIRST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 16),
+                Size::new(power_bar_width as u32, 2),
+            )
+            .draw_styled(&filled_style, &mut display)
+            .unwrap();
+
+            Text::with_alignment(
+                message_string,
+                Point::new(DISPLAY_LAST_COL_INDEX / 2, DISPLAY_LAST_ROW_INDEX - 5),
+                MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
+                Alignment::Center,
             )
             .draw(&mut display)
             .unwrap();
