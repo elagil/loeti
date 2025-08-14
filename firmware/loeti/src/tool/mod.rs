@@ -29,8 +29,8 @@ mod library;
 use library::ToolProperties;
 
 use crate::{
-    MAX_SUPPLY_CURRENT_MA_SIG, MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX,
-    POWER_MEASUREMENT_SIG, POWER_RATIO_BARGRAPH_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
+    DISPLAY_POWER_SIG, MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX,
+    POWER_RATIO_BARGRAPH_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
 };
 
 /// ADC resolution in bit.
@@ -171,13 +171,13 @@ struct PowerMeasurement {
     /// The electric current through the tool.
     current: ElectricCurrent,
     /// The supply voltage.
-    potential: ElectricPotential,
+    _potential: ElectricPotential,
 }
 
 impl PowerMeasurement {
     /// Calculate the tool's power dissipation.
-    fn power(&self) -> Power {
-        self.potential * self.current
+    fn _power(&self) -> Power {
+        self._potential * self.current
     }
 
     /// Compensate current with an idle power measurement.
@@ -210,7 +210,10 @@ async fn measure_tool_power(adc_power_resources: &mut AdcResources) -> PowerMeas
     const VOLTAGE_DIVIDER_RATIO: f32 = 7.667;
     let potential = VOLTAGE_DIVIDER_RATIO * adc_value_to_potential(adc_buffer[1]);
 
-    PowerMeasurement { current, potential }
+    PowerMeasurement {
+        current,
+        _potential: potential,
+    }
 }
 
 /// A tool (soldering iron).
@@ -435,7 +438,7 @@ async fn control(
         if operational_state.is_sleeping {
             let mut power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
             power_measurement.compensate(&idle_power_measurement);
-            show_power(&power_measurement, None);
+            show_power(None);
 
             // Skip the rest of the control loop.
             Timer::after_millis(LOOP_PERIOD_MS).await;
@@ -458,7 +461,7 @@ async fn control(
                 let mut power_measurement =
                     measure_tool_power(&mut tool_resources.adc_resources).await;
                 power_measurement.compensate(&idle_power_measurement);
-                show_power(&power_measurement, Some(tool.power_ratio()));
+                show_power(Some(tool.power_ratio()));
 
                 // Wait for the end of this cycle.
                 current_loop_ticker.next().await;
@@ -484,12 +487,7 @@ async fn control(
 }
 
 /// Display a power measurement and relative power bargraph.
-fn show_power(measurement: &PowerMeasurement, power_ratio: Option<f32>) {
-    POWER_MEASUREMENT_SIG.signal((
-        measurement.power().get::<power::watt>(),
-        measurement.potential.get::<electric_potential::volt>(),
-    ));
-
+fn show_power(power_ratio: Option<f32>) {
     let power_ratio = match power_ratio {
         None => f32::NAN,
         Some(x) => x,
@@ -504,7 +502,6 @@ fn show_message(message: &'static str) {
 
 /// Displays a message, while being idle (not heating).
 fn show_idle_message(message: &'static str) {
-    POWER_MEASUREMENT_SIG.signal((f32::NAN, f32::NAN));
     POWER_RATIO_BARGRAPH_SIG.signal(f32::NAN);
     TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(f32::NAN);
 
@@ -515,19 +512,22 @@ fn show_idle_message(message: &'static str) {
 ///
 /// Takes current and temperature measurements, and adjusts the heater PWM duty cycle accordingly.
 #[embassy_executor::task]
-pub async fn tool_task(mut tool_resources: ToolResources) {
+pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u32, u32)) {
     info!("Maximum measurable voltage: {} V", MAX_ADC_V);
     info!(
         "Maximum measurable detection resistor ratio: {}",
         MAX_ADC_RATIO
     );
-    show_idle_message("Negotiating...");
-    let max_supply_current = ElectricCurrent::new::<electric_current::milliampere>(
-        MAX_SUPPLY_CURRENT_MA_SIG.wait().await,
-    );
+
+    let negotiated_potential =
+        ElectricPotential::new::<electric_potential::millivolt>(negotiated_supply.0 as f32);
+    let negotiated_current =
+        ElectricCurrent::new::<electric_current::milliampere>(negotiated_supply.1 as f32);
+
+    DISPLAY_POWER_SIG.signal((negotiated_potential * negotiated_current).get::<power::watt>());
 
     loop {
-        let result = control(&mut tool_resources, &max_supply_current).await;
+        let result = control(&mut tool_resources, &negotiated_current).await;
 
         if let Err(error) = result {
             match error {

@@ -65,17 +65,17 @@ impl OperationalState {
                 is_open: false,
                 toggle_pending: false,
             },
-            is_sleeping: false,
+            is_sleeping: true,
             set_temperature_is_pending: false,
         }
     }
 }
 
-/// Signals a change in the maximum supply current in mA.
-static MAX_SUPPLY_CURRENT_MA_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
+/// Signals a change in the negotiated supply (potential/mV, current/mA).
+pub static NEGOTIATED_SUPPLY_SIG: Signal<ThreadModeRawMutex, (u32, u32)> = Signal::new();
 
-/// Signals a new tool power measurement (power/W, potential/V).
-static POWER_MEASUREMENT_SIG: Signal<ThreadModeRawMutex, (f32, f32)> = Signal::new();
+/// Displays negotiated power (power/W).
+static DISPLAY_POWER_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
 
 /// Signals a new tool temperature.
 static TEMPERATURE_MEASUREMENT_DEG_C_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();

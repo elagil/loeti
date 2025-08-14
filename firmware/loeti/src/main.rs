@@ -7,10 +7,10 @@ use embassy_stm32::exti::ExtiInput;
 use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
 use embassy_stm32::time::Hertz;
 use embassy_stm32::{bind_interrupts, i2c, peripherals, usb, Config};
-use embassy_time::Timer;
 use loeti::power::{AssignedResources, UcpdResources};
 use loeti::tool::{AdcResources, ToolResources};
 use loeti::ui::{self, encoder::RotaryEncoderResources};
+use loeti::NEGOTIATED_SUPPLY_SIG;
 use loeti::{eeprom, power};
 use loeti::{split_resources, tool, ui::display};
 use {defmt_rtt as _, panic_probe as _};
@@ -57,7 +57,7 @@ async fn main(spawner: Spawner) {
         unwrap!(spawner.spawn(power::ucpd_task(resources.ucpd, ndb_pin)));
     }
 
-    Timer::after_millis(500).await;
+    let negotiated_supply = NEGOTIATED_SUPPLY_SIG.wait().await;
 
     // Launch EEPROM config storage
     {
@@ -68,7 +68,6 @@ async fn main(spawner: Spawner) {
             Irqs,
             p.DMA1_CH5,
             p.DMA1_CH3,
-            Hertz(100_000),
             Default::default(),
         );
         let mut eeprom = eeprom24x::Eeprom24x::new_24x64(i2c, eeprom24x::SlaveAddr::Default);
@@ -146,6 +145,6 @@ async fn main(spawner: Spawner) {
             ),
             pin_sleep: Input::new(p.PB10, Pull::None),
         };
-        unwrap!(spawner.spawn(tool::tool_task(tool_resources)));
+        unwrap!(spawner.spawn(tool::tool_task(tool_resources, negotiated_supply)));
     }
 }

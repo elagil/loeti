@@ -10,3 +10,6 @@
 [submodule "firmware/embedded-menu"]
 	path = firmware/embedded-menu
 	url = git@github.com:elagil/embedded-menu.git
+[submodule "firmware/usbpd"]
+	path = firmware/usbpd
+	url = ../usbpd.git
