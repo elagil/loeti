@@ -132,6 +132,7 @@ impl SinkTimer for EmbassySinkTimer {
 
 /// This device.
 struct Device {
+    /// The requested/negotiated potential in mV.
     negotiated_potential_mv: Option<u32>,
 }
 
