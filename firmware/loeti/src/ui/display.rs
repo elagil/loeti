@@ -1,4 +1,5 @@
 //! Controls the display of the soldering controller.
+use biquad::{self, Biquad, ToHertz};
 use core::cmp::Ordering::{Greater, Less};
 use core::fmt::Write;
 use defmt::info;
@@ -25,10 +26,12 @@ use ssd1306::Ssd1306Async;
 
 use crate::ui::MENU_STEPS_SIG;
 use crate::{
-    MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, POWER_MEASUREMENT_SIG,
+    DISPLAY_POWER_SIG, MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX,
     POWER_RATIO_BARGRAPH_SIG, STORE_PERSISTENT_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
 };
 
+/// Display refresh rate.
+const DISPLAY_REFRESH_RATE_HZ: u64 = 30;
 /// Display height in pixels.
 const DISPLAY_HEIGHT: i32 = 64;
 /// Display width in pixels (shown).
@@ -94,6 +97,16 @@ impl SelectValue for CurrentMargin {
 pub async fn display_task(mut display_resources: DisplayResources) {
     let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
 
+    let mut bargraph_filter = biquad::DirectForm2Transposed::<f32>::new(
+        biquad::Coefficients::<f32>::from_params(
+            biquad::Type::LowPass,
+            (DISPLAY_REFRESH_RATE_HZ as f32).hz(),
+            2.0_f32.hz(),
+            biquad::Q_BUTTERWORTH_F32,
+        )
+        .unwrap(),
+    );
+
     let spi = embedded_hal_bus::spi::ExclusiveDevice::new_no_delay(
         display_resources.spi,
         display_resources.pin_cs,
@@ -140,10 +153,9 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     let mut temperature_string: heapless::String<10> = heapless::String::new();
     let mut set_temperature_string: heapless::String<10> = heapless::String::new();
     let mut power_string: heapless::String<10> = heapless::String::new();
-    let mut voltage_string: heapless::String<10> = heapless::String::new();
     let mut message_string: &str = "";
 
-    let mut refresh_ticker = Ticker::every(Duration::from_hz(20));
+    let mut refresh_ticker = Ticker::every(Duration::from_hz(DISPLAY_REFRESH_RATE_HZ));
 
     let mut menu = Menu::with_style(
         "Setup",
@@ -200,20 +212,22 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             message_string = message;
         }
 
-        if let Some((power, voltage)) = POWER_MEASUREMENT_SIG.try_take() {
+        if let Some(power) = DISPLAY_POWER_SIG.try_take() {
             power_string.clear();
             if !(power.is_nan()) {
                 write!(&mut power_string, "{} W", power.round() as usize).unwrap();
             }
-
-            voltage_string.clear();
-            if !(voltage.is_nan()) {
-                write!(&mut voltage_string, "{} V", voltage.round() as usize).unwrap();
-            }
         }
 
         if let Some(power_ratio) = POWER_RATIO_BARGRAPH_SIG.try_take() {
-            power_bar_width = ((power_ratio * DISPLAY_WIDTH as f32) as i32).max(0);
+            let raw = power_ratio * DISPLAY_WIDTH as f32;
+
+            if !raw.is_nan() {
+                power_bar_width = (bargraph_filter.run(raw).round() as i32).max(0);
+            } else {
+                bargraph_filter.reset_state();
+                power_bar_width = 0;
+            }
         }
 
         display.clear_buffer();
@@ -321,15 +335,6 @@ pub async fn display_task(mut display_resources: DisplayResources) {
                 Point::new(DISPLAY_FIRST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 20),
                 MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
                 Alignment::Left,
-            )
-            .draw(&mut display)
-            .unwrap();
-
-            Text::with_alignment(
-                &voltage_string,
-                Point::new(DISPLAY_LAST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 20),
-                MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
-                Alignment::Right,
             )
             .draw(&mut display)
             .unwrap();
