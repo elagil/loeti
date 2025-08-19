@@ -1,0 +1,6 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "connector_audio")(type "KiCad")(uri "${KIPRJMOD}/../../../kicad-library/footprints/connector_audio.pretty")(options "")(descr ""))
+  (lib (name "connector_debug")(type "KiCad")(uri "${KIPRJMOD}/../../../kicad-library/footprints/connector_debug.pretty")(options "")(descr ""))
+  (lib (name "display_visions")(type "KiCad")(uri "${KIPRJMOD}/../../../kicad-library/footprints/display_visions.pretty")(options "")(descr ""))
+)
