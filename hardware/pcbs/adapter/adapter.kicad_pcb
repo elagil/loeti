@@ -3221,7 +3221,7 @@
 		(layer "Edge.Cuts")
 		(uuid "ce6da8ea-c788-47b4-8abf-5ac9524e5f08")
 	)
-	(gr_text "af 25\ninside"
+	(gr_text "af 25"
 		(at 145.826708 109.029669 90)
 		(layer "F.SilkS")
 		(uuid "89a522a5-7d64-454c-91c8-b30565228fe6")
