@@ -1,14 +1,17 @@
-export FORMAT_ARGS := "--manifest-path firmware/loeti/Cargo.toml"
-export BUILD_ARGS := "--manifest-path firmware/loeti/Cargo.toml --config firmware/loeti/.cargo/config.toml"
+export PROJECT_DIR := "firmware/loeti"
 
 format:
-    cargo +nightly fmt $FORMAT_ARGS --all
+    pushd $PROJECT_DIR && \
+    cargo +nightly fmt --all
 
 lint:
-    cargo clippy $BUILD_ARGS -- -D warnings
+    pushd $PROJECT_DIR && \
+    cargo clippy -- -D warnings
 
 build:
-    cargo build $BUILD_ARGS --release
+    pushd $PROJECT_DIR && \
+    cargo build --release
 
 run:
-    cargo run $BUILD_ARGS --release
+    pushd $PROJECT_DIR && \
+    cargo run --release
