@@ -23,6 +23,7 @@ fp-info-cache
 \#auto_saved_files#
 *.log
 *.plt
+backups/
 
 # Netlist files (exported from Eeschema)
 *.net

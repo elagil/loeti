@@ -61,6 +61,10 @@ pub enum MenuResult {
     DisplayRotation(DisplayRotation),
     /// The current margin in mA.
     CurrentMargin(CurrentMargin),
+    /// Sleep when powering on.
+    SleepOnPower(bool),
+    /// Sleep when an error occurs.
+    SleepOnError(bool),
 }
 
 /// Adjust current margin (from max. supply current).
@@ -157,6 +161,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
 
     let mut refresh_ticker = Ticker::every(Duration::from_hz(DISPLAY_REFRESH_RATE_HZ));
 
+    // FIXME: Persistent storage in callback?
     let mut menu = Menu::with_style(
         "Setup",
         MenuStyle::default()
@@ -177,6 +182,12 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         },
         MenuResult::CurrentMargin,
     )
+    .add_item("Slp on power", persistent.sleep_on_power, |v| {
+        MenuResult::SleepOnPower(v)
+    })
+    .add_item("Slp on error", persistent.sleep_on_error, |v| {
+        MenuResult::SleepOnError(v)
+    })
     .build();
 
     loop {
@@ -272,6 +283,14 @@ pub async fn display_task(mut display_resources: DisplayResources) {
                         PERSISTENT_MUTEX.lock(|x| x.borrow_mut().current_margin_ma = c.current_ma);
                         STORE_PERSISTENT_SIG.signal(());
                     }
+                    Some(MenuResult::SleepOnPower(v)) => {
+                        PERSISTENT_MUTEX.lock(|x| x.borrow_mut().sleep_on_power = v);
+                        STORE_PERSISTENT_SIG.signal(());
+                    }
+                    Some(MenuResult::SleepOnError(v)) => {
+                        PERSISTENT_MUTEX.lock(|x| x.borrow_mut().sleep_on_error = v);
+                        STORE_PERSISTENT_SIG.signal(());
+                    }
                     _ => (),
                 };
             }
@@ -315,7 +334,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
 
             Text::with_alignment(
                 &temperature_string,
-                Point::new(DISPLAY_WIDTH / 2, 35),
+                Point::new(DISPLAY_WIDTH / 2, 34),
                 MonoTextStyle::new(&PROFONT_24_POINT, BinaryColor::On),
                 Alignment::Center,
             )

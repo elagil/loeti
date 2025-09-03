@@ -10,9 +10,9 @@ use embassy_stm32::{bind_interrupts, i2c, peripherals, usb, Config};
 use loeti::power::{AssignedResources, UcpdResources};
 use loeti::tool::{AdcResources, ToolResources};
 use loeti::ui::{self, encoder::RotaryEncoderResources};
-use loeti::NEGOTIATED_SUPPLY_SIG;
-use loeti::{eeprom, power};
+use loeti::{eeprom, power, OPERATIONAL_STATE_MUTEX};
 use loeti::{split_resources, tool, ui::display};
+use loeti::{NEGOTIATED_SUPPLY_SIG, PERSISTENT_MUTEX};
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
@@ -54,7 +54,7 @@ async fn main(spawner: Spawner) {
     {
         let resources = split_resources!(p);
         let ndb_pin = Output::new(p.PB5, Level::Low, Speed::Low);
-        unwrap!(spawner.spawn(power::ucpd_task(resources.ucpd, ndb_pin)));
+        spawner.spawn(unwrap!(power::ucpd_task(resources.ucpd, ndb_pin)));
     }
 
     let negotiated_supply = NEGOTIATED_SUPPLY_SIG.wait().await;
@@ -74,7 +74,16 @@ async fn main(spawner: Spawner) {
 
         // Load data before any other tasks access persistent storage.
         eeprom::load_persistent(&mut eeprom).await;
-        unwrap!(spawner.spawn(eeprom::eeprom_task(eeprom)));
+
+        // Transfer persistent information to operational state.
+        // FIXME: Make a method on the operational state itself?
+        let power_on_heater_off =
+            PERSISTENT_MUTEX.lock(|persistent| persistent.borrow().sleep_on_power);
+        OPERATIONAL_STATE_MUTEX.lock(|operational| {
+            operational.borrow_mut().is_sleeping = power_on_heater_off;
+        });
+
+        spawner.spawn(unwrap!(eeprom::eeprom_task(eeprom)));
     }
 
     // Launch display
@@ -94,7 +103,7 @@ async fn main(spawner: Spawner) {
                 pin_cs: Output::new(p.PB12, Level::Low, Speed::High),
             }
         };
-        unwrap!(spawner.spawn(display::display_task(display_resources)));
+        spawner.spawn(unwrap!(display::display_task(display_resources)));
     }
 
     // Launch UI with rotary encoder control
@@ -105,7 +114,9 @@ async fn main(spawner: Spawner) {
             pin_b: Input::new(p.PB2, Pull::None),
         };
 
-        unwrap!(spawner.spawn(ui::encoder::rotary_encoder_task(rotary_encoder_resources)));
+        spawner.spawn(unwrap!(ui::encoder::rotary_encoder_task(
+            rotary_encoder_resources
+        )));
     }
 
     // Launch iron control
@@ -145,6 +156,6 @@ async fn main(spawner: Spawner) {
             ),
             pin_sleep: Input::new(p.PB10, Pull::None),
         };
-        unwrap!(spawner.spawn(tool::tool_task(tool_resources, negotiated_supply)));
+        spawner.spawn(unwrap!(tool::tool_task(tool_resources, negotiated_supply)));
     }
 }
