@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install just
+        uses: extractions/setup-just@v3
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -24,4 +27,10 @@ jobs:
             firmware/loeti
 
       - name: Build
-        run: bash .github/ci/build.sh
+        run: just build
+
+      - name: Lint
+        run: just lint
+
+      - name: Test
+        run: just test

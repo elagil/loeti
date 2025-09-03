@@ -17,13 +17,17 @@ pub mod ui;
 
 /// Persistent storage data.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
-struct Persistent {
+pub struct Persistent {
     /// If true, display is rotated 180°.
-    display_is_rotated: bool,
+    pub display_is_rotated: bool,
+    /// If true, start the controller with heating switched off after power on.
+    pub sleep_on_power: bool,
+    /// If true, switch off heating on error (tip or iron removed).
+    pub sleep_on_error: bool,
     /// The temperature set point in °C.
-    set_temperature_deg_c: isize,
+    pub set_temperature_deg_c: isize,
     /// Current margin to leave until max. supply current.
-    current_margin_ma: u16,
+    pub current_margin_ma: u16,
 }
 
 impl Persistent {
@@ -31,6 +35,8 @@ impl Persistent {
     const fn default() -> Self {
         Self {
             display_is_rotated: false,
+            sleep_on_power: true,
+            sleep_on_error: true,
             set_temperature_deg_c: 300,
             current_margin_ma: 150,
         }
@@ -39,27 +45,27 @@ impl Persistent {
 
 /// The state of the setup menu.
 #[derive(Debug, Format, Clone, Copy, Default)]
-struct MenuState {
+pub struct MenuState {
     /// The menu is currently open.
-    is_open: bool,
+    pub is_open: bool,
     /// An item was toggled and evaluation is pending.
-    toggle_pending: bool,
+    pub toggle_pending: bool,
 }
 
 /// The operational state of the soldering station (not persistent).
-#[derive(Debug, Format, Clone, Copy, Default)]
-struct OperationalState {
+#[derive(Debug, Format, Clone, Copy)]
+pub struct OperationalState {
     /// The state of the control menu.
-    menu_state: MenuState,
-    /// The iron is in sleep mode (manual).
-    is_sleeping: bool,
+    pub menu_state: MenuState,
+    /// The iron is in sleep mode.
+    pub is_sleeping: bool,
     /// If true, the new set temperature was not confirmed yet.
-    set_temperature_is_pending: bool,
+    pub set_temperature_is_pending: bool,
 }
 
 impl OperationalState {
-    /// Default persistent settings.
-    const fn default() -> Self {
+    /// Generate a default operational state.
+    pub const fn default() -> Self {
         Self {
             menu_state: MenuState {
                 is_open: false,
@@ -90,9 +96,9 @@ static MESSAGE_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();
 static STORE_PERSISTENT_SIG: Signal<ThreadModeRawMutex, ()> = Signal::new();
 
 /// Persistently stored data (on EEPROM).
-static PERSISTENT_MUTEX: Mutex<ThreadModeRawMutex, RefCell<Persistent>> =
+pub static PERSISTENT_MUTEX: Mutex<ThreadModeRawMutex, RefCell<Persistent>> =
     Mutex::new(RefCell::new(Persistent::default()));
 
 /// Operational state (not persistent).
-static OPERATIONAL_STATE_MUTEX: Mutex<ThreadModeRawMutex, RefCell<OperationalState>> =
+pub static OPERATIONAL_STATE_MUTEX: Mutex<ThreadModeRawMutex, RefCell<OperationalState>> =
     Mutex::new(RefCell::new(OperationalState::default()));
