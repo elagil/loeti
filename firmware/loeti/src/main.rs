@@ -80,7 +80,7 @@ async fn main(spawner: Spawner) {
         let power_on_heater_off =
             PERSISTENT_MUTEX.lock(|persistent| persistent.borrow().sleep_on_power);
         OPERATIONAL_STATE_MUTEX.lock(|operational| {
-            operational.borrow_mut().is_sleeping = power_on_heater_off;
+            operational.borrow_mut().tool_is_off = power_on_heater_off;
         });
 
         spawner.spawn(unwrap!(eeprom::eeprom_task(eeprom)));
@@ -154,7 +154,7 @@ async fn main(spawner: Spawner) {
                 khz(34),
                 Default::default(),
             ),
-            pin_sleep: Input::new(p.PB10, Pull::None),
+            pin_sleep: Input::new(p.PA5, Pull::Up),
         };
         spawner.spawn(unwrap!(tool::tool_task(tool_resources, negotiated_supply)));
     }

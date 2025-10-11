@@ -81,7 +81,7 @@ impl SelectValue for CurrentMargin {
             250 => "0.25",
             500 => "0.5",
             1000 => "1.0",
-            _ => unreachable!(),
+            _ => "?",
         }
     }
 
@@ -91,7 +91,7 @@ impl SelectValue for CurrentMargin {
             250 => 500,
             500 => 1000,
             1000 => 150,
-            _ => unreachable!(),
+            _ => 150,
         };
     }
 }
@@ -198,7 +198,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         write!(
             &mut set_temperature_string,
             "{}",
-            persistent.set_temperature_deg_c
+            persistent.operational_temperature_deg_c
         )
         .unwrap();
 
@@ -321,9 +321,15 @@ pub async fn display_task(mut display_resources: DisplayResources) {
                     .unwrap();
             }
 
-            if operational_state.is_sleeping {
+            let corner_text = if operational_state.tool_is_off {
+                Some("OFF")
+            } else {
+                None
+            };
+
+            if let Some(corner_text) = corner_text {
                 Text::with_alignment(
-                    "OFF",
+                    corner_text,
                     Point::new(DISPLAY_LAST_COL_INDEX, SET_TEMP_Y),
                     MonoTextStyle::new(&PROFONT_12_POINT, BinaryColor::On),
                     Alignment::Right,
@@ -357,6 +363,17 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             )
             .draw(&mut display)
             .unwrap();
+
+            if operational_state.tool_in_stand {
+                Text::with_alignment(
+                    "Stand",
+                    Point::new(DISPLAY_LAST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 20),
+                    MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
+                    Alignment::Right,
+                )
+                .draw(&mut display)
+                .unwrap();
+            }
 
             Rectangle::new(
                 Point::new(DISPLAY_FIRST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 16),
