@@ -24,8 +24,8 @@ pub struct Persistent {
     pub sleep_on_power: bool,
     /// If true, switch off heating on error (tip or iron removed).
     pub sleep_on_error: bool,
-    /// The temperature set point in °C.
-    pub set_temperature_deg_c: isize,
+    /// The operational temperature set point in °C.
+    pub operational_temperature_deg_c: isize,
     /// Current margin to leave until max. supply current.
     pub current_margin_ma: u16,
 }
@@ -35,9 +35,9 @@ impl Persistent {
     const fn default() -> Self {
         Self {
             display_is_rotated: false,
-            sleep_on_power: true,
+            sleep_on_power: false,
             sleep_on_error: true,
-            set_temperature_deg_c: 300,
+            operational_temperature_deg_c: 300,
             current_margin_ma: 150,
         }
     }
@@ -57,8 +57,10 @@ pub struct MenuState {
 pub struct OperationalState {
     /// The state of the control menu.
     pub menu_state: MenuState,
-    /// The iron is in sleep mode.
-    pub is_sleeping: bool,
+    /// If true, the tool is in its stand.
+    pub tool_in_stand: bool,
+    /// If true, the tool is off (manual sleep).
+    pub tool_is_off: bool,
     /// If true, the new set temperature was not confirmed yet.
     pub set_temperature_is_pending: bool,
 }
@@ -71,7 +73,8 @@ impl OperationalState {
                 is_open: false,
                 toggle_pending: false,
             },
-            is_sleeping: true,
+            tool_in_stand: false,
+            tool_is_off: true,
             set_temperature_is_pending: false,
         }
     }

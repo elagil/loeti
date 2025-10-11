@@ -1,5 +1,8 @@
 //! Drives the tool's heating element, based on target and actual temperature.
 
+use core::f32::INFINITY;
+use micromath::F32Ext;
+
 use defmt::{debug, error, info, warn, Format};
 use embassy_futures::select::{select, Either};
 use embassy_stm32::dac::Ch1;
@@ -45,11 +48,14 @@ const CURRENT_LOOP_PERIOD_MS: u64 = LOOP_PERIOD_MS / CURRENT_CONTROL_CYCLE_COUNT
 /// The ADC reference voltage.
 const VREFBUF_V: f32 = 2.9;
 /// The analog supply voltage.
-const SUPPLY_V: f32 = 3.3;
+const ANALOG_SUPPLY_V: f32 = 3.3;
 /// The value at which an ADC voltage is considered to be at the upper limit.
 const MAX_ADC_V: f32 = VREFBUF_V - 0.1;
 /// The ratio between the defined maximum ADC voltage and analog supply voltage.
-const MAX_ADC_RATIO: f32 = MAX_ADC_V / SUPPLY_V;
+const MAX_ADC_RATIO: f32 = MAX_ADC_V / ANALOG_SUPPLY_V;
+
+/// The stand temperature in °C.
+const STAND_TEMPERATURE_DEG_C: f32 = 180.0;
 
 /// Errors during tool detection.
 #[derive(Debug, Format)]
@@ -231,12 +237,26 @@ struct Tool {
 }
 
 impl Tool {
+    /// Compute current control gain (I-component).
+    ///
+    /// # Parameters
+    /// `supply_v` - supply voltage in V
+    /// `resistance_ohm` - rough heater resistance in Ω
+    /// `tau_scale` - desired closed-loop time constant in multiples of the loop period (e.g., 3.0 for medium speed)
+    fn calculate_current_loop_gain(supply_v: f32, resistance_ohm: f32, tau_scale: f32) -> f32 {
+        let period_s = CURRENT_LOOP_PERIOD_MS as f32 / 1000.0;
+        let kp_a_per_duty = supply_v / resistance_ohm;
+        let a = (-period_s / (tau_scale * period_s)).exp();
+        (1.0 - a) / kp_a_per_duty // in units of duty per A per tick
+    }
+
     /// Create a new tool from a measurement.
     ///
     /// Limits the tool's current capability to the maximum available supply current.
     pub fn new(
         tool_measurement: RawToolMeasurement,
         supply_current_limit: &ElectricCurrent,
+        negotiated_potential: &ElectricPotential,
     ) -> Result<Self, Error> {
         let tool_properties = Tool::detect(tool_measurement)?;
 
@@ -251,14 +271,31 @@ impl Tool {
             pwm_ratio: Ratio::new::<percent>(0.0),
         };
 
-        tool.current_pid.i(
-            //  TODO: explain formula
-            0.25 * tool_properties.heater_resistance_ohm / (CURRENT_LOOP_PERIOD_MS as f32),
-            1.0,
-        );
+        let gain = {
+            const TAU_SCALE: f32 = 3.0;
+            let negotiated_potential_v = negotiated_potential.get::<electric_potential::volt>();
+            let gain = Self::calculate_current_loop_gain(
+                negotiated_potential_v,
+                tool_properties.heater_resistance_ohm,
+                TAU_SCALE,
+            );
+            debug!(
+                "Using current loop I-gain of {} (for {} V, {} Ω, TAU={})",
+                gain, negotiated_potential_v, tool_properties.heater_resistance_ohm, TAU_SCALE
+            );
+
+            gain
+        };
+
+        tool.current_pid.i(gain, 1.0);
         tool.configure_temperature_control(false);
 
         Ok(tool)
+    }
+
+    /// The tool's name.
+    pub fn name(&self) -> &'static str {
+        self.tool_properties.name
     }
 
     /// Set a new current limit for the tool.
@@ -295,8 +332,6 @@ impl Tool {
                 .abs()
                 < 0.05
             {
-                show_message(tool_properties.name);
-
                 return Ok(tool_properties);
             }
         }
@@ -305,7 +340,10 @@ impl Tool {
     }
 
     /// Calculate tool temperature from a raw tool measurement.
-    fn calculate_temperature(&self, tool_measurement: RawToolMeasurement) -> Result<f32, Error> {
+    fn calculate_temperature(
+        &mut self,
+        tool_measurement: RawToolMeasurement,
+    ) -> Result<f32, Error> {
         let tool_properties = Tool::detect(tool_measurement)?;
         if tool_properties.tool_type != self.tool_properties.tool_type {
             return Err(Error::ToolMismatch);
@@ -322,7 +360,10 @@ impl Tool {
         tool_temperature_deg_c: f32,
         set_temperature_deg_c: f32,
     ) -> Result<f32, Error> {
-        self.temperature_pid.setpoint(set_temperature_deg_c);
+        if self.temperature_pid.setpoint != set_temperature_deg_c {
+            self.temperature_pid.reset_integral_term();
+            self.temperature_pid.setpoint(set_temperature_deg_c);
+        }
 
         let current_setpoint_a = self
             .temperature_pid
@@ -368,6 +409,7 @@ impl Tool {
 async fn control(
     tool_resources: &mut ToolResources,
     max_supply_current: &ElectricCurrent,
+    negotiated_potential: &ElectricPotential,
 ) -> Result<(), Error> {
     let detect_threshold_ratio = Ratio::new::<ratio::ratio>(MAX_ADC_RATIO);
     let temperature_threshold_potential = ElectricPotential::new::<volt>(MAX_ADC_V);
@@ -391,18 +433,22 @@ async fn control(
     pwm_heater_channel.set_duty_cycle_fully_off();
     pwm_heater_channel.enable();
 
-    let mut set_temperature_deg_c = None;
+    let mut operational_temperature_deg_c = None;
 
     loop {
+        // Wait for temperature sensor value to settle after disabling the heating element.
+        Timer::after_millis(10).await;
+
+        // Check if tool is in its stand.
+        let tool_in_stand = tool_resources.pin_sleep.is_low();
+        OPERATIONAL_STATE_MUTEX.lock(|x| x.borrow_mut().tool_in_stand = tool_in_stand);
+
         let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
         let operational_state = OPERATIONAL_STATE_MUTEX.lock(|x| *x.borrow());
         let current_limit = *max_supply_current
             - ElectricCurrent::new::<electric_current::milliampere>(
                 persistent.current_margin_ma as f32,
             );
-
-        // Wait for temperature sensor value to settle after disabling the heating element.
-        Timer::after_millis(10).await;
 
         // Measure idle current for potential offset compensation.
         let idle_power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
@@ -415,17 +461,30 @@ async fn control(
         .await?;
 
         if tool.is_none() {
-            tool = Some(Tool::new(tool_measurement, &current_limit)?);
+            tool = Some(Tool::new(
+                tool_measurement,
+                &current_limit,
+                negotiated_potential,
+            )?);
         }
 
         let tool = tool.as_mut().unwrap();
         tool.set_current_limit(&current_limit);
 
+        show_message(tool.name());
+
         if !operational_state.set_temperature_is_pending {
-            PERSISTENT_MUTEX.lock(|x| {
-                set_temperature_deg_c = Some(x.borrow().set_temperature_deg_c as f32);
-            });
+            operational_temperature_deg_c = Some(persistent.operational_temperature_deg_c as f32);
         }
+        let stand_temperature_deg_c = Some(
+            STAND_TEMPERATURE_DEG_C.min(operational_temperature_deg_c.unwrap_or_else(|| INFINITY)),
+        );
+
+        let set_temperature_deg_c = if operational_state.tool_in_stand {
+            stand_temperature_deg_c
+        } else {
+            operational_temperature_deg_c
+        };
 
         if set_temperature_deg_c.is_none() {
             error!("No set temperature available.");
@@ -435,7 +494,7 @@ async fn control(
         let tool_temperature_deg_c = tool.calculate_temperature(tool_measurement)?;
         TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(tool_temperature_deg_c);
 
-        if operational_state.is_sleeping {
+        if operational_state.tool_is_off {
             let mut power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
             power_measurement.compensate(&idle_power_measurement);
             show_power(None);
@@ -504,8 +563,7 @@ fn show_message(message: &'static str) {
 fn show_idle_message(message: &'static str) {
     POWER_RATIO_BARGRAPH_SIG.signal(f32::NAN);
     TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(f32::NAN);
-
-    MESSAGE_SIG.signal(message);
+    show_message(message);
 }
 
 /// Control the tool's heating element.
@@ -527,18 +585,23 @@ pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u3
     DISPLAY_POWER_SIG.signal((negotiated_potential * negotiated_current).get::<power::watt>());
 
     loop {
-        let result = control(&mut tool_resources, &negotiated_current).await;
+        let result = control(
+            &mut tool_resources,
+            &negotiated_current,
+            &negotiated_potential,
+        )
+        .await;
 
         if let Err(error) = result {
             match error {
                 Error::NoTool => show_idle_message("No tool"),
                 Error::NoTip => show_idle_message("No tip"),
                 Error::UnknownTool => show_idle_message("Unknown"),
-                Error::ToolMismatch => show_idle_message("Mismatch"),
+                Error::ToolMismatch => show_idle_message(""),
             }
 
             let sleep_on_error = PERSISTENT_MUTEX.lock(|x| x.borrow().sleep_on_error);
-            OPERATIONAL_STATE_MUTEX.lock(|x| x.borrow_mut().is_sleeping = sleep_on_error);
+            OPERATIONAL_STATE_MUTEX.lock(|x| x.borrow_mut().tool_is_off = sleep_on_error);
 
             debug!("Tool control error: {}", error);
             Timer::after_millis(100).await

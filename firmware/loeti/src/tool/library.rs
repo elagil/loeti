@@ -4,9 +4,9 @@
 #[derive(Clone, Copy, PartialEq)]
 pub enum ToolType {
     /// The JBC C210.
-    JBCC210,
+    JbcC210,
     /// The JBC C245.
-    JBCC245,
+    JbcC245,
 }
 
 /// Temperature calibration settings.
@@ -55,7 +55,7 @@ impl ToolProperties {
         &[
             Self {
                 name: "JBC C210",
-                tool_type: ToolType::JBCC210,
+                tool_type: ToolType::JbcC210,
                 max_current_a: 1.0,
                 heater_resistance_ohm: 2.0,
                 detect_ratio: 0.7,
@@ -70,7 +70,7 @@ impl ToolProperties {
             },
             Self {
                 name: "JBC C245",
-                tool_type: ToolType::JBCC245,
+                tool_type: ToolType::JbcC245,
                 max_current_a: 6.0,
                 heater_resistance_ohm: 2.5,
                 detect_ratio: 0.5,

@@ -42,10 +42,8 @@ pub async fn load_persistent(eeprom: &mut Eeprom) {
     PERSISTENT_MUTEX.lock(|x| x.replace(data));
 }
 
-/// Store persistent data to EEPROM.
-async fn store_persistent(eeprom: &mut Eeprom) {
-    let data = PERSISTENT_MUTEX.lock(|x| *x.borrow());
-
+/// Store provided persistent data to EEPROM.
+async fn store(eeprom: &mut Eeprom, data: &Persistent) {
     let mut buf = [0u8; SIZE];
     let used = postcard::to_slice_cobs(&data, &mut buf).unwrap();
 
@@ -54,6 +52,16 @@ async fn store_persistent(eeprom: &mut Eeprom) {
         Timer::after_millis(10).await;
     }
     debug!("EEPROM wrote: {}", used);
+}
+
+/// Store default persistent data to EEPROM (reset);
+pub async fn store_defaults(eeprom: &mut Eeprom) {
+    store(eeprom, &Persistent::default()).await;
+}
+
+/// Store current persistent data to EEPROM.
+async fn store_persistent(eeprom: &mut Eeprom) {
+    store(eeprom, &PERSISTENT_MUTEX.lock(|x| *x.borrow())).await;
 }
 
 /// Handles reading and writing EEPROM.

@@ -77,14 +77,14 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                     let set_temperature_pending = PERSISTENT_MUTEX.lock(|x| {
                         let mut persistent = x.borrow_mut();
 
-                        if persistent.set_temperature_deg_c >= 450 && steps > 0 {
+                        if persistent.operational_temperature_deg_c >= 450 && steps > 0 {
                             // Upper temperature limit.
                             false
-                        } else if persistent.set_temperature_deg_c <= 100 && steps < 0 {
+                        } else if persistent.operational_temperature_deg_c <= 100 && steps < 0 {
                             // Lower temperature limit.
                             false
                         } else {
-                            persistent.set_temperature_deg_c += steps * 10;
+                            persistent.operational_temperature_deg_c += steps * 10;
                             true
                         }
                     });
@@ -142,8 +142,8 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
             (SwitchEvent::ShortPress, UiState::Idle) => {
                 let manual_sleep = OPERATIONAL_STATE_MUTEX.lock(|x| {
                     let mut operational_state = x.borrow_mut();
-                    operational_state.is_sleeping = !operational_state.is_sleeping;
-                    operational_state.is_sleeping
+                    operational_state.tool_is_off = !operational_state.tool_is_off;
+                    operational_state.tool_is_off
                 });
                 info!("toggle manual sleep ({})", manual_sleep);
 
