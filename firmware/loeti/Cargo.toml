@@ -47,8 +47,7 @@ uom = { version = "0.36.0", default-features = false, features = ["si", "f32"] }
 rotary-encoder-embedded = "0.5"
 
 serde = { version = "1.0.217", default-features = false, features = ["derive"] }
-postcard = { version = "1.1.1", features = ["use-crc"] }
-crc = "3.3.0"
+postcard = "1.1.1"
 eeprom24x = "0.7.2"
 usbpd = { path = "../usbpd/usbpd", features = ["defmt"] }
 usbpd-traits = { path = "../usbpd/usbpd-traits", features = ["defmt"] }
