@@ -1,6 +1,5 @@
 //! Drives the tool's heating element, based on target and actual temperature.
 
-use core::f32::INFINITY;
 use micromath::F32Ext;
 
 use defmt::{debug, error, info, warn, Format};
@@ -54,7 +53,7 @@ const MAX_ADC_V: f32 = VREFBUF_V - 0.1;
 /// The ratio between the defined maximum ADC voltage and analog supply voltage.
 const MAX_ADC_RATIO: f32 = MAX_ADC_V / ANALOG_SUPPLY_V;
 
-/// The stand temperature in °C.
+/// The idle temperature in °C that is used when the tool is in its stand.
 const STAND_TEMPERATURE_DEG_C: f32 = 180.0;
 
 /// Errors during tool detection.
@@ -242,7 +241,7 @@ impl Tool {
     /// # Parameters
     /// `supply_v` - supply voltage in V
     /// `resistance_ohm` - rough heater resistance in Ω
-    /// `tau_scale` - desired closed-loop time constant in multiples of the loop period (e.g., 3.0 for medium speed)
+    /// `tau_scale` - desired closed-loop time constant in multiples of the loop period (e.g. 3.0 for medium speed)
     fn calculate_current_loop_gain(supply_v: f32, resistance_ohm: f32, tau_scale: f32) -> f32 {
         let period_s = CURRENT_LOOP_PERIOD_MS as f32 / 1000.0;
         let kp_a_per_duty = supply_v / resistance_ohm;
@@ -433,6 +432,7 @@ async fn control(
     pwm_heater_channel.set_duty_cycle_fully_off();
     pwm_heater_channel.enable();
 
+    // The set temperature of the tool when in use (not in the stand).
     let mut operational_temperature_deg_c = None;
 
     loop {
@@ -477,7 +477,7 @@ async fn control(
             operational_temperature_deg_c = Some(persistent.operational_temperature_deg_c as f32);
         }
         let stand_temperature_deg_c = Some(
-            STAND_TEMPERATURE_DEG_C.min(operational_temperature_deg_c.unwrap_or_else(|| INFINITY)),
+            STAND_TEMPERATURE_DEG_C.min(operational_temperature_deg_c.unwrap_or(f32::INFINITY)),
         );
 
         let set_temperature_deg_c = if operational_state.tool_in_stand {
