@@ -1,7 +1,5 @@
 //! Drives the tool's heating element, based on target and actual temperature.
 
-use micromath::F32Ext;
-
 use defmt::{debug, error, info, warn, Format};
 use embassy_futures::select::{select, Either};
 use embassy_stm32::dac::Ch1;
