@@ -236,19 +236,6 @@ struct Tool {
 }
 
 impl Tool {
-    /// Compute current control gain (I-component).
-    ///
-    /// # Parameters
-    /// `supply_v` - supply voltage in V
-    /// `resistance_ohm` - rough heater resistance in Ω
-    /// `tau_scale` - desired closed-loop time constant in multiples of the loop period (e.g. 3.0 for medium speed)
-    fn calculate_current_loop_gain(supply_v: f32, resistance_ohm: f32, tau_scale: f32) -> f32 {
-        let period_s = CURRENT_LOOP_PERIOD_MS as f32 / 1000.0;
-        let kp_a_per_duty = supply_v / resistance_ohm;
-        let a = (-period_s / (tau_scale * period_s)).exp();
-        (1.0 - a) / kp_a_per_duty // in units of duty per A per tick
-    }
-
     /// Create a new tool from a measurement.
     ///
     /// Limits the tool's current capability to the maximum available supply current.
@@ -271,16 +258,13 @@ impl Tool {
         };
 
         let gain = {
-            const TAU_SCALE: f32 = 3.0;
+            // Use a scale between 0.3 (fast) and 0.1 (slow).
+            const SCALE: f32 = 0.2;
             let negotiated_potential_v = negotiated_potential.get::<electric_potential::volt>();
-            let gain = Self::calculate_current_loop_gain(
-                negotiated_potential_v,
-                tool_properties.heater_resistance_ohm,
-                TAU_SCALE,
-            );
+            let gain = SCALE * tool_properties.heater_resistance_ohm / negotiated_potential_v;
             debug!(
-                "Using current loop I-gain of {} (for {} V, {} Ω, TAU={})",
-                gain, negotiated_potential_v, tool_properties.heater_resistance_ohm, TAU_SCALE
+                "Using current loop I-gain of {} (for {} V, {} Ω, scale {})",
+                gain, negotiated_potential_v, tool_properties.heater_resistance_ohm, SCALE
             );
 
             gain
