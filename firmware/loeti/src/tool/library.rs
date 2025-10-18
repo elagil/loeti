@@ -1,14 +1,5 @@
 //! A library of supported tools (soldering irons).
 
-/// Supported tool types.
-#[derive(Clone, Copy, PartialEq)]
-pub enum ToolType {
-    /// The JBC C210.
-    JbcC210,
-    /// The JBC C245.
-    JbcC245,
-}
-
 /// Temperature calibration settings.
 #[derive(Clone, Copy)]
 pub struct TemperatureCalibration {
@@ -30,8 +21,6 @@ impl TemperatureCalibration {
 pub struct ToolProperties {
     /// The tool's name.
     pub name: &'static str,
-    /// The type of a tool.
-    pub tool_type: ToolType,
     /// Maximum allowed current.
     pub max_current_a: f32,
     /// Heater resistance in Ohm.
@@ -49,40 +38,53 @@ pub struct ToolProperties {
     pub d: f32,
 }
 
-impl ToolProperties {
-    /// A list of all supported tools.
-    pub const fn all() -> &'static [Self] {
-        &[
-            Self {
-                name: "JBC C210",
-                tool_type: ToolType::JbcC210,
-                max_current_a: 1.0,
-                heater_resistance_ohm: 2.0,
-                detect_ratio: 0.7,
-                temperature_calibration: TemperatureCalibration {
-                    slope_k_per_v: 180.0,
-                    offset_c: 4.4,
-                },
+macro_rules! unique_items {
+    // Main form: explicit `id`, and all fields as key: value pairs
+    ( $( { id: $id:ident, $($field:ident : $value:expr),* $(,)? }),* $(,)?) => {{
+        // Compile-time duplicate detection (E0428 on duplicate `id`)
+        const _: () = { $( #[allow(dead_code)] const $id: () = ();)* };
+        &[ $( ToolProperties { $($field : $value,)* },)* ]
+    }};
 
-                p: 0.025,
-                i: 0.005,
-                d: 0.0,
-            },
-            Self {
-                name: "JBC C245",
-                tool_type: ToolType::JbcC245,
-                max_current_a: 6.0,
-                heater_resistance_ohm: 2.5,
-                detect_ratio: 0.5,
-                temperature_calibration: TemperatureCalibration {
-                    slope_k_per_v: 180.0,
-                    offset_c: 4.4, // Compensates for heat up of the handle and cold junction itself - around 20 °C
-                },
-
-                p: 0.1,
-                i: 0.125,
-                d: 0.0,
-            },
-        ]
-    }
+    // Fallback to improve error messages
+    ( $($tt:tt)* ) => {
+        compile_error!(
+            "unique_items! expects entries like:
+             { id: <ident>, field1: <expr>, field2: <expr>, ... }"
+        );
+    };
 }
+
+/// List of all supported tools.
+pub const TOOLS: &[ToolProperties] = unique_items![
+    {
+        id: JBC_C210,
+        name: "JBC C210",
+        max_current_a: 1.0,
+        heater_resistance_ohm: 2.0,
+        detect_ratio: 0.7,
+        temperature_calibration: TemperatureCalibration {
+            slope_k_per_v: 180.0,
+            offset_c: 4.4,
+        },
+
+        p: 0.025,
+        i: 0.005,
+        d: 0.0,
+    },
+    {
+        id: JBC_C245,
+        name: "JBC C245",
+        max_current_a: 6.0,
+        heater_resistance_ohm: 2.5,
+        detect_ratio: 0.5,
+        temperature_calibration: TemperatureCalibration {
+            slope_k_per_v: 180.0,
+            offset_c: 4.4,
+        },
+
+        p: 0.1,
+        i: 0.125,
+        d: 0.0,
+    },
+];

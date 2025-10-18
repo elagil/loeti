@@ -26,7 +26,7 @@ use uom::si::thermodynamic_temperature::degree_celsius;
 use uom::si::{electric_current, power};
 
 mod library;
-use library::ToolProperties;
+use library::{ToolProperties, TOOLS};
 
 use crate::{
     DISPLAY_POWER_SIG, MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX,
@@ -222,7 +222,7 @@ async fn measure_tool_power(adc_power_resources: &mut AdcResources) -> PowerMeas
 /// A tool (soldering iron).
 struct Tool {
     /// Unique properties of the tool.
-    tool_properties: &'static ToolProperties,
+    properties: &'static ToolProperties,
     /// The maximum allowed supply current, regardless of tool capabilities.
     supply_current_limit_a: f32,
     /// The temperature control.
@@ -242,13 +242,13 @@ impl Tool {
         supply_current_limit: &ElectricCurrent,
         negotiated_potential: &ElectricPotential,
     ) -> Result<Self, Error> {
-        let tool_properties = Tool::detect(tool_measurement)?;
+        let properties = Tool::detect(tool_measurement)?;
 
         let supply_current_limit_a = supply_current_limit.get::<electric_current::ampere>();
-        let current_limit_a = tool_properties.max_current_a.min(supply_current_limit_a);
+        let current_limit_a = properties.max_current_a.min(supply_current_limit_a);
 
         let mut tool = Self {
-            tool_properties,
+            properties,
             supply_current_limit_a,
             temperature_pid: Pid::new(300.0, current_limit_a),
             current_pid: Pid::new(0.0, 1.0),
@@ -259,10 +259,10 @@ impl Tool {
             // Use a scale between 0.3 (fast) and 0.1 (slow).
             const SCALE: f32 = 0.2;
             let negotiated_potential_v = negotiated_potential.get::<electric_potential::volt>();
-            let gain = SCALE * tool_properties.heater_resistance_ohm / negotiated_potential_v;
+            let gain = SCALE * properties.heater_resistance_ohm / negotiated_potential_v;
             debug!(
                 "Using current loop I-gain of {} (for {} V, {} Ω, scale {})",
-                gain, negotiated_potential_v, tool_properties.heater_resistance_ohm, SCALE
+                gain, negotiated_potential_v, properties.heater_resistance_ohm, SCALE
             );
 
             gain
@@ -276,13 +276,13 @@ impl Tool {
 
     /// The tool's name.
     pub fn name(&self) -> &'static str {
-        self.tool_properties.name
+        self.properties.name
     }
 
     /// Set a new current limit for the tool.
     pub fn set_current_limit(&mut self, current_limit: &ElectricCurrent) {
         self.temperature_pid.output_limit = self
-            .tool_properties
+            .properties
             .max_current_a
             .min(current_limit.get::<electric_current::ampere>());
     }
@@ -293,22 +293,20 @@ impl Tool {
     fn configure_temperature_control(&mut self, is_current_limited: bool) {
         let max_current_a = self.temperature_pid.output_limit;
         self.temperature_pid
-            .p(self.tool_properties.p, max_current_a)
-            .d(self.tool_properties.d, max_current_a);
+            .p(self.properties.p, max_current_a)
+            .d(self.properties.d, max_current_a);
 
         if is_current_limited {
             self.temperature_pid.i(0.0, max_current_a);
         } else {
-            self.temperature_pid.i(
-                self.tool_properties.i / LOOP_PERIOD_MS as f32,
-                max_current_a,
-            );
+            self.temperature_pid
+                .i(self.properties.i / LOOP_PERIOD_MS as f32, max_current_a);
         }
     }
 
     /// Detect a tool, based on a measurement.
     fn detect(tool_measurement: RawToolMeasurement) -> Result<&'static ToolProperties, Error> {
-        for tool_properties in ToolProperties::all() {
+        for tool_properties in TOOLS {
             if (tool_measurement.detect_ratio.get::<ratio::ratio>() - tool_properties.detect_ratio)
                 .abs()
                 < 0.05
@@ -325,13 +323,13 @@ impl Tool {
         &mut self,
         tool_measurement: RawToolMeasurement,
     ) -> Result<f32, Error> {
-        let tool_properties = Tool::detect(tool_measurement)?;
-        if tool_properties.tool_type != self.tool_properties.tool_type {
+        let new_properties = Tool::detect(tool_measurement)?;
+        if new_properties.name != self.name() {
             return Err(Error::ToolMismatch);
         }
 
         Ok(tool_measurement
-            .temperature(self.tool_properties)
+            .temperature(self.properties)
             .get::<thermodynamic_temperature::degree_celsius>())
     }
 
@@ -355,7 +353,7 @@ impl Tool {
 
         let is_current_limited = current_setpoint_a.abs()
             == self
-                .tool_properties
+                .properties
                 .max_current_a
                 .min(self.supply_current_limit_a);
         self.configure_temperature_control(is_current_limited);
