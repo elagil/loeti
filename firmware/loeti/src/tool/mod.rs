@@ -585,12 +585,12 @@ pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u3
 
     let potential =
         ElectricPotential::new::<electric_potential::millivolt>(negotiated_supply.0 as f32);
-    let maximum_current =
+    let current_limit =
         ElectricCurrent::new::<electric_current::milliampere>(negotiated_supply.1 as f32);
 
     let supply = Supply {
-        current_limit: maximum_current,
-        potential: potential,
+        current_limit,
+        potential,
     };
 
     DISPLAY_POWER_SIG.signal(supply.power_limit().get::<power::watt>());

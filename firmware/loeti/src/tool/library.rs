@@ -49,6 +49,7 @@ impl ToolProperties {
     }
 }
 
+/// Make sure that all tools have unique `id` fields. Avoids accidental duplicates.
 macro_rules! unique_items {
     // Main form: explicit `id`, and all fields as key: value pairs
     ( $( { id: $id:ident, $($field:ident : $value:expr),* $(,)? }),* $(,)?) => {{
