@@ -21,8 +21,8 @@ impl TemperatureCalibration {
 pub struct ToolProperties {
     /// The tool's name.
     pub name: &'static str,
-    /// Maximum allowed current.
-    pub max_current_a: f32,
+    /// Maximum allowed power.
+    pub max_power_w: f32,
     /// Heater resistance in Ohm.
     pub heater_resistance_ohm: f32,
     /// The detection ratio for distinguishing between tools.
@@ -36,6 +36,13 @@ pub struct ToolProperties {
     pub i: f32,
     /// Temperature control D-value.
     pub d: f32,
+}
+
+impl ToolProperties {
+    /// Calculate maximum supported current, based on available voltage.
+    pub fn max_current_a(&self, potential_v: f32) -> f32 {
+        self.max_power_w / potential_v
+    }
 }
 
 macro_rules! unique_items {
@@ -60,7 +67,7 @@ pub const TOOLS: &[ToolProperties] = unique_items![
     {
         id: JBC_C210,
         name: "JBC C210",
-        max_current_a: 1.0,
+        max_power_w: 35.0,
         heater_resistance_ohm: 2.0,
         detect_ratio: 0.7,
         temperature_calibration: TemperatureCalibration {
@@ -75,7 +82,7 @@ pub const TOOLS: &[ToolProperties] = unique_items![
     {
         id: JBC_C245,
         name: "JBC C245",
-        max_current_a: 6.0,
+        max_power_w: 130.0,
         heater_resistance_ohm: 2.5,
         detect_ratio: 0.5,
         temperature_calibration: TemperatureCalibration {
