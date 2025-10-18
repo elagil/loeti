@@ -33,8 +33,8 @@ use crate::{
     POWER_RATIO_BARGRAPH_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
 };
 
-/// ADC resolution in bit.
-const ADC_RESOLUTION: adc::Resolution = adc::Resolution::BITS12;
+/// ADC max. value (16 bit).
+const ADC_MAX: f32 = 65535.0;
 /// The number of current control iterations per temperature control iteration.
 const CURRENT_CONTROL_CYCLE_COUNT: u64 = 5;
 /// The total loop period in ms (temperature loop).
@@ -68,9 +68,7 @@ enum Error {
 }
 
 fn adc_value_to_potential(value: u16) -> ElectricPotential {
-    ElectricPotential::new::<volt>(
-        VREFBUF_V * (value as f32) / (adc::resolution_to_max_count(ADC_RESOLUTION) as f32),
-    )
+    ElectricPotential::new::<volt>(VREFBUF_V * (value as f32) / ADC_MAX)
 }
 
 /// Resources for the ADC.
@@ -137,7 +135,7 @@ async fn measure_tool(
     detect_ratio_threshold: Ratio,
     temperature_potential_threshold: ElectricPotential,
 ) -> Result<RawToolMeasurement, Error> {
-    const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES247_5;
+    const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES247_5; // 14.56 us sampling period
     let mut adc_buffer = [0u16; 2];
 
     adc_resources
@@ -152,6 +150,8 @@ async fn measure_tool(
             &mut adc_buffer,
         )
         .await;
+
+    debug!("Read {}", adc_buffer);
 
     let detect_ratio = adc_value_to_potential(adc_buffer[0])
         / ElectricPotential::new::<electric_potential::volt>(3.3);
