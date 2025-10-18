@@ -3,18 +3,20 @@
 /// Temperature calibration settings.
 #[derive(Debug, Clone, Copy, defmt::Format)]
 pub struct TemperatureCalibration {
-    /// Conversion factor from thermocouple voltage to temperature.
-    slope_k_per_v: f32,
-    /// A temperature offset.
-    offset_c: f32,
+    /// Quadratic term for temperature calculation.
+    quadratic_c_per_vv: f32,
+    /// Linear term for temperature calculation.
+    linear_c_per_v: f32,
+    /// Constant term for temperature calculation.
+    constant_c: f32,
 }
 
 impl TemperatureCalibration {
     /// Calculate temperature from thermocouple voltage.
-    ///
-    /// FIXME: Improve calibration? Currently just a linear fit.
     pub fn calc_temperature_c(&self, tc_potential_v: f32) -> f32 {
-        self.slope_k_per_v * tc_potential_v + self.offset_c
+        self.quadratic_c_per_vv * tc_potential_v * tc_potential_v
+            + self.linear_c_per_v * tc_potential_v
+            + self.constant_c
     }
 }
 
@@ -73,8 +75,9 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         heater_resistance_ohm: 2.0,
         detect_ratio: 0.7,
         temperature_calibration: TemperatureCalibration {
-            slope_k_per_v: 180.0,
-            offset_c: 4.4,
+            quadratic_c_per_vv: 0.0,
+            linear_c_per_v: 180.0,
+            constant_c: 4.4,
         },
 
         p: 0.025,
@@ -88,8 +91,9 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         heater_resistance_ohm: 2.5,
         detect_ratio: 0.5,
         temperature_calibration: TemperatureCalibration {
-            slope_k_per_v: 180.0,
-            offset_c: 4.4,
+            quadratic_c_per_vv: 3.89,
+            linear_c_per_v: 150.0,
+            constant_c: 47.1,
         },
 
         p: 0.1,

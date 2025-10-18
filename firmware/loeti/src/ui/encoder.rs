@@ -65,11 +65,17 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
     let mut switch_state = SwitchState::Released;
 
     loop {
+        let direction = if PERSISTENT_MUTEX.lock(|x| x.borrow().display_is_rotated) {
+            1
+        } else {
+            -1
+        };
+
         let steps = match rotary_encoder.update() {
             Direction::Clockwise => 1,
             Direction::Anticlockwise => -1,
             _ => 0,
-        };
+        } * direction;
 
         if steps != 0 {
             ui_state = match ui_state {
