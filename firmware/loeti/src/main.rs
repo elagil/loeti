@@ -32,7 +32,7 @@ async fn main(spawner: Spawner) {
             source: PllSource::HSI,
             prediv: PllPreDiv::DIV4,
             mul: PllMul::MUL85,
-            divp: Some(PllPDiv::DIV30),
+            divp: Some(PllPDiv::DIV20), // 17 MHz ADC clock
             divq: None,
             divr: Some(PllRDiv::DIV2), // 170 MHz system clock
         });
@@ -134,9 +134,18 @@ async fn main(spawner: Spawner) {
             w.set_vrs(embassy_stm32::pac::vrefbuf::vals::Vrs::VREF2);
         });
 
+        let mut adc = Adc::new(p.ADC1);
+        adc.set_oversampling_ratio(5); // 64x
+        adc.set_oversampling_shift(2); // Scale back to 16 bit
+        adc.enable_regular_oversampling_mode(
+            embassy_stm32::adc::vals::Rovsm::RESUMED,
+            embassy_stm32::adc::vals::Trovs::AUTOMATIC,
+            true,
+        );
+
         let tool_resources = ToolResources {
             adc_resources: AdcResources {
-                adc: Adc::new(p.ADC1),
+                adc,
                 pin_temperature: p.PA0.degrade_adc(),
                 pin_detect: p.PA1.degrade_adc(),
                 pin_voltage: p.PA2.degrade_adc(),
