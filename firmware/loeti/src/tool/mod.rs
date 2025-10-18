@@ -265,6 +265,7 @@ impl Tool {
     /// Limits the tool's current capability to the maximum available supply current.
     fn new(tool_measurement: RawToolMeasurement, supply: &Supply) -> Result<Self, Error> {
         let properties = Tool::detect(tool_measurement)?;
+        debug!("Create new tool with properties: {:?}", properties);
 
         let mut tool = Self {
             properties,
@@ -315,9 +316,14 @@ impl Tool {
     /// Set a new current limit for the tool's temperature PID controller.
     ///
     /// Takes into account the hard current limit (supply and tool dependent), and some margin.
-    fn set_current_limit(&mut self, current_margin: &ElectricCurrent) {
+    fn set_output_current_limit(&mut self, current_margin: &ElectricCurrent) {
         self.temperature_pid.output_limit =
-            self.current_limit_a() - current_margin.get::<electric_current::ampere>()
+            self.current_limit_a() - current_margin.get::<electric_current::ampere>();
+
+        debug!(
+            "Set new output current limit at {} A",
+            self.temperature_pid.output_limit
+        );
     }
 
     /// Configures the temperaure control.
@@ -384,11 +390,7 @@ impl Tool {
 
         self.current_pid.setpoint(current_setpoint_a);
 
-        let is_current_limited = current_setpoint_a.abs()
-            == self
-                .properties
-                .max_current_a(self.supply.potential_v())
-                .min(self.supply.current_limit_a());
+        let is_current_limited = current_setpoint_a.abs() >= self.current_pid.output_limit;
         self.configure_temperature_control(is_current_limited);
 
         Ok(tool_temperature_deg_c)
@@ -473,7 +475,7 @@ async fn control(tool_resources: &mut ToolResources, supply: &Supply) -> Result<
         }
 
         let tool = tool.as_mut().unwrap();
-        tool.set_current_limit(&current_margin);
+        tool.set_output_current_limit(&current_margin);
 
         show_message(tool.name());
 

@@ -206,16 +206,12 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             temperature_string.clear();
 
             if !temperature_deg_c.is_nan() {
-                if temperature_deg_c < 50.0 {
-                    write!(&mut temperature_string, "low").unwrap();
-                } else {
-                    write!(
-                        &mut temperature_string,
-                        "{}",
-                        temperature_deg_c.round() as usize
-                    )
-                    .unwrap();
-                }
+                write!(
+                    &mut temperature_string,
+                    "{}",
+                    temperature_deg_c.round() as usize
+                )
+                .unwrap();
             }
         }
 

@@ -1,7 +1,7 @@
 //! A library of supported tools (soldering irons).
 
 /// Temperature calibration settings.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, defmt::Format)]
 pub struct TemperatureCalibration {
     /// Conversion factor from thermocouple voltage to temperature.
     slope_k_per_v: f32,
@@ -11,17 +11,19 @@ pub struct TemperatureCalibration {
 
 impl TemperatureCalibration {
     /// Calculate temperature from thermocouple voltage.
+    ///
+    /// FIXME: Improve calibration? Currently just a linear fit.
     pub fn calc_temperature_c(&self, tc_potential_v: f32) -> f32 {
         self.slope_k_per_v * tc_potential_v + self.offset_c
     }
 }
 
 /// Properties of a tool (soldering iron).
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, defmt::Format)]
 pub struct ToolProperties {
     /// The tool's name.
     pub name: &'static str,
-    /// Maximum allowed power.
+    /// Maximum allowed power in Watt.
     pub max_power_w: f32,
     /// Heater resistance in Ohm.
     pub heater_resistance_ohm: f32,
