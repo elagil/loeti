@@ -11,7 +11,7 @@
 		(company "elagil")
 	)
 	(lib_symbols
-		(symbol "Connector:Conn_01x04_Pin"
+		(symbol "Connector:Conn_01x05_Pin"
 			(pin_names
 				(offset 1.016)
 				(hide yes)
@@ -20,14 +20,14 @@
 			(in_bom yes)
 			(on_board yes)
 			(property "Reference" "J"
-				(at 0 5.08 0)
+				(at 0 7.62 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
 			)
-			(property "Value" "Conn_01x04_Pin"
+			(property "Value" "Conn_01x05_Pin"
 				(at 0 -7.62 0)
 				(effects
 					(font
@@ -53,7 +53,7 @@
 					(hide yes)
 				)
 			)
-			(property "Description" "Generic connector, single row, 01x04, script generated"
+			(property "Description" "Generic connector, single row, 01x05, script generated"
 				(at 0 0 0)
 				(effects
 					(font
@@ -88,7 +88,18 @@
 					(hide yes)
 				)
 			)
-			(symbol "Conn_01x04_Pin_1_1"
+			(symbol "Conn_01x05_Pin_1_1"
+				(rectangle
+					(start 0.8636 5.207)
+					(end 0 4.953)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
 				(rectangle
 					(start 0.8636 2.667)
 					(end 0 2.413)
@@ -131,6 +142,18 @@
 					)
 					(fill
 						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 5.08) (xy 0.8636 5.08)
+					)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
 					)
 				)
 				(polyline
@@ -182,7 +205,7 @@
 					)
 				)
 				(pin passive line
-					(at 5.08 2.54 180)
+					(at 5.08 5.08 180)
 					(length 3.81)
 					(name "Pin_1"
 						(effects
@@ -200,7 +223,7 @@
 					)
 				)
 				(pin passive line
-					(at 5.08 0 180)
+					(at 5.08 2.54 180)
 					(length 3.81)
 					(name "Pin_2"
 						(effects
@@ -218,7 +241,7 @@
 					)
 				)
 				(pin passive line
-					(at 5.08 -2.54 180)
+					(at 5.08 0 180)
 					(length 3.81)
 					(name "Pin_3"
 						(effects
@@ -236,7 +259,7 @@
 					)
 				)
 				(pin passive line
-					(at 5.08 -5.08 180)
+					(at 5.08 -2.54 180)
 					(length 3.81)
 					(name "Pin_4"
 						(effects
@@ -253,10 +276,28 @@
 						)
 					)
 				)
+				(pin passive line
+					(at 5.08 -5.08 180)
+					(length 3.81)
+					(name "Pin_5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
 			)
 			(embedded_fonts no)
 		)
-		(symbol "Connector_Audio:XLR4"
+		(symbol "Connector_Audio:XLR5"
 			(pin_names
 				(hide yes)
 			)
@@ -271,7 +312,7 @@
 					)
 				)
 			)
-			(property "Value" "XLR4"
+			(property "Value" "XLR5"
 				(at 0 6.35 0)
 				(effects
 					(font
@@ -297,7 +338,7 @@
 					(hide yes)
 				)
 			)
-			(property "Description" "XLR Connector, Male or Female, 4 Pins"
+			(property "Description" "XLR Connector, Male or Female, 5 Pins"
 				(at 0 0 0)
 				(effects
 					(font
@@ -324,7 +365,7 @@
 					(hide yes)
 				)
 			)
-			(symbol "XLR4_0_1"
+			(symbol "XLR5_0_1"
 				(polyline
 					(pts
 						(xy -5.08 0) (xy -4.572 0)
@@ -351,7 +392,7 @@
 				)
 				(polyline
 					(pts
-						(xy -4.572 -2.54) (xy -3.556 -2.54)
+						(xy -4.572 -2.54) (xy -3.302 -2.54)
 					)
 					(stroke
 						(width 0)
@@ -373,7 +414,7 @@
 					)
 				)
 				(circle
-					(center -2.54 -2.54)
+					(center -2.286 -2.54)
 					(radius 1.016)
 					(stroke
 						(width 0)
@@ -395,7 +436,30 @@
 					)
 				)
 				(circle
-					(center 2.54 -2.54)
+					(center 0 -3.556)
+					(radius 1.016)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 -5.08) (xy 0 -4.572)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 2.286 -2.54)
 					(radius 1.016)
 					(stroke
 						(width 0)
@@ -418,7 +482,7 @@
 				)
 				(polyline
 					(pts
-						(xy 4.318 -2.54) (xy 3.556 -2.54)
+						(xy 4.572 -2.54) (xy 3.302 -2.54)
 					)
 					(stroke
 						(width 0)
@@ -471,7 +535,7 @@
 					)
 				)
 				(text "3"
-					(at 2.032 -0.762 0)
+					(at 0 -1.778 0)
 					(effects
 						(font
 							(size 1.016 1.016)
@@ -480,6 +544,15 @@
 					)
 				)
 				(text "4"
+					(at 2.032 -0.762 0)
+					(effects
+						(font
+							(size 1.016 1.016)
+							(bold yes)
+						)
+					)
+				)
+				(text "5"
 					(at 3.556 1.778 0)
 					(effects
 						(font
@@ -489,11 +562,11 @@
 					)
 				)
 			)
-			(symbol "XLR4_1_1"
+			(symbol "XLR5_1_1"
 				(pin passive line
 					(at -7.62 0 0)
 					(length 2.54)
-					(name "~"
+					(name "P1"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -511,7 +584,7 @@
 				(pin passive line
 					(at -7.62 -2.54 0)
 					(length 2.54)
-					(name "~"
+					(name "P2"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -527,27 +600,9 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 0 180)
+					(at 0 -7.62 90)
 					(length 2.54)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 7.62 -2.54 180)
-					(length 2.54)
-					(name "~"
+					(name "P3"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -562,23 +617,49 @@
 						)
 					)
 				)
+				(pin passive line
+					(at 7.62 0 180)
+					(length 2.54)
+					(name "P5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 7.62 -2.54 180)
+					(length 2.54)
+					(name "P3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
 			)
 			(embedded_fonts no)
 		)
 	)
 	(wire
 		(pts
-			(xy 139.7 104.14) (xy 139.7 105.41)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "021950ef-89b1-4f83-b518-de464d886750")
-	)
-	(wire
-		(pts
-			(xy 152.4 97.79) (xy 167.64 97.79)
+			(xy 152.4 99.06) (xy 167.64 99.06)
 		)
 		(stroke
 			(width 0)
@@ -588,17 +669,7 @@
 	)
 	(wire
 		(pts
-			(xy 151.13 87.63) (xy 151.13 100.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2a4104aa-fc7d-4bac-8ffd-d3176d3d97b0")
-	)
-	(wire
-		(pts
-			(xy 139.7 105.41) (xy 149.86 105.41)
+			(xy 138.43 104.14) (xy 149.86 104.14)
 		)
 		(stroke
 			(width 0)
@@ -608,7 +679,7 @@
 	)
 	(wire
 		(pts
-			(xy 152.4 86.36) (xy 152.4 95.25)
+			(xy 152.4 86.36) (xy 152.4 93.98)
 		)
 		(stroke
 			(width 0)
@@ -618,7 +689,7 @@
 	)
 	(wire
 		(pts
-			(xy 137.16 104.14) (xy 137.16 106.68)
+			(xy 135.89 104.14) (xy 135.89 106.68)
 		)
 		(stroke
 			(width 0)
@@ -628,7 +699,7 @@
 	)
 	(wire
 		(pts
-			(xy 149.86 92.71) (xy 149.86 105.41)
+			(xy 149.86 91.44) (xy 149.86 104.14)
 		)
 		(stroke
 			(width 0)
@@ -638,27 +709,27 @@
 	)
 	(wire
 		(pts
-			(xy 139.7 87.63) (xy 151.13 87.63)
+			(xy 147.32 96.52) (xy 167.64 96.52)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "5b9d359b-2afb-4db0-8a5c-f9ad02d1807f")
+		(uuid "5ec0d0d5-adf9-465f-a9bc-e6a5fb9215df")
 	)
 	(wire
 		(pts
-			(xy 151.13 100.33) (xy 167.64 100.33)
+			(xy 143.51 96.52) (xy 144.78 96.52)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "6290747c-1b75-4571-b62b-5636a97c9ec3")
+		(uuid "62908683-8ee2-4c9e-aab4-7076dd50aee2")
 	)
 	(wire
 		(pts
-			(xy 152.4 106.68) (xy 152.4 97.79)
+			(xy 152.4 106.68) (xy 152.4 99.06)
 		)
 		(stroke
 			(width 0)
@@ -668,7 +739,7 @@
 	)
 	(wire
 		(pts
-			(xy 149.86 92.71) (xy 167.64 92.71)
+			(xy 149.86 91.44) (xy 167.64 91.44)
 		)
 		(stroke
 			(width 0)
@@ -678,7 +749,17 @@
 	)
 	(wire
 		(pts
-			(xy 137.16 88.9) (xy 137.16 86.36)
+			(xy 138.43 87.63) (xy 147.32 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8082bc2a-b81f-4fe5-ad27-0d487637b5df")
+	)
+	(wire
+		(pts
+			(xy 135.89 88.9) (xy 135.89 86.36)
 		)
 		(stroke
 			(width 0)
@@ -688,7 +769,7 @@
 	)
 	(wire
 		(pts
-			(xy 152.4 95.25) (xy 167.64 95.25)
+			(xy 152.4 93.98) (xy 167.64 93.98)
 		)
 		(stroke
 			(width 0)
@@ -698,7 +779,7 @@
 	)
 	(wire
 		(pts
-			(xy 139.7 88.9) (xy 139.7 87.63)
+			(xy 138.43 88.9) (xy 138.43 87.63)
 		)
 		(stroke
 			(width 0)
@@ -708,7 +789,27 @@
 	)
 	(wire
 		(pts
-			(xy 137.16 106.68) (xy 152.4 106.68)
+			(xy 147.32 87.63) (xy 147.32 96.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a39b6f61-95e7-4d71-8f71-6937f0d577b7")
+	)
+	(wire
+		(pts
+			(xy 144.78 96.52) (xy 144.78 101.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b054e1da-8844-49f8-8003-ce1ba718691e")
+	)
+	(wire
+		(pts
+			(xy 135.89 106.68) (xy 152.4 106.68)
 		)
 		(stroke
 			(width 0)
@@ -718,7 +819,7 @@
 	)
 	(wire
 		(pts
-			(xy 137.16 86.36) (xy 152.4 86.36)
+			(xy 135.89 86.36) (xy 152.4 86.36)
 		)
 		(stroke
 			(width 0)
@@ -726,8 +827,18 @@
 		)
 		(uuid "cf8ad6a1-aae7-4387-bca9-6ee539aa8ecb")
 	)
+	(wire
+		(pts
+			(xy 144.78 101.6) (xy 167.64 101.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d0d7d95c-70ab-46fa-a89e-822540d09e22")
+	)
 	(label "GND"
-		(at 153.67 97.79 0)
+		(at 153.67 99.06 0)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -737,7 +848,7 @@
 		(uuid "175c2fde-ed1b-4cda-b082-9ad32405ae1d")
 	)
 	(label "TC+"
-		(at 153.67 92.71 0)
+		(at 153.67 91.44 0)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -747,7 +858,7 @@
 		(uuid "45f733d2-f422-461c-9479-c165a5f30357")
 	)
 	(label "DET"
-		(at 153.67 95.25 0)
+		(at 153.67 93.98 0)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -756,8 +867,18 @@
 		)
 		(uuid "5f264aae-d5da-4c37-87c5-313f46353ae4")
 	)
+	(label "SLP"
+		(at 153.67 96.52 0)
+		(effects
+			(font
+				(size 1.524 1.524)
+			)
+			(justify left bottom)
+		)
+		(uuid "8ee2b223-6725-4566-9d79-5c143febaa5e")
+	)
 	(label "HEATER"
-		(at 153.67 100.33 0)
+		(at 153.67 101.6 0)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -767,33 +888,33 @@
 		(uuid "b6a29f0d-67c0-4c79-a7f0-cdb204e92881")
 	)
 	(symbol
-		(lib_id "Connector:Conn_01x04_Pin")
-		(at 172.72 95.25 0)
+		(lib_id "Connector:Conn_01x05_Pin")
+		(at 172.72 96.52 0)
 		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "50449852-703c-4eec-8156-135b6c0a79f8")
-		(property "Reference" "J1"
-			(at 165.1 86.614 0)
+		(uuid "0c9ef3da-8f29-43eb-bd44-71bb60e46377")
+		(property "Reference" "J3"
+			(at 172.085 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "Conn_01x04_Pin"
-			(at 165.1 89.154 0)
+		(property "Value" "Conn_01x05_Pin"
+			(at 172.085 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
-			(at 172.72 95.25 0)
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical"
+			(at 172.72 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -802,7 +923,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 172.72 95.25 0)
+			(at 172.72 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -810,66 +931,69 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Generic connector, single row, 01x04, script generated"
-			(at 172.72 95.25 0)
+		(property "Description" "Generic connector, single row, 01x05, script generated"
+			(at 172.72 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
 			)
-		)
-		(pin "2"
-			(uuid "3d31846c-8de8-4835-a9a7-813f22659a74")
-		)
-		(pin "1"
-			(uuid "6292f216-77b3-400c-bcf3-0c7ab4213e2f")
-		)
-		(pin "3"
-			(uuid "37af7772-0b0a-484a-b7b5-d7d2accf4850")
 		)
 		(pin "4"
-			(uuid "927cd03a-9a8f-4859-b44c-0ca15b268580")
+			(uuid "bc41a033-5c27-4a24-aa3e-1c390283c72b")
+		)
+		(pin "2"
+			(uuid "a02b83d6-fb21-42d3-9788-ae6e82ee39a5")
+		)
+		(pin "1"
+			(uuid "6e671fa7-3511-46f4-b78c-93d9ca1e51d8")
+		)
+		(pin "3"
+			(uuid "dabe8a79-c25e-4d07-8dd0-0d47ceea5c64")
+		)
+		(pin "5"
+			(uuid "b2208bd6-6c92-4f29-afaf-53942f38bfd3")
 		)
 		(instances
-			(project "adapter"
+			(project ""
 				(path "/95e8c498-3a26-4530-acb0-521a20a9800f"
-					(reference "J1")
+					(reference "J3")
 					(unit 1)
 				)
 			)
 		)
 	)
 	(symbol
-		(lib_id "Connector_Audio:XLR4")
-		(at 137.16 96.52 90)
+		(lib_id "Connector_Audio:XLR5")
+		(at 135.89 96.52 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "faee63f9-9675-4edc-a530-259af85852f6")
-		(property "Reference" "J2"
-			(at 143.51 95.2499 90)
+		(uuid "3e8ed47c-dd45-4f09-8417-d7a0d7e6516f")
+		(property "Reference" "J1"
+			(at 129.54 95.2499 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify right)
+				(justify left)
 			)
 		)
-		(property "Value" "XLR4"
-			(at 143.51 97.7899 90)
+		(property "Value" "XLR5"
+			(at 129.54 97.7899 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify right)
+				(justify left)
 			)
 		)
-		(property "Footprint" "connector_audio:MiniXLR-4_Rean_RT4MPR"
-			(at 137.16 96.52 0)
+		(property "Footprint" "connector_audio:MiniXLR-5_Rean_RT5MPR"
+			(at 135.89 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -878,7 +1002,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 137.16 96.52 0)
+			(at 135.89 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -886,31 +1010,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "XLR Connector, Male or Female, 4 Pins"
-			(at 137.16 96.52 0)
+		(property "Description" "XLR Connector, Male or Female, 5 Pins"
+			(at 135.89 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
 			)
-		)
-		(pin "3"
-			(uuid "6c160a04-e895-43cd-a622-ddbc9ec4436a")
 		)
 		(pin "4"
-			(uuid "b24cc2f5-8779-4b6a-b00d-499e369170bf")
+			(uuid "58f9af72-98f5-4e9f-b008-cb68e9cd15f3")
 		)
 		(pin "2"
-			(uuid "2ed611b9-e352-4e61-97df-b948560e0b54")
+			(uuid "13b05b17-9775-4247-8966-ee40f1554888")
+		)
+		(pin "3"
+			(uuid "02faca3f-1456-4e4d-ab41-858bf3d6fc42")
+		)
+		(pin "5"
+			(uuid "9c8c6b98-7167-458c-8d49-ab850370b452")
 		)
 		(pin "1"
-			(uuid "1a5d9c63-a6ce-4c54-9967-1e4c871d5a23")
+			(uuid "f4879363-933d-4dd6-8867-5ac8c26085e3")
 		)
 		(instances
-			(project "adapter"
+			(project ""
 				(path "/95e8c498-3a26-4530-acb0-521a20a9800f"
-					(reference "J2")
+					(reference "J1")
 					(unit 1)
 				)
 			)

@@ -11,7 +11,7 @@
 		(company "elagil")
 	)
 	(lib_symbols
-		(symbol "Connector_Audio:XLR4"
+		(symbol "Connector_Audio:XLR5"
 			(pin_names
 				(hide yes)
 			)
@@ -26,7 +26,7 @@
 					)
 				)
 			)
-			(property "Value" "XLR4"
+			(property "Value" "XLR5"
 				(at 0 6.35 0)
 				(effects
 					(font
@@ -52,7 +52,7 @@
 					(hide yes)
 				)
 			)
-			(property "Description" "XLR Connector, Male or Female, 4 Pins"
+			(property "Description" "XLR Connector, Male or Female, 5 Pins"
 				(at 0 0 0)
 				(effects
 					(font
@@ -79,7 +79,7 @@
 					(hide yes)
 				)
 			)
-			(symbol "XLR4_0_1"
+			(symbol "XLR5_0_1"
 				(polyline
 					(pts
 						(xy -5.08 0) (xy -4.572 0)
@@ -106,7 +106,7 @@
 				)
 				(polyline
 					(pts
-						(xy -4.572 -2.54) (xy -3.556 -2.54)
+						(xy -4.572 -2.54) (xy -3.302 -2.54)
 					)
 					(stroke
 						(width 0)
@@ -128,7 +128,7 @@
 					)
 				)
 				(circle
-					(center -2.54 -2.54)
+					(center -2.286 -2.54)
 					(radius 1.016)
 					(stroke
 						(width 0)
@@ -150,7 +150,30 @@
 					)
 				)
 				(circle
-					(center 2.54 -2.54)
+					(center 0 -3.556)
+					(radius 1.016)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 -5.08) (xy 0 -4.572)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 2.286 -2.54)
 					(radius 1.016)
 					(stroke
 						(width 0)
@@ -173,7 +196,7 @@
 				)
 				(polyline
 					(pts
-						(xy 4.318 -2.54) (xy 3.556 -2.54)
+						(xy 4.572 -2.54) (xy 3.302 -2.54)
 					)
 					(stroke
 						(width 0)
@@ -226,7 +249,7 @@
 					)
 				)
 				(text "3"
-					(at 2.032 -0.762 0)
+					(at 0 -1.778 0)
 					(effects
 						(font
 							(size 1.016 1.016)
@@ -235,6 +258,15 @@
 					)
 				)
 				(text "4"
+					(at 2.032 -0.762 0)
+					(effects
+						(font
+							(size 1.016 1.016)
+							(bold yes)
+						)
+					)
+				)
+				(text "5"
 					(at 3.556 1.778 0)
 					(effects
 						(font
@@ -244,11 +276,11 @@
 					)
 				)
 			)
-			(symbol "XLR4_1_1"
+			(symbol "XLR5_1_1"
 				(pin passive line
 					(at -7.62 0 0)
 					(length 2.54)
-					(name "~"
+					(name "P1"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -266,7 +298,7 @@
 				(pin passive line
 					(at -7.62 -2.54 0)
 					(length 2.54)
-					(name "~"
+					(name "P2"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -282,16 +314,34 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 0 180)
+					(at 0 -7.62 90)
 					(length 2.54)
-					(name "~"
+					(name "P3"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "4"
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 7.62 0 180)
+					(length 2.54)
+					(name "P5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -302,14 +352,14 @@
 				(pin passive line
 					(at 7.62 -2.54 180)
 					(length 2.54)
-					(name "~"
+					(name "P3"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "3"
+					(number "4"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -448,6 +498,10 @@
 	(no_connect
 		(at 139.7 88.9)
 		(uuid "12c493c6-73d7-4910-91f5-251385be13c2")
+	)
+	(no_connect
+		(at 144.78 96.52)
+		(uuid "6ed388b9-e75c-4bbf-beb4-f6d683f8118e")
 	)
 	(no_connect
 		(at 139.7 104.14)
@@ -642,7 +696,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector_Audio:XLR4")
+		(lib_id "Connector_Audio:XLR5")
 		(at 137.16 96.52 90)
 		(unit 1)
 		(exclude_from_sim no)
@@ -650,26 +704,26 @@
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "faee63f9-9675-4edc-a530-259af85852f6")
-		(property "Reference" "J2"
-			(at 143.51 95.2499 90)
+		(uuid "ca02a32e-7285-4073-8b16-bb7cf12d569e")
+		(property "Reference" "J1"
+			(at 130.81 95.2499 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify right)
+				(justify left)
 			)
 		)
-		(property "Value" "XLR4"
-			(at 143.51 97.7899 90)
+		(property "Value" "XLR5"
+			(at 130.81 97.7899 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify right)
+				(justify left)
 			)
 		)
-		(property "Footprint" "connector_audio:MiniXLR-4_Rean_RT4MPR"
+		(property "Footprint" "connector_audio:MiniXLR-5_Rean_RT5MPR"
 			(at 137.16 96.52 0)
 			(effects
 				(font
@@ -687,7 +741,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "XLR Connector, Male or Female, 4 Pins"
+		(property "Description" "XLR Connector, Male or Female, 5 Pins"
 			(at 137.16 96.52 0)
 			(effects
 				(font
@@ -696,22 +750,25 @@
 				(hide yes)
 			)
 		)
-		(pin "3"
-			(uuid "6c160a04-e895-43cd-a622-ddbc9ec4436a")
+		(pin "5"
+			(uuid "2967c5c3-daea-421b-b09a-c391f4f76792")
 		)
 		(pin "4"
-			(uuid "b24cc2f5-8779-4b6a-b00d-499e369170bf")
+			(uuid "34cead21-192e-4eb3-a203-aa243065b53e")
+		)
+		(pin "3"
+			(uuid "db9fa149-ea3c-44bb-9a15-88d00b8fdbbb")
 		)
 		(pin "2"
-			(uuid "2ed611b9-e352-4e61-97df-b948560e0b54")
+			(uuid "01eb0b86-4f8c-45f1-896e-670ccf18e032")
 		)
 		(pin "1"
-			(uuid "1a5d9c63-a6ce-4c54-9967-1e4c871d5a23")
+			(uuid "2fb3b5ad-4750-4a0d-9dbf-07e11e4b5184")
 		)
 		(instances
-			(project "adapter"
+			(project ""
 				(path "/95e8c498-3a26-4530-acb0-521a20a9800f"
-					(reference "J2")
+					(reference "J1")
 					(unit 1)
 				)
 			)
