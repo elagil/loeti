@@ -163,7 +163,7 @@ async fn main(spawner: Spawner) {
                 khz(34),
                 Default::default(),
             ),
-            pin_sleep: Input::new(p.PA5, Pull::Up),
+            pin_sleep: Input::new(p.PB10, Pull::Up),
         };
         spawner.spawn(unwrap!(tool::tool_task(tool_resources, negotiated_supply)));
     }
