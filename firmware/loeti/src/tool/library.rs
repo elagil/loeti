@@ -76,9 +76,10 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         heater_resistance_ohm: 2.0,
         detect_ratio: 0.7,
         temperature_calibration: TemperatureCalibration {
-            quadratic_c_per_vv: 0.0,
-            linear_c_per_v: 180.0,
-            constant_c: 4.4,
+            // FIXME: Values are not tested.
+            quadratic_c_per_vv: 3.89,
+            linear_c_per_v: 150.0,
+            constant_c: 47.1,
         },
 
         p: 0.025,
