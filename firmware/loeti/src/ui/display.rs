@@ -205,17 +205,15 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         if let Some(temperature_deg_c) = TEMPERATURE_MEASUREMENT_DEG_C_SIG.try_take() {
             temperature_string.clear();
 
-            if !temperature_deg_c.is_nan() {
-                if temperature_deg_c >= 60.0 {
-                    write!(
-                        &mut temperature_string,
-                        "{}",
-                        temperature_deg_c.round() as usize
-                    )
-                    .unwrap();
-                } else {
-                    write!(&mut temperature_string, "~",).unwrap();
-                }
+            if let Some(temperature_deg_c) = temperature_deg_c {
+                write!(
+                    &mut temperature_string,
+                    "{}",
+                    temperature_deg_c.round() as usize
+                )
+                .unwrap();
+            } else {
+                write!(&mut temperature_string, "?",).unwrap();
             }
         }
 
@@ -231,9 +229,8 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         }
 
         if let Some(power_ratio) = POWER_RATIO_BARGRAPH_SIG.try_take() {
-            let raw = power_ratio * DISPLAY_WIDTH as f32;
-
-            if !raw.is_nan() {
+            if let Some(power_ratio) = power_ratio {
+                let raw = power_ratio * DISPLAY_WIDTH as f32;
                 power_bar_width = (bargraph_filter.run(raw).round() as i32).max(0);
             } else {
                 bargraph_filter.reset_state();

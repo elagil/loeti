@@ -87,10 +87,10 @@ pub static NEGOTIATED_SUPPLY_SIG: Signal<ThreadModeRawMutex, (u32, u32)> = Signa
 static DISPLAY_POWER_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
 
 /// Signals a new tool temperature.
-static TEMPERATURE_MEASUREMENT_DEG_C_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
+static TEMPERATURE_MEASUREMENT_DEG_C_SIG: Signal<ThreadModeRawMutex, Option<f32>> = Signal::new();
 
 /// Signals a new power bargraph value.
-static POWER_RATIO_BARGRAPH_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
+static POWER_RATIO_BARGRAPH_SIG: Signal<ThreadModeRawMutex, Option<f32>> = Signal::new();
 
 /// Signals a new message to display.
 static MESSAGE_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();

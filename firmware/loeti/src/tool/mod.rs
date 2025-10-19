@@ -67,6 +67,7 @@ enum Error {
     ToolMismatch,
 }
 
+/// Convert an ADC value to measured voltage.
 fn adc_value_to_potential(value: u16) -> ElectricPotential {
     ElectricPotential::new::<volt>(VREFBUF_V * (value as f32) / ADC_MAX)
 }
@@ -118,12 +119,23 @@ struct RawToolMeasurement {
 
 impl RawToolMeasurement {
     /// Derive a tool's temperature, given its unique properties.
-    fn temperature(&self, tool_properties: &ToolProperties) -> ThermodynamicTemperature {
-        ThermodynamicTemperature::new::<degree_celsius>(
+    ///
+    /// The temperature is invalid if the ADC voltage is very close to zero. The hardware cannot measure negative
+    /// thermocouple voltages, thus reports invalid temperature measurements in such cases.
+    fn temperature(&self, tool_properties: &ToolProperties) -> Option<ThermodynamicTemperature> {
+        const MIN_VALID_ADC_POTENTIAL_V: f32 = 0.1;
+
+        if self.temperature_potential
+            <= ElectricPotential::new::<electric_potential::volt>(MIN_VALID_ADC_POTENTIAL_V)
+        {
+            return None;
+        }
+
+        Some(ThermodynamicTemperature::new::<degree_celsius>(
             tool_properties
                 .temperature_calibration
                 .calc_temperature_c(self.temperature_potential.get::<volt>()),
-        )
+        ))
     }
 }
 
@@ -151,7 +163,7 @@ async fn measure_tool(
         )
         .await;
 
-    debug!("Read {}", adc_buffer);
+    debug!("Measured tool, ADC values: {}", adc_buffer);
 
     let detect_ratio = adc_value_to_potential(adc_buffer[0])
         / ElectricPotential::new::<electric_potential::volt>(3.3);
@@ -358,10 +370,12 @@ impl Tool {
     }
 
     /// Calculate tool temperature from a raw tool measurement.
-    fn calculate_temperature(
+    ///
+    /// Checks for unexpected tool changes during the control cycle.
+    fn detect_and_calculate_temperature(
         &mut self,
         tool_measurement: RawToolMeasurement,
-    ) -> Result<f32, Error> {
+    ) -> Result<Option<f32>, Error> {
         let new_properties = Tool::detect(tool_measurement)?;
         if new_properties.name != self.name() {
             return Err(Error::ToolMismatch);
@@ -369,23 +383,24 @@ impl Tool {
 
         Ok(tool_measurement
             .temperature(self.properties)
-            .get::<thermodynamic_temperature::degree_celsius>())
+            .map(|v| v.get::<thermodynamic_temperature::degree_celsius>()))
     }
 
     /// Runs a temperature control step.
     fn control_temperature(
         &mut self,
-        tool_temperature_deg_c: f32,
+        tool_temperature_deg_c: Option<f32>,
         set_temperature_deg_c: f32,
-    ) -> Result<f32, Error> {
+    ) -> Result<(), Error> {
         if self.temperature_pid.setpoint != set_temperature_deg_c {
             self.temperature_pid.reset_integral_term();
             self.temperature_pid.setpoint(set_temperature_deg_c);
         }
 
+        // Assume 0°C measurement, when tool temperature is invalid (too low to measure).
         let current_setpoint_a = self
             .temperature_pid
-            .next_control_output(tool_temperature_deg_c)
+            .next_control_output(tool_temperature_deg_c.unwrap_or_default())
             .output;
 
         self.current_pid.setpoint(current_setpoint_a);
@@ -393,7 +408,7 @@ impl Tool {
         let is_current_limited = current_setpoint_a.abs() >= self.current_pid.output_limit;
         self.configure_temperature_control(is_current_limited);
 
-        Ok(tool_temperature_deg_c)
+        Ok(())
     }
 
     /// The ratio of the current setpoint and the maximum current that can be supplied.
@@ -497,7 +512,7 @@ async fn control(tool_resources: &mut ToolResources, supply: &Supply) -> Result<
             continue;
         }
 
-        let tool_temperature_deg_c = tool.calculate_temperature(tool_measurement)?;
+        let tool_temperature_deg_c = tool.detect_and_calculate_temperature(tool_measurement)?;
         TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(tool_temperature_deg_c);
 
         if operational_state.tool_is_off {
@@ -553,10 +568,6 @@ async fn control(tool_resources: &mut ToolResources, supply: &Supply) -> Result<
 
 /// Display a power measurement and relative power bargraph.
 fn show_power(power_ratio: Option<f32>) {
-    let power_ratio = match power_ratio {
-        None => f32::NAN,
-        Some(x) => x,
-    };
     POWER_RATIO_BARGRAPH_SIG.signal(power_ratio)
 }
 
@@ -567,8 +578,8 @@ fn show_message(message: &'static str) {
 
 /// Displays a message, while being idle (not heating).
 fn show_idle_message(message: &'static str) {
-    POWER_RATIO_BARGRAPH_SIG.signal(f32::NAN);
-    TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(f32::NAN);
+    POWER_RATIO_BARGRAPH_SIG.signal(None);
+    TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(None);
     show_message(message);
 }
 
