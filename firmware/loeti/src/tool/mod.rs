@@ -617,7 +617,7 @@ pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u3
                 Error::ToolMismatch => show_idle_message(""),
             }
 
-            let sleep_on_error = PERSISTENT_MUTEX.lock(|x| x.borrow().sleep_on_error);
+            let sleep_on_error = PERSISTENT_MUTEX.lock(|x| x.borrow().sleep_on_change);
             OPERATIONAL_STATE_MUTEX.lock(|x| x.borrow_mut().tool_is_off = sleep_on_error);
 
             debug!("Tool control error: {}", error);

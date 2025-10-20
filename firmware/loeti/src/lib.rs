@@ -22,8 +22,8 @@ pub struct Persistent {
     pub display_is_rotated: bool,
     /// If true, start the controller with heating switched off after power on.
     pub sleep_on_power: bool,
-    /// If true, switch off heating on error (tip or iron removed).
-    pub sleep_on_error: bool,
+    /// If true, switch off heating when the tip or iron was removed/changed.
+    pub sleep_on_change: bool,
     /// The operational temperature set point in °C.
     pub operational_temperature_deg_c: isize,
     /// Current margin to leave until max. supply current.
@@ -36,7 +36,7 @@ impl Persistent {
         Self {
             display_is_rotated: false,
             sleep_on_power: false,
-            sleep_on_error: true,
+            sleep_on_change: false,
             operational_temperature_deg_c: 300,
             current_margin_ma: 150,
         }

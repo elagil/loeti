@@ -63,8 +63,8 @@ pub enum MenuResult {
     CurrentMargin(CurrentMargin),
     /// Sleep when powering on.
     SleepOnPower(bool),
-    /// Sleep when an error occurs.
-    SleepOnError(bool),
+    /// Sleep when a tool/tip change occurs.
+    SleepOnChange(bool),
 }
 
 /// Adjust current margin (from max. supply current).
@@ -99,6 +99,8 @@ impl SelectValue for CurrentMargin {
 /// Handle displaying the UI.
 #[embassy_executor::task]
 pub async fn display_task(mut display_resources: DisplayResources) {
+    const GIT_HASH: &str = env!("GIT_HASH");
+
     let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
 
     let mut bargraph_filter = biquad::DirectForm2Transposed::<f32>::new(
@@ -162,8 +164,9 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     let mut refresh_ticker = Ticker::every(Duration::from_hz(DISPLAY_REFRESH_RATE_HZ));
 
     // FIXME: Persistent storage in callback?
+    let version: heapless::String<13> = heapless::format!("Ver. {}", GIT_HASH).unwrap();
     let mut menu = Menu::with_style(
-        "Setup",
+        version,
         MenuStyle::default()
             .with_title_font(&PROFONT_12_POINT)
             .with_font(&PROFONT_9_POINT),
@@ -185,8 +188,8 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     .add_item("Slp on power", persistent.sleep_on_power, |v| {
         MenuResult::SleepOnPower(v)
     })
-    .add_item("Slp on error", persistent.sleep_on_error, |v| {
-        MenuResult::SleepOnError(v)
+    .add_item("Slp on change", persistent.sleep_on_change, |v| {
+        MenuResult::SleepOnChange(v)
     })
     .build();
 
@@ -284,8 +287,8 @@ pub async fn display_task(mut display_resources: DisplayResources) {
                         PERSISTENT_MUTEX.lock(|x| x.borrow_mut().sleep_on_power = v);
                         STORE_PERSISTENT_SIG.signal(());
                     }
-                    Some(MenuResult::SleepOnError(v)) => {
-                        PERSISTENT_MUTEX.lock(|x| x.borrow_mut().sleep_on_error = v);
+                    Some(MenuResult::SleepOnChange(v)) => {
+                        PERSISTENT_MUTEX.lock(|x| x.borrow_mut().sleep_on_change = v);
                         STORE_PERSISTENT_SIG.signal(());
                     }
                     _ => (),
