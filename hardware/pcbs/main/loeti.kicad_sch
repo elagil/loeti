@@ -9233,7 +9233,7 @@
 		)
 		(uuid "8e98034b-c6d5-4257-bc17-f2ac8e17df3c")
 	)
-	(text "Possible candidates\nSi4825DDY\nSi4425DDY\nDMP3036SSS"
+	(text "Possible candidates\nSi4151DY\nSi4153DY\nSi4825DDY"
 		(exclude_from_sim no)
 		(at 390.144 154.94 0)
 		(effects
@@ -26173,7 +26173,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Si4825"
+		(property "Value" "Si4425FDY"
 			(at 368.3 173.9899 0)
 			(effects
 				(font
