@@ -12,7 +12,6 @@ use embassy_stm32::{
 };
 use embassy_time::{Duration, Ticker, Timer};
 use pid::{self, Pid};
-use uom::si::electric_current;
 use uom::si::electric_potential;
 use uom::si::electric_potential::volt;
 use uom::si::electrical_resistance::ohm;
@@ -26,9 +25,11 @@ use uom::si::ratio;
 use uom::si::ratio::percent;
 use uom::si::thermodynamic_temperature;
 use uom::si::thermodynamic_temperature::degree_celsius;
+use uom::si::{electric_current, power};
 
 mod library;
 use library::{ToolProperties, TOOLS};
+use uom::ConstZero;
 
 use crate::ui::display::{
     show_current_power, show_current_temperature, show_message, show_power_limit,
@@ -122,14 +123,10 @@ struct RawToolMeasurement {
 impl RawToolMeasurement {
     /// Derive a tool's temperature, given its unique properties.
     ///
-    /// The temperature is invalid if the ADC voltage is very close to zero. The hardware cannot measure negative
+    /// The temperature is invalid if the ADC voltage is zero or below. The hardware cannot measure negative
     /// thermocouple voltages, thus reports invalid temperature measurements in such cases.
     fn temperature(&self, tool_properties: &ToolProperties) -> Option<ThermodynamicTemperature> {
-        const MIN_VALID_ADC_POTENTIAL_V: f32 = 0.1;
-
-        if self.temperature_potential
-            <= ElectricPotential::new::<electric_potential::volt>(MIN_VALID_ADC_POTENTIAL_V)
-        {
+        if self.temperature_potential == ElectricPotential::ZERO {
             return None;
         }
 
@@ -188,6 +185,8 @@ struct PowerMeasurement {
     /// The electric current through the tool.
     current: ElectricCurrent,
     /// The supply voltage.
+    ///
+    /// FIXME: Use for checking drop from negotiated voltage?
     _potential: ElectricPotential,
 }
 
@@ -234,23 +233,54 @@ async fn measure_tool_power(adc_power_resources: &mut AdcResources) -> PowerMeas
 }
 
 /// Properties of the tool's power supply.
-#[derive(Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone)]
 struct Supply {
     /// The maximum allowed current.
     current_limit: ElectricCurrent,
+    /// A margin to leave until the limit (reduces the actual limit).
+    current_margin: ElectricCurrent,
     /// The negotiated potential.
     potential: ElectricPotential,
 }
 
 impl Supply {
+    /// The supply's maximum current minus the margin to leave.
+    ///
+    /// This is the effectively usable current limit.
+    fn effective_current_limit(&self) -> ElectricCurrent {
+        self.current_limit - self.current_margin
+    }
+
     /// Calculate the supply's maximum power output.
-    fn power_limit(&self) -> Power {
+    fn _power_limit(&self) -> Power {
         self.current_limit * self.potential
     }
 
-    /// The supply's maximum current in Ampere.
-    fn current_limit_a(&self) -> f32 {
+    /// Calculate the supply's maximum effective power output, taking into account the margin to leave.
+    ///
+    /// This is the effectively usable power limit.
+    fn effective_power_limit(&self) -> Power {
+        self.effective_current_limit() * self.potential
+    }
+
+    /// Calculate the supply's maximum effective power output in W, taking into account the margin to leave.
+    ///
+    /// This is the effectively usable power limit.
+    fn effective_power_limit_w(&self) -> f32 {
+        self.effective_power_limit().get::<power::watt>()
+    }
+
+    /// The supply's maximum current, in Ampere.
+    fn _current_limit_a(&self) -> f32 {
         self.current_limit.get::<electric_current::ampere>()
+    }
+
+    /// The supply's maximum current minus the margin to leave, in Ampere.
+    ///
+    /// This is the effectively usable current limit.
+    fn effective_current_limit_a(&self) -> f32 {
+        self.effective_current_limit()
+            .get::<electric_current::ampere>()
     }
 
     /// The supply's potential in Volt.
@@ -269,17 +299,17 @@ struct Tool {
     current_pid: Pid<f32>,
     /// The current  PWM ratio of the heater switch (MOSFET).
     pwm_ratio: Ratio,
+    /// The current temperature.
+    temperature_deg_c: Option<f32>,
     /// The tool's power supply.
     supply: Supply,
-    /// The current temperature.
-    temperature_deg_c: f32,
 }
 
 impl Tool {
     /// Create a new tool from a measurement.
     ///
     /// Limits the tool's current capability to the maximum available supply current.
-    fn new(tool_measurement: RawToolMeasurement, supply: &Supply) -> Result<Self, Error> {
+    fn new(tool_measurement: RawToolMeasurement, supply: Supply) -> Result<Self, Error> {
         let properties = Tool::detect(tool_measurement)?;
         debug!("Create new tool with properties: {:?}", properties);
 
@@ -288,18 +318,18 @@ impl Tool {
             temperature_pid: Pid::new(0.0, 0.0),
             current_pid: Pid::new(0.0, 1.0),
             pwm_ratio: Ratio::new::<percent>(0.0),
-            supply: *supply,
-            temperature_deg_c: 0.0,
+            temperature_deg_c: None,
+            supply,
         };
 
         let gain = {
             // Use a scale between 0.3 (fast) and 0.1 (slow).
             const SCALE: f32 = 0.2;
-            let gain = SCALE * properties.heater_resistance_ohm / supply.potential_v();
+            let gain = SCALE * properties.heater_resistance_ohm / tool.supply.potential_v();
             debug!(
                 "Using current loop I-gain of {} (for {} V, {} Ω, scale {})",
                 gain,
-                supply.potential_v(),
+                tool.supply.potential_v(),
                 properties.heater_resistance_ohm,
                 SCALE
             );
@@ -318,7 +348,14 @@ impl Tool {
         self.properties.name
     }
 
-    /// Calculate the tool's current limit in Ampere.
+    /// Calculate the tool's power limit in W, including effective power limit from the supply.
+    fn power_limit_w(&self) -> f32 {
+        self.properties
+            .max_power_w
+            .min(self.supply.effective_power_limit_w())
+    }
+
+    /// Calculate the tool's current limit in Ampere, including effective current limit from the supply.
     ///
     /// Takes into account
     /// - the tool's maximum allowed power,
@@ -327,37 +364,28 @@ impl Tool {
     fn current_limit_a(&self) -> f32 {
         self.properties
             .max_current_a(self.supply.potential_v())
-            .min(self.supply.current_limit_a())
-    }
-
-    /// Set a new current limit for the tool's temperature PID controller.
-    ///
-    /// Takes into account the hard current limit (supply and tool dependent), and some margin.
-    fn set_output_current_limit(&mut self, current_margin: &ElectricCurrent) {
-        self.temperature_pid.output_limit =
-            self.current_limit_a() - current_margin.get::<electric_current::ampere>();
-
-        debug!(
-            "Set new output current limit at {} A",
-            self.temperature_pid.output_limit
-        );
+            .min(self.supply.effective_current_limit_a())
     }
 
     /// Configures the temperaure control.
     ///
     /// If the device is current limited, disable the PID's I-component temporarily (prevent windup).
     fn configure_temperature_control(&mut self, is_current_limited: bool) {
-        const CURRENT_LIMIT_A: f32 = f32::INFINITY;
+        const COMPONENT_CURRENT_LIMIT_A: f32 = f32::INFINITY;
+
+        self.temperature_pid.output_limit = self.current_limit_a();
 
         self.temperature_pid
-            .p(self.properties.p, CURRENT_LIMIT_A)
-            .d(self.properties.d, CURRENT_LIMIT_A);
+            .p(self.properties.p, COMPONENT_CURRENT_LIMIT_A)
+            .d(self.properties.d, COMPONENT_CURRENT_LIMIT_A);
 
         if is_current_limited {
-            self.temperature_pid.i(0.0, CURRENT_LIMIT_A);
+            self.temperature_pid.i(0.0, COMPONENT_CURRENT_LIMIT_A);
         } else {
-            self.temperature_pid
-                .i(self.properties.i / LOOP_PERIOD_MS as f32, CURRENT_LIMIT_A);
+            self.temperature_pid.i(
+                self.properties.i / LOOP_PERIOD_MS as f32,
+                COMPONENT_CURRENT_LIMIT_A,
+            );
         }
     }
 
@@ -387,13 +415,9 @@ impl Tool {
             return Err(Error::ToolMismatch);
         }
 
-        let temperature_deg_c = tool_measurement
+        self.temperature_deg_c = tool_measurement
             .temperature(self.properties)
             .map(|v| v.get::<thermodynamic_temperature::degree_celsius>());
-
-        if let Some(temperature_deg_c) = temperature_deg_c {
-            self.temperature_deg_c = temperature_deg_c;
-        }
 
         Ok(())
     }
@@ -405,24 +429,37 @@ impl Tool {
             self.temperature_pid.setpoint(set_temperature_deg_c);
         }
 
-        let current_setpoint_a = self
+        // Assume a 0°C, if the measurement was invalid (e.g. negative thermocouple voltage).
+        let control_output = self
             .temperature_pid
-            .next_control_output(self.temperature_deg_c)
-            .output;
+            .next_control_output(self.temperature_deg_c.unwrap_or_default());
+
+        // Do not request negative currents, or the current loop integrator may wind up.
+        let current_setpoint_a = control_output.output.max(0.0);
 
         self.current_pid.setpoint(current_setpoint_a);
 
-        let is_current_limited = current_setpoint_a.abs() >= self.current_pid.output_limit;
+        let is_current_limited =
+            current_setpoint_a >= self.temperature_pid.output_limit || current_setpoint_a == 0.0;
         self.configure_temperature_control(is_current_limited);
+
+        debug!(
+            "Temperature control, limited={}: P {}, I {}, D {} => {} A",
+            is_current_limited,
+            control_output.p,
+            control_output.i,
+            control_output.d,
+            current_setpoint_a
+        );
 
         Ok(())
     }
 
-    /// The ratio of the current setpoint and the maximum current that can be supplied.
+    /// The ratio of the current setpoint and the maximum current that can be practically supplied.
     ///
-    /// This is a measure for relative output power.
+    /// This is a measure for relative output power, referred to the tool, not only the supply.
     fn power_ratio(&self) -> f32 {
-        (self.current_pid.setpoint / self.supply.current_limit_a()).max(0.0)
+        (self.current_pid.setpoint / self.current_limit_a()).max(0.0)
     }
 
     /// The PWM ratio to use for driving the heater.
@@ -447,7 +484,7 @@ impl Tool {
 /// - Detects whether a tool is present
 /// - Runs temperature (outer) control loop, while measuring tool temperature
 /// - Runs current (inner) control loop, while measuring voltage and current on the tool
-async fn control(tool_resources: &mut ToolResources, supply: &Supply) -> Result<(), Error> {
+async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(), Error> {
     let detect_threshold_ratio = Ratio::new::<ratio::ratio>(MAX_ADC_RATIO);
     let temperature_threshold_potential = ElectricPotential::new::<volt>(MAX_ADC_V);
 
@@ -465,7 +502,7 @@ async fn control(tool_resources: &mut ToolResources, supply: &Supply) -> Result<
         '_,
         peripherals::TIM1,
     > = &mut tool_resources.pwm_heater.ch1();
-    let mut tool: Option<Tool> = None;
+    let mut tool = None;
 
     pwm_heater_channel.set_duty_cycle_fully_off();
     pwm_heater_channel.enable();
@@ -482,6 +519,9 @@ async fn control(tool_resources: &mut ToolResources, supply: &Supply) -> Result<
             .get::<electric_current::milliampere>()
     );
 
+    // Can be taken once, when creating a new tool.
+    let mut supply = Some(supply);
+
     loop {
         // Check if tool is in its stand.
         let tool_in_stand = tool_resources.pin_sleep.is_low();
@@ -489,9 +529,6 @@ async fn control(tool_resources: &mut ToolResources, supply: &Supply) -> Result<
 
         let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
         let operational_state = OPERATIONAL_STATE_MUTEX.lock(|x| *x.borrow());
-        let current_margin = ElectricCurrent::new::<electric_current::milliampere>(
-            persistent.current_margin_ma as f32,
-        );
 
         let tool_measurement = measure_tool(
             &mut tool_resources.adc_resources,
@@ -501,12 +538,15 @@ async fn control(tool_resources: &mut ToolResources, supply: &Supply) -> Result<
         .await?;
 
         if tool.is_none() {
-            tool = Some(Tool::new(tool_measurement, supply)?);
-        }
+            tool = Some(Tool::new(tool_measurement, supply.take().unwrap())?);
+        };
 
         let tool = tool.as_mut().unwrap();
-        tool.set_output_current_limit(&current_margin);
+        tool.supply.current_margin = ElectricCurrent::new::<electric_current::milliampere>(
+            persistent.current_margin_ma as f32,
+        );
 
+        show_power_limit(tool.power_limit_w());
         show_message(tool.name());
 
         if !operational_state.set_temperature_is_pending {
@@ -528,7 +568,7 @@ async fn control(tool_resources: &mut ToolResources, supply: &Supply) -> Result<
         }
 
         tool.detect_and_calculate_temperature(tool_measurement)?;
-        show_current_temperature(Some(tool.temperature_deg_c));
+        show_current_temperature(tool.temperature_deg_c);
 
         if operational_state.tool_is_off {
             let mut power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
@@ -549,7 +589,7 @@ async fn control(tool_resources: &mut ToolResources, supply: &Supply) -> Result<
             pwm_heater_channel
                 .set_duty_cycle((ratio * pwm_heater_channel.max_duty_cycle() as f32) as u16);
 
-            show_current_power(Some(ratio));
+            show_current_power(Some(tool.power_ratio()));
 
             let tool_power_fut = async {
                 // Measure current and voltage after the low-pass filter settles - in the middle of the loop period.
@@ -600,20 +640,18 @@ pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u3
         MAX_ADC_RATIO
     );
 
-    let potential =
-        ElectricPotential::new::<electric_potential::millivolt>(negotiated_supply.0 as f32);
-    let current_limit =
-        ElectricCurrent::new::<electric_current::milliampere>(negotiated_supply.1 as f32);
-
-    let supply = Supply {
-        current_limit,
-        potential,
-    };
-
-    show_power_limit(supply.power_limit());
-
     loop {
-        let result = control(&mut tool_resources, &supply).await;
+        let supply = Supply {
+            current_limit: ElectricCurrent::new::<electric_current::milliampere>(
+                negotiated_supply.1 as f32,
+            ),
+            potential: ElectricPotential::new::<electric_potential::millivolt>(
+                negotiated_supply.0 as f32,
+            ),
+            ..Default::default()
+        };
+
+        let result = control(&mut tool_resources, supply).await;
 
         if let Err(error) = result {
             match error {
