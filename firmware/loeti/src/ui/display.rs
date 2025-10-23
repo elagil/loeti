@@ -421,21 +421,21 @@ pub fn show_current_temperature(tool_temperature_deg_c: Option<f32>) {
     TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(tool_temperature_deg_c);
 }
 
-/// Display a power measurement and relative power bargraph.
+/// Display a relative power bargraph.
 ///
-/// Updates the displayed value. Passing `None` hides the bargraph.
+/// Passing `None` hides the bargraph.
 pub fn show_current_power(power_ratio: Option<f32>) {
     POWER_RATIO_BARGRAPH_SIG.signal(power_ratio);
 }
 
-/// Displays negotiated power.
+/// Displays the effective power limit (depends on supply minus margin, and tool capabilities).
 pub fn show_power_limit(power_limit: f32) {
     POWER_LIMIT_W_SIG.signal(power_limit);
 }
 
-/// Displays a message.
+/// Displays a status message.
 ///
 /// Mostly used for displaying the current tool's name, but also (tool) error messages.
-pub fn show_message(message: &'static str) {
+pub fn show_status_message(message: &'static str) {
     MESSAGE_SIG.signal(message);
 }

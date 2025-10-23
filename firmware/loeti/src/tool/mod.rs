@@ -32,7 +32,7 @@ use library::{ToolProperties, TOOLS};
 use uom::ConstZero;
 
 use crate::ui::display::{
-    show_current_power, show_current_temperature, show_message, show_power_limit,
+    show_current_power, show_current_temperature, show_power_limit, show_status_message,
 };
 use crate::{OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX};
 
@@ -126,7 +126,7 @@ impl RawToolMeasurement {
     /// The temperature is invalid if the ADC voltage is zero or below. The hardware cannot measure negative
     /// thermocouple voltages, thus reports invalid temperature measurements in such cases.
     fn temperature(&self, tool_properties: &ToolProperties) -> Option<ThermodynamicTemperature> {
-        if self.temperature_potential == ElectricPotential::ZERO {
+        if self.temperature_potential <= ElectricPotential::ZERO {
             return None;
         }
 
@@ -545,7 +545,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
         );
 
         show_power_limit(tool.power_limit_w());
-        show_message(tool.name());
+        show_status_message(tool.name());
 
         if !operational_state.set_temperature_is_pending {
             operational_temperature_deg_c = Some(persistent.operational_temperature_deg_c as f32);
@@ -624,7 +624,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
 fn show_idle_message(message: &'static str) {
     show_current_power(None);
     show_current_temperature(None);
-    show_message(message);
+    show_status_message(message);
 }
 
 /// Control the tool's heating element.
