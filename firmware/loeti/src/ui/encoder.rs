@@ -1,5 +1,5 @@
 //! Handles user inputs by means of a rotary encoder.
-use defmt::info;
+use defmt::debug;
 use embassy_stm32::gpio::Input;
 use embassy_time::{Duration, Instant, Ticker};
 use rotary_encoder_embedded::{Direction, RotaryEncoder};
@@ -141,7 +141,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                     x.borrow_mut().set_temperature_is_pending = false;
                 });
                 STORE_PERSISTENT_SIG.signal(());
-                info!("store temperature");
+                debug!("store temperature");
 
                 UiState::Idle
             }
@@ -151,7 +151,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                     operational_state.tool_is_off = !operational_state.tool_is_off;
                     operational_state.tool_is_off
                 });
-                info!("toggle manual sleep ({})", manual_sleep);
+                debug!("toggle manual sleep ({})", manual_sleep);
 
                 ui_state
             }
@@ -166,7 +166,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                 OPERATIONAL_STATE_MUTEX.lock(|x| {
                     x.borrow_mut().menu_state.is_open = true;
                 });
-                info!("open menu");
+                debug!("open menu");
 
                 UiState::Menu
             }
@@ -174,7 +174,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                 OPERATIONAL_STATE_MUTEX.lock(|x| {
                     x.borrow_mut().menu_state.is_open = false;
                 });
-                info!("close menu");
+                debug!("close menu");
 
                 UiState::Idle
             }
