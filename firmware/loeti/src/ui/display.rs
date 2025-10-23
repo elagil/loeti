@@ -24,8 +24,6 @@ use panic_probe as _;
 use profont::{PROFONT_12_POINT, PROFONT_24_POINT, PROFONT_9_POINT};
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize102x64, SPIInterface};
 use ssd1306::Ssd1306Async;
-use uom::si::f32::Power;
-use uom::si::power;
 
 use crate::ui::MENU_STEPS_SIG;
 use crate::{OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
@@ -37,7 +35,7 @@ static TEMPERATURE_MEASUREMENT_DEG_C_SIG: Signal<ThreadModeRawMutex, Option<f32>
 static POWER_RATIO_BARGRAPH_SIG: Signal<ThreadModeRawMutex, Option<f32>> = Signal::new();
 
 /// Signals the new power limit (power/W).
-static POWER_LIMIT_SIG: Signal<ThreadModeRawMutex, Power> = Signal::new();
+static POWER_LIMIT_W_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
 
 /// Signals a new message to display.
 static MESSAGE_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();
@@ -79,7 +77,9 @@ pub enum MenuResult {
     SleepOnChange(bool),
 }
 
+/// The selected current margin w.r.t. the supply's current limit in mA.
 #[derive(SelectValue, PartialEq, PartialOrd, Clone)]
+#[allow(missing_docs)]
 pub enum CurrentMarginMa {
     #[display_as("0.1")]
     _100,
@@ -198,7 +198,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     })
     .add_item(
         "Margin / A",
-        CurrentMarginMa::_100,
+        persistent.current_margin_ma.into(),
         MenuResult::CurrentMargin,
     )
     .add_item("Slp on power", persistent.sleep_on_power, |v| {
@@ -240,9 +240,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             message_string = message;
         }
 
-        if let Some(power) = POWER_LIMIT_SIG.try_take() {
-            let power = power.get::<power::watt>();
-
+        if let Some(power) = POWER_LIMIT_W_SIG.try_take() {
             power_string.clear();
             if !(power.is_nan()) {
                 write!(&mut power_string, "{} W", power.round() as usize).unwrap();
@@ -431,8 +429,8 @@ pub fn show_current_power(power_ratio: Option<f32>) {
 }
 
 /// Displays negotiated power.
-pub fn show_power_limit(power_limit: Power) {
-    POWER_LIMIT_SIG.signal(power_limit);
+pub fn show_power_limit(power_limit: f32) {
+    POWER_LIMIT_W_SIG.signal(power_limit);
 }
 
 /// Displays a message.

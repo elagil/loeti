@@ -93,13 +93,13 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         heater_resistance_ohm: 2.5,
         detect_ratio: 0.5,
         temperature_calibration: TemperatureCalibration {
-            quadratic_c_per_vv: 3.89,
-            linear_c_per_v: 150.0,
-            constant_c: 47.1,
+            quadratic_c_per_vv: -1.4275,
+            linear_c_per_v: 171.29,
+            constant_c: 30.614,
         },
 
-        p: 0.1,
-        i: 0.5,
+        p: 0.15,
+        i: 1.0,
         d: 0.0,
     },
 ];
