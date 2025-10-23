@@ -237,7 +237,7 @@ async fn measure_tool_power(adc_power_resources: &mut AdcResources) -> PowerMeas
 struct Supply {
     /// The maximum allowed current.
     current_limit: ElectricCurrent,
-    /// A margin to leave until the limit (reduces the actual limit).
+    /// A margin to leave until the limit (reduces the effective limit).
     current_margin: ElectricCurrent,
     /// The negotiated potential.
     potential: ElectricPotential,
@@ -256,14 +256,14 @@ impl Supply {
         self.current_limit * self.potential
     }
 
-    /// Calculate the supply's maximum effective power output, taking into account the margin to leave.
+    /// Calculate the supply's maximum power output, taking into account the margin to leave.
     ///
     /// This is the effectively usable power limit.
     fn effective_power_limit(&self) -> Power {
         self.effective_current_limit() * self.potential
     }
 
-    /// Calculate the supply's maximum effective power output in W, taking into account the margin to leave.
+    /// Calculate the supply's maximum power output in W, taking into account the margin to leave.
     ///
     /// This is the effectively usable power limit.
     fn effective_power_limit_w(&self) -> f32 {
@@ -300,8 +300,10 @@ struct Tool {
     /// The current  PWM ratio of the heater switch (MOSFET).
     pwm_ratio: Ratio,
     /// The current temperature.
+    ///
+    /// Can be `None`, if the ADC reading was invalid.
     temperature_deg_c: Option<f32>,
-    /// The tool's power supply.
+    /// The tool supply's characteristics.
     supply: Supply,
 }
 
@@ -367,24 +369,25 @@ impl Tool {
             .min(self.supply.effective_current_limit_a())
     }
 
-    /// Configures the temperaure control.
+    /// Configures the temperature control.
     ///
-    /// If the device is current limited, disable the PID's I-component temporarily (prevent windup).
-    fn configure_temperature_control(&mut self, is_current_limited: bool) {
-        const COMPONENT_CURRENT_LIMIT_A: f32 = f32::INFINITY;
+    /// Optionally disable the PID's I-component temporarily (prevents windup).
+    fn configure_temperature_control(&mut self, disable_integration: bool) {
+        const UNLIMITED_OUTPUT: f32 = f32::INFINITY;
 
         self.temperature_pid.output_limit = self.current_limit_a();
 
         self.temperature_pid
-            .p(self.properties.p, COMPONENT_CURRENT_LIMIT_A)
-            .d(self.properties.d, COMPONENT_CURRENT_LIMIT_A);
+            .p(self.properties.p, UNLIMITED_OUTPUT)
+            .d(self.properties.d, UNLIMITED_OUTPUT);
 
-        if is_current_limited {
-            self.temperature_pid.i(0.0, COMPONENT_CURRENT_LIMIT_A);
+        // The I-component is capped at the current limit to avoid excessive windup.
+        if disable_integration {
+            self.temperature_pid.i(0.0, self.current_limit_a());
         } else {
             self.temperature_pid.i(
                 self.properties.i / LOOP_PERIOD_MS as f32,
-                COMPONENT_CURRENT_LIMIT_A,
+                self.current_limit_a(),
             );
         }
     }
@@ -436,12 +439,16 @@ impl Tool {
 
         // Do not request negative currents, or the current loop integrator may wind up.
         let current_setpoint_a = control_output.output.max(0.0);
-
         self.current_pid.setpoint(current_setpoint_a);
 
         let is_current_limited =
             current_setpoint_a >= self.temperature_pid.output_limit || current_setpoint_a == 0.0;
         self.configure_temperature_control(is_current_limited);
+
+        // Mitigate downward setpoint steps to cause undershoot.
+        if control_output.i < 0.0 {
+            self.temperature_pid.reset_integral_term();
+        }
 
         debug!(
             "Temperature control, limited={}: P {}, I {}, D {} => {} A",

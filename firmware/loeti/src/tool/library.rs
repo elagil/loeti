@@ -99,7 +99,7 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         },
 
         p: 0.15,
-        i: 1.0,
+        i: 2.5,
         d: 0.0,
     },
 ];
