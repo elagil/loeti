@@ -5,6 +5,8 @@ use core::fmt::Write;
 use defmt::info;
 use embassy_stm32::spi::Spi;
 use embassy_stm32::{gpio::Output, mode::Async};
+use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
+use embassy_sync::signal::Signal;
 use embassy_time::{Duration, Ticker};
 use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::primitives::{StyledDrawable, Triangle};
@@ -16,19 +18,29 @@ use embedded_graphics::{
     primitives::{PrimitiveStyleBuilder, Rectangle},
 };
 use embedded_menu::interaction::{Action, Interaction, Navigation};
-use embedded_menu::items::menu_item::SelectValue;
-use embedded_menu::{Menu, MenuStyle};
+use embedded_menu::{Menu, MenuStyle, SelectValue};
 use micromath::F32Ext;
 use panic_probe as _;
 use profont::{PROFONT_12_POINT, PROFONT_24_POINT, PROFONT_9_POINT};
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize102x64, SPIInterface};
 use ssd1306::Ssd1306Async;
+use uom::si::f32::Power;
+use uom::si::power;
 
 use crate::ui::MENU_STEPS_SIG;
-use crate::{
-    DISPLAY_POWER_SIG, MESSAGE_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX,
-    POWER_RATIO_BARGRAPH_SIG, STORE_PERSISTENT_SIG, TEMPERATURE_MEASUREMENT_DEG_C_SIG,
-};
+use crate::{OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
+
+/// Signals a new tool temperature.
+static TEMPERATURE_MEASUREMENT_DEG_C_SIG: Signal<ThreadModeRawMutex, Option<f32>> = Signal::new();
+
+/// Signals a new power bargraph value.
+static POWER_RATIO_BARGRAPH_SIG: Signal<ThreadModeRawMutex, Option<f32>> = Signal::new();
+
+/// Signals the new power limit (power/W).
+static POWER_LIMIT_SIG: Signal<ThreadModeRawMutex, Power> = Signal::new();
+
+/// Signals a new message to display.
+static MESSAGE_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();
 
 /// Display refresh rate.
 const DISPLAY_REFRESH_RATE_HZ: u64 = 30;
@@ -60,39 +72,45 @@ pub enum MenuResult {
     /// Display rotation was changed.
     DisplayRotation(DisplayRotation),
     /// The current margin in mA.
-    CurrentMargin(CurrentMargin),
+    CurrentMargin(CurrentMarginMa),
     /// Sleep when powering on.
     SleepOnPower(bool),
     /// Sleep when a tool/tip change occurs.
     SleepOnChange(bool),
 }
 
-/// Adjust current margin (from max. supply current).
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct CurrentMargin {
-    /// The margin in units of mA.
-    current_ma: u16,
+#[derive(SelectValue, PartialEq, PartialOrd, Clone)]
+pub enum CurrentMarginMa {
+    #[display_as("0.1")]
+    _100,
+    #[display_as("0.2")]
+    _200,
+    #[display_as("0.5")]
+    _500,
+    #[display_as("1.0")]
+    _1000,
 }
 
-impl SelectValue for CurrentMargin {
-    fn marker(&self) -> &str {
-        match self.current_ma {
-            150 => "0.15",
-            250 => "0.25",
-            500 => "0.5",
-            1000 => "1.0",
-            _ => "?",
+impl From<u16> for CurrentMarginMa {
+    fn from(value: u16) -> Self {
+        match value {
+            100 => CurrentMarginMa::_100,
+            200 => CurrentMarginMa::_200,
+            500 => CurrentMarginMa::_500,
+            1000 => CurrentMarginMa::_1000,
+            _ => unreachable!(),
         }
     }
+}
 
-    fn next(&mut self) {
-        self.current_ma = match self.current_ma {
-            150 => 250,
-            250 => 500,
-            500 => 1000,
-            1000 => 150,
-            _ => 150,
-        };
+impl From<CurrentMarginMa> for u16 {
+    fn from(value: CurrentMarginMa) -> Self {
+        match value {
+            CurrentMarginMa::_100 => 100,
+            CurrentMarginMa::_200 => 200,
+            CurrentMarginMa::_500 => 500,
+            CurrentMarginMa::_1000 => 1000,
+        }
     }
 }
 
@@ -107,8 +125,8 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         biquad::Coefficients::<f32>::from_params(
             biquad::Type::LowPass,
             (DISPLAY_REFRESH_RATE_HZ as f32).hz(),
-            2.0_f32.hz(),
-            biquad::Q_BUTTERWORTH_F32,
+            2.5_f32.hz(),
+            0.5, // Critically damped
         )
         .unwrap(),
     );
@@ -180,9 +198,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     })
     .add_item(
         "Margin / A",
-        CurrentMargin {
-            current_ma: persistent.current_margin_ma,
-        },
+        CurrentMarginMa::_100,
         MenuResult::CurrentMargin,
     )
     .add_item("Slp on power", persistent.sleep_on_power, |v| {
@@ -224,7 +240,9 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             message_string = message;
         }
 
-        if let Some(power) = DISPLAY_POWER_SIG.try_take() {
+        if let Some(power) = POWER_LIMIT_SIG.try_take() {
+            let power = power.get::<power::watt>();
+
             power_string.clear();
             if !(power.is_nan()) {
                 write!(&mut power_string, "{} W", power.round() as usize).unwrap();
@@ -280,7 +298,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
                         info!("set rotation");
                     }
                     Some(MenuResult::CurrentMargin(c)) => {
-                        PERSISTENT_MUTEX.lock(|x| x.borrow_mut().current_margin_ma = c.current_ma);
+                        PERSISTENT_MUTEX.lock(|x| x.borrow_mut().current_margin_ma = c.into());
                         STORE_PERSISTENT_SIG.signal(());
                     }
                     Some(MenuResult::SleepOnPower(v)) => {
@@ -396,4 +414,30 @@ pub async fn display_task(mut display_resources: DisplayResources) {
 
         refresh_ticker.next().await;
     }
+}
+
+/// Display the current tool temperature.
+///
+/// Passing `None` hides tool temperature.
+pub fn show_current_temperature(tool_temperature_deg_c: Option<f32>) {
+    TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(tool_temperature_deg_c);
+}
+
+/// Display a power measurement and relative power bargraph.
+///
+/// Updates the displayed value. Passing `None` hides the bargraph.
+pub fn show_current_power(power_ratio: Option<f32>) {
+    POWER_RATIO_BARGRAPH_SIG.signal(power_ratio);
+}
+
+/// Displays negotiated power.
+pub fn show_power_limit(power_limit: Power) {
+    POWER_LIMIT_SIG.signal(power_limit);
+}
+
+/// Displays a message.
+///
+/// Mostly used for displaying the current tool's name, but also (tool) error messages.
+pub fn show_message(message: &'static str) {
+    MESSAGE_SIG.signal(message);
 }

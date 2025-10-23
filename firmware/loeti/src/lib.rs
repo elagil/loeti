@@ -18,27 +18,27 @@ pub mod ui;
 /// Persistent storage data.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
 pub struct Persistent {
+    /// The operational temperature set point in °C.
+    pub operational_temperature_deg_c: i16,
+    /// Current margin to leave until max. supply current in mA.
+    pub current_margin_ma: u16,
     /// If true, display is rotated 180°.
     pub display_is_rotated: bool,
     /// If true, start the controller with heating switched off after power on.
     pub sleep_on_power: bool,
     /// If true, switch off heating when the tip or iron was removed/changed.
     pub sleep_on_change: bool,
-    /// The operational temperature set point in °C.
-    pub operational_temperature_deg_c: isize,
-    /// Current margin to leave until max. supply current.
-    pub current_margin_ma: u16,
 }
 
 impl Persistent {
     /// Default persistent settings.
     const fn default() -> Self {
         Self {
-            display_is_rotated: false,
-            sleep_on_power: false,
-            sleep_on_change: false,
             operational_temperature_deg_c: 300,
-            current_margin_ma: 150,
+            current_margin_ma: 200,
+            display_is_rotated: false,
+            sleep_on_power: true,
+            sleep_on_change: true,
         }
     }
 }
@@ -82,18 +82,6 @@ impl OperationalState {
 
 /// Signals a change in the negotiated supply (potential/mV, current/mA).
 pub static NEGOTIATED_SUPPLY_SIG: Signal<ThreadModeRawMutex, (u32, u32)> = Signal::new();
-
-/// Displays negotiated power (power/W).
-static DISPLAY_POWER_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
-
-/// Signals a new tool temperature.
-static TEMPERATURE_MEASUREMENT_DEG_C_SIG: Signal<ThreadModeRawMutex, Option<f32>> = Signal::new();
-
-/// Signals a new power bargraph value.
-static POWER_RATIO_BARGRAPH_SIG: Signal<ThreadModeRawMutex, Option<f32>> = Signal::new();
-
-/// Signals a new message to display.
-static MESSAGE_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();
 
 /// Signals storage of persistent data.
 static STORE_PERSISTENT_SIG: Signal<ThreadModeRawMutex, ()> = Signal::new();

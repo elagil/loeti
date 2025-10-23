@@ -57,6 +57,7 @@ embedded-hal-bus = { version = "0.3.0", features = ["async"] }
 embedded-menu = { path = "../embedded-menu" }
 display-interface = "0.5.0"
 biquad = "0.4.2"
+crc = "3.3.0"
 
 # cargo build/run
 [profile.dev]
