@@ -102,7 +102,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                     UiState::Temperature
                 }
                 UiState::Menu => {
-                    MENU_STEPS_SIG.signal(steps);
+                    MENU_STEPS_SIG.signal(steps as isize);
 
                     ui_state
                 }

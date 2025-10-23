@@ -7,6 +7,7 @@ use embassy_stm32::exti::ExtiInput;
 use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
 use embassy_stm32::time::Hertz;
 use embassy_stm32::{bind_interrupts, i2c, peripherals, usb, Config};
+use embassy_time::{Duration, WithTimeout};
 use loeti::power::{AssignedResources, UcpdResources};
 use loeti::tool::{AdcResources, ToolResources};
 use loeti::ui::{self, encoder::RotaryEncoderResources};
@@ -57,7 +58,10 @@ async fn main(spawner: Spawner) {
         spawner.spawn(unwrap!(power::ucpd_task(resources.ucpd, ndb_pin)));
     }
 
-    let negotiated_supply = NEGOTIATED_SUPPLY_SIG.wait().await;
+    let negotiated_supply = NEGOTIATED_SUPPLY_SIG
+        .wait()
+        .with_timeout(Duration::from_secs(3))
+        .await;
 
     // Launch EEPROM config storage
     {
@@ -120,7 +124,7 @@ async fn main(spawner: Spawner) {
     }
 
     // Launch iron control
-    {
+    if let Ok(negotiated_supply) = negotiated_supply {
         use embassy_stm32::adc::{Adc, AdcChannel};
         use embassy_stm32::dac::DacCh1;
         use embassy_stm32::pac::VREFBUF;
@@ -165,6 +169,7 @@ async fn main(spawner: Spawner) {
             ),
             pin_sleep: Input::new(p.PB10, Pull::Up),
         };
+
         spawner.spawn(unwrap!(tool::tool_task(tool_resources, negotiated_supply)));
     }
 }

@@ -5,4 +5,4 @@ runner = "probe-rs run --chip STM32G431CBTx --connect-under-reset"
 target = "thumbv7em-none-eabihf"
 
 [env]
-DEFMT_LOG = "info"
+DEFMT_LOG = "debug"

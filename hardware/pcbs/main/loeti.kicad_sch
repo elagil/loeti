@@ -9233,7 +9233,7 @@
 		)
 		(uuid "8e98034b-c6d5-4257-bc17-f2ac8e17df3c")
 	)
-	(text "Possible candidates\nSi4425FDY (best)\nSi4425DDY\nSi4825DDY\nDMG4435SSS\nIRF9393PbF"
+	(text "Possible candidates\nSi4825DDY\nSi4425DDY\nDMP3036SSS"
 		(exclude_from_sim no)
 		(at 390.144 154.94 0)
 		(effects
@@ -12625,6 +12625,16 @@
 			(type default)
 		)
 		(uuid "9fe7487f-701f-47a7-820b-e5007093a3a6")
+	)
+	(polyline
+		(pts
+			(xy 402.59 196.85) (xy 403.86 196.85)
+		)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(uuid "9fffbb2d-6df0-4165-9826-452cfd7f66c7")
 	)
 	(wire
 		(pts
@@ -25543,7 +25553,6 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "867eed9c-863a-4bb8-b329-67889851ed05")
 		(property "Reference" "#FLG08"
 			(at 102.235 207.01 0)
@@ -26164,7 +26173,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Si4425FDY"
+		(property "Value" "Si4825"
 			(at 368.3 173.9899 0)
 			(effects
 				(font

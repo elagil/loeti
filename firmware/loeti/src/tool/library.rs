@@ -70,9 +70,9 @@ macro_rules! unique_items {
 /// List of all supported tools.
 pub const TOOLS: &[ToolProperties] = unique_items![
     {
-        id: JBC_C210,
-        name: "JBC C210",
-        max_power_w: 35.0,
+        id: JBC_T210,
+        name: "JBC T210",
+        max_power_w: 60.0,
         heater_resistance_ohm: 2.0,
         detect_ratio: 0.7,
         temperature_calibration: TemperatureCalibration {
@@ -87,8 +87,8 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         d: 0.0,
     },
     {
-        id: JBC_C245,
-        name: "JBC C245",
+        id: JBC_T245,
+        name: "JBC T245",
         max_power_w: 130.0,
         heater_resistance_ohm: 2.5,
         detect_ratio: 0.5,
@@ -99,7 +99,7 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         },
 
         p: 0.1,
-        i: 0.125,
+        i: 0.5,
         d: 0.0,
     },
 ];

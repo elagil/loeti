@@ -1,5 +1,6 @@
 //! Handles user inputs by means of a rotary encoder.
-use defmt::debug;
+use crc;
+use defmt::{debug, error};
 use embassy_stm32::i2c::{self};
 use embassy_time::Timer;
 use postcard::from_bytes_cobs;
@@ -17,45 +18,77 @@ type Eeprom = eeprom24x::Eeprom24x<
 /// Size of a page.
 const SIZE: usize = 32;
 
+/// Size of the checksum.
+const CHECKSUM_SIZE: usize = 4;
+
+/// Calculate checksum bytes for provided data.
+fn calculate_checksum_bytes(data: &[u8]) -> [u8; 4] {
+    let crc = crc::Crc::<u32>::new(&crc::CRC_32_CKSUM);
+    crc.checksum(data).to_le_bytes()
+}
+
 /// Load persistent data from EEPROM.
 pub async fn load_persistent(eeprom: &mut Eeprom) {
-    let mut buf = [0u8; SIZE];
+    let mut expected_checksum_bytes = [0u8; CHECKSUM_SIZE];
+    while eeprom.read_data(0, &mut expected_checksum_bytes).is_err() {
+        debug!("Retry EEPROM read");
+        Timer::after_millis(10).await;
+    }
+    debug!("Expected checksum bytes: {}", expected_checksum_bytes);
 
-    while eeprom.read_data(0, &mut buf).is_err() {
+    let mut buf = [0u8; SIZE];
+    while eeprom.read_data(SIZE as u32, &mut buf).is_err() {
         debug!("Retry EEPROM read");
         Timer::after_millis(10).await;
     }
 
-    debug!("EEPROM read: {}", buf);
+    let mut data = if let Some(zero_index) = buf.iter().position(|&x| x == 0) {
+        let checksum_bytes = calculate_checksum_bytes(&buf[..=zero_index]);
+        debug!("Read raw data: {}", buf);
+        debug!("Calculated checksum bytes: {}", checksum_bytes);
 
-    let data: Persistent = match from_bytes_cobs(&mut buf) {
-        Ok(x) => {
-            debug!("Loaded persistent storage {}", x);
-            x
+        if checksum_bytes != expected_checksum_bytes {
+            None
+        } else {
+            from_bytes_cobs(&mut buf).ok()
         }
-        Err(_) => {
-            debug!("Initialize new persistent storage");
-            Persistent::default()
-        }
+    } else {
+        None
     };
 
-    PERSISTENT_MUTEX.lock(|x| x.replace(data));
+    if data.is_none() {
+        store_defaults(eeprom).await;
+        data = Some(Persistent::default())
+    }
+
+    PERSISTENT_MUTEX.lock(|x| x.replace(data.unwrap()));
 }
 
 /// Store provided persistent data to EEPROM.
 async fn store(eeprom: &mut Eeprom, data: &Persistent) {
-    let mut buf = [0u8; SIZE];
-    let used = postcard::to_slice_cobs(&data, &mut buf).unwrap();
+    let mut data_buffer = [0u8; SIZE];
+    let encoded_data = postcard::to_slice_cobs(&data, &mut data_buffer).unwrap();
 
-    while eeprom.write_page(0, used).is_err() {
-        debug!("Retry EEPROM write");
+    let checksum_bytes: [u8; CHECKSUM_SIZE] = calculate_checksum_bytes(encoded_data);
+    if eeprom.write_page(0, &checksum_bytes).is_err() {
+        debug!("Retry EEPROM checksum write");
         Timer::after_millis(10).await;
     }
-    debug!("EEPROM wrote: {}", used);
+    debug!("EEPROM wrote checksum bytes: {}", checksum_bytes);
+
+    // Maximum write delay.
+    Timer::after_millis(5).await;
+
+    if eeprom.write_page(SIZE as u32, encoded_data).is_err() {
+        debug!("Retry EEPROM data write");
+        Timer::after_millis(10).await;
+    }
+    debug!("EEPROM wrote data bytes: {}", encoded_data);
 }
 
 /// Store default persistent data to EEPROM (reset);
 pub async fn store_defaults(eeprom: &mut Eeprom) {
+    debug!("EEPROM store defaults");
     store(eeprom, &Persistent::default()).await;
 }
 
