@@ -2,7 +2,7 @@
 
 use core::f32;
 
-use defmt::{debug, error, info, warn, Format};
+use defmt::{debug, error, info, trace, warn, Format};
 use embassy_futures::select::{select, Either};
 use embassy_stm32::dac::Ch1;
 use embassy_stm32::mode::Blocking;
@@ -162,7 +162,7 @@ async fn measure_tool(
         )
         .await;
 
-    debug!("Measured tool, ADC values: {}", adc_buffer);
+    trace!("Measured tool, ADC values: {}", adc_buffer);
 
     let detect_ratio = adc_value_to_potential(adc_buffer[0])
         / ElectricPotential::new::<electric_potential::volt>(3.3);
@@ -313,7 +313,7 @@ impl Tool {
     /// Limits the tool's current capability to the maximum available supply current.
     fn new(tool_measurement: RawToolMeasurement, supply: Supply) -> Result<Self, Error> {
         let properties = Tool::detect(tool_measurement)?;
-        debug!("Create new tool with properties: {:?}", properties);
+        info!("New tool with properties: {:?}", properties);
 
         let mut tool = Self {
             properties,
@@ -340,7 +340,6 @@ impl Tool {
         };
 
         tool.current_pid.i(gain, f32::INFINITY);
-        tool.configure_temperature_control(false);
 
         Ok(tool)
     }
@@ -369,35 +368,14 @@ impl Tool {
             .min(self.supply.effective_current_limit_a())
     }
 
-    /// Configures the temperature control.
-    ///
-    /// Optionally disable the PID's I-component temporarily (prevents windup).
-    fn configure_temperature_control(&mut self, disable_integration: bool) {
-        const UNLIMITED_OUTPUT: f32 = f32::INFINITY;
-
-        self.temperature_pid.output_limit = self.current_limit_a();
-
-        self.temperature_pid
-            .p(self.properties.p, UNLIMITED_OUTPUT)
-            .d(self.properties.d, UNLIMITED_OUTPUT);
-
-        // The I-component is capped at the current limit to avoid excessive windup.
-        if disable_integration {
-            self.temperature_pid.i(0.0, self.current_limit_a());
-        } else {
-            self.temperature_pid.i(
-                self.properties.i / LOOP_PERIOD_MS as f32,
-                self.current_limit_a(),
-            );
-        }
-    }
-
     /// Detect a tool, based on a measurement.
     fn detect(tool_measurement: RawToolMeasurement) -> Result<&'static ToolProperties, Error> {
+        const DETECTION_RATIO_ABS_TOLERANCE: f32 = 0.05;
+
         for tool_properties in TOOLS {
             if (tool_measurement.detect_ratio.get::<ratio::ratio>() - tool_properties.detect_ratio)
                 .abs()
-                < 0.05
+                < DETECTION_RATIO_ABS_TOLERANCE
             {
                 return Ok(tool_properties);
             }
@@ -427,12 +405,15 @@ impl Tool {
 
     /// Runs a temperature control step.
     fn control_temperature(&mut self, set_temperature_deg_c: f32) -> Result<(), Error> {
+        let current_limit_a = self.current_limit_a();
+        self.temperature_pid.output_limit = current_limit_a;
+
         if self.temperature_pid.setpoint != set_temperature_deg_c {
             self.temperature_pid.reset_integral_term();
             self.temperature_pid.setpoint(set_temperature_deg_c);
         }
 
-        // Assume a 0°C, if the measurement was invalid (e.g. negative thermocouple voltage).
+        // Assume 0°C, if the measurement was invalid (e.g. negative thermocouple voltage).
         let control_output = self
             .temperature_pid
             .next_control_output(self.temperature_deg_c.unwrap_or_default());
@@ -441,17 +422,27 @@ impl Tool {
         let current_setpoint_a = control_output.output.max(0.0);
         self.current_pid.setpoint(current_setpoint_a);
 
-        let is_current_limited =
-            current_setpoint_a >= self.temperature_pid.output_limit || current_setpoint_a == 0.0;
-        self.configure_temperature_control(is_current_limited);
+        const UNLIMITED_OUTPUT: f32 = f32::INFINITY;
+        self.temperature_pid
+            .p(self.properties.p, UNLIMITED_OUTPUT)
+            .d(self.properties.d * LOOP_PERIOD_MS as f32, UNLIMITED_OUTPUT);
+
+        // The I-component is capped at the current limit to avoid excessive windup.
+        let is_current_limited = current_setpoint_a >= current_limit_a || current_setpoint_a == 0.0;
+        if is_current_limited {
+            self.temperature_pid.i(0.0, current_limit_a);
+        } else {
+            self.temperature_pid
+                .i(self.properties.i / LOOP_PERIOD_MS as f32, current_limit_a);
+        }
 
         // Mitigate downward setpoint steps to cause undershoot.
-        if control_output.i < 0.0 {
+        if control_output.output <= 0.0 && control_output.i < 0.0 {
             self.temperature_pid.reset_integral_term();
         }
 
-        debug!(
-            "Temperature control, limited={}: P {}, I {}, D {} => {} A",
+        trace!(
+            "Temperature control, current limited={}: P {}, I {}, D {} => {} A",
             is_current_limited,
             control_output.p,
             control_output.i,
@@ -641,8 +632,8 @@ fn show_idle_message(message: &'static str) {
 /// Takes current and temperature measurements, and adjusts the heater PWM duty cycle accordingly.
 #[embassy_executor::task]
 pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u32, u32)) {
-    info!("Maximum measurable voltage: {} V", MAX_ADC_V);
-    info!(
+    debug!("Maximum measurable voltage: {} V", MAX_ADC_V);
+    debug!(
         "Maximum measurable detection resistor ratio: {}",
         MAX_ADC_RATIO
     );
@@ -671,7 +662,7 @@ pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u3
             let sleep_on_error = PERSISTENT_MUTEX.lock(|x| x.borrow().sleep_on_change);
             OPERATIONAL_STATE_MUTEX.lock(|x| x.borrow_mut().tool_is_off = sleep_on_error);
 
-            debug!("Tool control error: {}", error);
+            warn!("Tool control error: {}", error);
             Timer::after_millis(100).await
         }
     }

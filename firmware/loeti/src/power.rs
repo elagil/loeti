@@ -1,7 +1,7 @@
 //! Handles USB PD negotiation.
 use crate::NEGOTIATED_SUPPLY_SIG;
 use assign_resources::assign_resources;
-use defmt::{info, warn, Format};
+use defmt::{debug, warn, Format};
 use embassy_futures::select::{select, Either};
 use embassy_stm32::gpio::Output;
 use embassy_stm32::ucpd::{self, CcPhy, CcPull, CcSel, CcVState, PdPhy, Ucpd};
@@ -178,17 +178,17 @@ pub async fn ucpd_task(mut ucpd_resources: UcpdResources, mut ndb_pin: Output<'s
         ucpd.cc_phy().set_pull(CcPull::Sink);
         ndb_pin.set_high();
 
-        info!("Waiting for USB connection");
+        debug!("Waiting for USB connection");
         let cable_orientation = wait_attached(ucpd.cc_phy()).await;
-        info!("USB cable attached, orientation: {}", cable_orientation);
+        debug!("USB cable attached, orientation: {}", cable_orientation);
 
         let cc_sel = match cable_orientation {
             CableOrientation::Normal => {
-                info!("Starting PD communication on CC1 pin");
+                debug!("Starting PD communication on CC1 pin");
                 CcSel::CC1
             }
             CableOrientation::Flipped => {
-                info!("Starting PD communication on CC2 pin");
+                debug!("Starting PD communication on CC2 pin");
                 CcSel::CC2
             }
             CableOrientation::DebugAccessoryMode => panic!("No PD communication in DAM"),
@@ -206,12 +206,12 @@ pub async fn ucpd_task(mut ucpd_resources: UcpdResources, mut ndb_pin: Output<'s
                 negotiated_potential_mv: None,
             },
         );
-        info!("Run sink");
+        debug!("Run sink");
 
         match select(sink.run(), wait_detached(&mut cc_phy)).await {
             Either::First(result) => warn!("Sink loop broken with result: {}", result),
             Either::Second(_) => {
-                info!("Detached");
+                debug!("Detached");
                 continue;
             }
         }

@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use defmt::unwrap;
+use defmt::{info, unwrap};
 use embassy_executor::Spawner;
 use embassy_stm32::exti::ExtiInput;
 use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
@@ -24,6 +24,8 @@ bind_interrupts!(struct Irqs {
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
+    info!("Hi");
+
     let mut config = Config::default();
     {
         use embassy_stm32::rcc::*;
