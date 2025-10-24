@@ -17,7 +17,7 @@ use embedded_graphics::{
     prelude::*,
     primitives::{PrimitiveStyleBuilder, Rectangle},
 };
-use embedded_hal_bus::spi::{ExclusiveDevice, NoDelay};
+use embedded_hal_bus::spi::ExclusiveDevice;
 use embedded_menu::interaction::{Action, Interaction, Navigation};
 use embedded_menu::{Menu, MenuStyle, SelectValue};
 use micromath::F32Ext;
@@ -27,14 +27,16 @@ use ssd1306::mode::BufferedGraphicsModeAsync;
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize102x64, SPIInterface};
 use ssd1306::Ssd1306Async;
 
+use crate::tool::Error as ToolError;
 use crate::ui::MENU_STEPS_SIG;
-use crate::{
-    OperationalState, Persistent, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG,
-};
+use crate::{OperationalState, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
 
 /// The inner display type (draw target).
 type InnerDisplay = Ssd1306Async<
-    SPIInterface<ExclusiveDevice<Spi<'static, Async>, Output<'static>, NoDelay>, Output<'static>>,
+    SPIInterface<
+        ExclusiveDevice<Spi<'static, Async>, Output<'static>, embassy_time::Delay>,
+        Output<'static>,
+    >,
     DisplaySize102x64,
     BufferedGraphicsModeAsync<DisplaySize102x64>,
 >;
@@ -46,7 +48,7 @@ static TEMPERATURE_MEASUREMENT_DEG_C_SIG: Signal<ThreadModeRawMutex, Option<f32>
 static POWER_RATIO_BARGRAPH_SIG: Signal<ThreadModeRawMutex, Option<f32>> = Signal::new();
 
 /// Signals the new power limit (power/W).
-static POWER_LIMIT_W_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
+static POWER_LIMIT_W_SIG: Signal<ThreadModeRawMutex, Option<f32>> = Signal::new();
 
 /// Signals a new message to display.
 static MESSAGE_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();
@@ -84,9 +86,9 @@ const OUTLINE_STYLE: PrimitiveStyle<BinaryColor> = PrimitiveStyleBuilder::new()
     .build();
 
 /// Wraps displayed items.
-struct Display {
+struct Display<'d> {
     /// The inner display structure (draw target).
-    inner: InnerDisplay,
+    inner: &'d mut InnerDisplay,
     /// The current temperature.
     temperature_string: heapless::String<10>,
     /// The set temperature.
@@ -103,34 +105,9 @@ struct Display {
     refresh_ticker: Ticker,
 }
 
-impl Display {
+impl<'d> Display<'d> {
     /// Create a new display instance.
-    async fn new(mut resources: DisplayResources, persistent: &Persistent) -> Self {
-        let spi =
-            embedded_hal_bus::spi::ExclusiveDevice::new_no_delay(resources.spi, resources.pin_cs)
-                .unwrap();
-        let interface = SPIInterface::new(spi, resources.pin_dc);
-        let mut inner = Ssd1306Async::new(
-            interface,
-            DisplaySize102x64,
-            if persistent.display_is_rotated {
-                DisplayRotation::Rotate180
-            } else {
-                DisplayRotation::Rotate0
-            },
-        )
-        .into_buffered_graphics_mode();
-
-        inner
-            .reset(&mut resources.pin_reset, &mut embassy_time::Delay {})
-            .await
-            .unwrap();
-        inner
-            .init_with_addr_mode(ssd1306::command::AddrMode::Horizontal)
-            .await
-            .unwrap();
-        inner.set_brightness(Brightness::BRIGHTEST).await.unwrap();
-
+    async fn new(inner: &'d mut InnerDisplay) -> Self {
         Self {
             inner,
             temperature_string: heapless::String::new(),
@@ -170,15 +147,13 @@ impl Display {
                 temperature_deg_c.round() as i16
             )
             .unwrap();
-        } else {
-            write!(&mut self.temperature_string, "?",).unwrap();
         }
     }
 
     /// Update the available power.
-    fn update_power(&mut self, power: f32) {
+    fn update_power(&mut self, power: Option<f32>) {
         self.power_string.clear();
-        if !(power.is_nan()) {
+        if let Some(power) = power {
             write!(&mut self.power_string, "{} W", power.round() as i16).unwrap();
         }
     }
@@ -228,11 +203,11 @@ impl Display {
 
         if operational_state.set_temperature_is_pending {
             set_temperature_triangle
-                .draw_styled(&OUTLINE_STYLE, &mut self.inner)
+                .draw_styled(&OUTLINE_STYLE, self.inner)
                 .unwrap();
         } else {
             set_temperature_triangle
-                .draw_styled(&FILLED_STYLE, &mut self.inner)
+                .draw_styled(&FILLED_STYLE, self.inner)
                 .unwrap();
         }
 
@@ -249,7 +224,7 @@ impl Display {
                 MonoTextStyle::new(&PROFONT_12_POINT, BinaryColor::On),
                 Alignment::Right,
             )
-            .draw(&mut self.inner)
+            .draw(self.inner)
             .unwrap();
         }
 
@@ -259,7 +234,7 @@ impl Display {
             MonoTextStyle::new(&PROFONT_24_POINT, BinaryColor::On),
             Alignment::Center,
         )
-        .draw(&mut self.inner)
+        .draw(self.inner)
         .unwrap();
 
         Text::new(
@@ -267,7 +242,7 @@ impl Display {
             Point::new(DISPLAY_FIRST_COL_INDEX + 2 * ARROW_WIDTH, SET_TEMP_Y),
             MonoTextStyle::new(&PROFONT_12_POINT, BinaryColor::On),
         )
-        .draw(&mut self.inner)
+        .draw(self.inner)
         .unwrap();
 
         Text::with_alignment(
@@ -276,7 +251,7 @@ impl Display {
             MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
             Alignment::Left,
         )
-        .draw(&mut self.inner)
+        .draw(self.inner)
         .unwrap();
 
         if operational_state.tool_in_stand {
@@ -286,7 +261,7 @@ impl Display {
                 MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
                 Alignment::Right,
             )
-            .draw(&mut self.inner)
+            .draw(self.inner)
             .unwrap();
         }
 
@@ -294,7 +269,7 @@ impl Display {
             Point::new(DISPLAY_FIRST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 16),
             Size::new(self.power_bar_width as u32, 2),
         )
-        .draw_styled(&FILLED_STYLE, &mut self.inner)
+        .draw_styled(&FILLED_STYLE, self.inner)
         .unwrap();
 
         Text::with_alignment(
@@ -303,7 +278,7 @@ impl Display {
             MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
             Alignment::Center,
         )
-        .draw(&mut self.inner)
+        .draw(self.inner)
         .unwrap();
     }
 
@@ -377,11 +352,42 @@ impl From<CurrentMarginMa> for u16 {
 
 /// Handle displaying the UI.
 #[embassy_executor::task]
-pub async fn display_task(display_resources: DisplayResources) {
+pub async fn display_task(mut display_resources: DisplayResources) {
     const GIT_HASH: &str = env!("GIT_HASH");
-
     let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
-    let mut display = Display::new(display_resources, &persistent).await;
+
+    let spi = embedded_hal_bus::spi::ExclusiveDevice::new(
+        display_resources.spi,
+        display_resources.pin_cs,
+        embassy_time::Delay,
+    )
+    .unwrap();
+    let interface = SPIInterface::new(spi, display_resources.pin_dc);
+    let mut inner = Ssd1306Async::new(
+        interface,
+        DisplaySize102x64,
+        if persistent.display_is_rotated {
+            DisplayRotation::Rotate180
+        } else {
+            DisplayRotation::Rotate0
+        },
+    )
+    .into_buffered_graphics_mode();
+
+    inner
+        .reset(
+            &mut display_resources.pin_reset,
+            &mut embassy_time::Delay {},
+        )
+        .await
+        .unwrap();
+    inner
+        .init_with_addr_mode(ssd1306::command::AddrMode::Horizontal)
+        .await
+        .unwrap();
+    inner.set_brightness(Brightness::BRIGHTEST).await.unwrap();
+
+    let mut display = Display::new(&mut inner).await;
 
     // FIXME: Persistent storage in callback?
     let version: heapless::String<13> = heapless::format!("Ver. {}", GIT_HASH).unwrap();
@@ -416,6 +422,14 @@ pub async fn display_task(display_resources: DisplayResources) {
 
         let operational_state = OPERATIONAL_STATE_MUTEX.lock(|x| *x.borrow());
         let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
+
+        match operational_state.tool {
+            Err(ToolError::NoTool) => show_idle_message("No tool"),
+            Err(ToolError::NoTip) => show_idle_message("No tip"),
+            Err(ToolError::UnknownTool) => show_idle_message("Unknown"),
+            Err(ToolError::ToolMismatch) => show_idle_message(""),
+            Ok(name) => show_status_message(name),
+        }
 
         display.update_set_temperature(persistent.set_temperature_deg_c);
 
@@ -512,7 +526,7 @@ pub fn show_current_power(power_ratio: Option<f32>) {
 }
 
 /// Displays the effective power limit (depends on supply minus margin, and tool capabilities).
-pub fn show_power_limit(power_limit: f32) {
+pub fn show_power_limit(power_limit: Option<f32>) {
     POWER_LIMIT_W_SIG.signal(power_limit);
 }
 
@@ -521,4 +535,12 @@ pub fn show_power_limit(power_limit: f32) {
 /// Mostly used for displaying the current tool's name, but also (tool) error messages.
 pub fn show_status_message(message: &'static str) {
     MESSAGE_SIG.signal(message);
+}
+
+/// Displays a message, while being idle (not heating).
+pub fn show_idle_message(message: &'static str) {
+    show_power_limit(None);
+    show_current_power(None);
+    show_current_temperature(None);
+    show_status_message(message);
 }

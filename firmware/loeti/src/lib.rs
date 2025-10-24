@@ -10,6 +10,8 @@ use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, signal::Signal};
 use serde::{Deserialize, Serialize};
 
+use crate::tool::Error as ToolError;
+
 pub mod eeprom;
 pub mod power;
 pub mod tool;
@@ -59,6 +61,8 @@ pub struct OperationalState {
     pub menu_state: MenuState,
     /// If true, the tool is in its stand.
     pub tool_in_stand: bool,
+    /// The tool's name, or a tool error.
+    pub tool: Result<&'static str, ToolError>,
     /// If true, the tool is off (manual sleep).
     pub tool_is_off: bool,
     /// If true, the new set temperature was not confirmed yet.
@@ -74,6 +78,7 @@ impl OperationalState {
                 toggle_pending: false,
             },
             tool_in_stand: false,
+            tool: Err(ToolError::NoTool),
             tool_is_off: true,
             set_temperature_is_pending: false,
         }
