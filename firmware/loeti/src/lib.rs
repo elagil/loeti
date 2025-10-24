@@ -20,6 +20,8 @@ pub mod ui;
 /// Persistent storage data.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
 pub struct Persistent {
+    /// The max. set temperature if the tool is in its stand.
+    pub stand_temperature_deg_c: i16,
     /// The operational temperature set point in °C.
     pub set_temperature_deg_c: i16,
     /// Current margin to leave until max. supply current in mA.
@@ -36,6 +38,7 @@ impl Persistent {
     /// Default persistent settings.
     const fn default() -> Self {
         Self {
+            stand_temperature_deg_c: 180,
             set_temperature_deg_c: 300,
             current_margin_ma: 200,
             display_is_rotated: false,

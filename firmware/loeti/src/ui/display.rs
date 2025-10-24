@@ -394,7 +394,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     let mut main_menu = Menu::with_style(
         version,
         MenuStyle::default()
-            .with_title_font(&PROFONT_12_POINT)
+            .with_title_font(&PROFONT_9_POINT)
             .with_font(&PROFONT_9_POINT),
     )
     .add_item("Rotate", persistent.display_is_rotated, |b| {
