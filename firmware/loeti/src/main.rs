@@ -6,14 +6,14 @@ use embassy_executor::Spawner;
 use embassy_stm32::exti::ExtiInput;
 use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
 use embassy_stm32::time::Hertz;
-use embassy_stm32::{bind_interrupts, i2c, peripherals, usb, Config};
+use embassy_stm32::{Config, bind_interrupts, i2c, peripherals, usb};
 use embassy_time::{Duration, WithTimeout};
 use loeti::power::{AssignedResources, UcpdResources};
 use loeti::tool::{AdcResources, ToolResources};
 use loeti::ui::{self, encoder::RotaryEncoderResources};
-use loeti::{eeprom, power, OPERATIONAL_STATE_MUTEX};
-use loeti::{split_resources, tool, ui::display};
 use loeti::{NEGOTIATED_SUPPLY_SIG, PERSISTENT_MUTEX};
+use loeti::{OPERATIONAL_STATE_MUTEX, eeprom, power};
+use loeti::{split_resources, tool, ui::display};
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {

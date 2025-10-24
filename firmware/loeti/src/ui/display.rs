@@ -7,7 +7,7 @@ use embassy_stm32::spi::Spi;
 use embassy_stm32::{gpio::Output, mode::Async};
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::signal::Signal;
-use embassy_time::{Duration, Ticker};
+use embassy_time::{Duration, Instant, Ticker};
 use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::primitives::{PrimitiveStyle, StyledDrawable, Triangle};
 use embedded_graphics::text::Alignment;
@@ -22,14 +22,16 @@ use embedded_menu::interaction::{Action, Interaction, Navigation};
 use embedded_menu::{Menu, MenuStyle, SelectValue};
 use micromath::F32Ext;
 use panic_probe as _;
-use profont::{PROFONT_12_POINT, PROFONT_24_POINT, PROFONT_9_POINT};
+use profont::{PROFONT_9_POINT, PROFONT_12_POINT, PROFONT_24_POINT};
+use ssd1306::Ssd1306Async;
 use ssd1306::mode::BufferedGraphicsModeAsync;
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize102x64, SPIInterface};
-use ssd1306::Ssd1306Async;
 
-use crate::tool::Error as ToolError;
+use crate::tool::{Error as ToolError, ToolState};
 use crate::ui::MENU_STEPS_SIG;
-use crate::{OperationalState, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
+use crate::{
+    OPERATIONAL_STATE_MUTEX, OperationalState, PERSISTENT_MUTEX, Persistent, STORE_PERSISTENT_SIG,
+};
 
 /// The inner display type (draw target).
 type InnerDisplay = Ssd1306Async<
@@ -140,13 +142,17 @@ impl<'d> Display<'d> {
     fn update_current_temperature(&mut self, temperature_deg_c: Option<f32>) {
         self.temperature_string.clear();
 
-        if let Some(temperature_deg_c) = temperature_deg_c {
+        if let Some(temperature_deg_c) = temperature_deg_c
+            && temperature_deg_c > 40.0
+        {
             write!(
                 &mut self.temperature_string,
                 "{}",
                 temperature_deg_c.round() as i16
             )
             .unwrap();
+        } else {
+            write!(&mut self.temperature_string, "cold",).unwrap();
         }
     }
 
@@ -187,7 +193,7 @@ impl<'d> Display<'d> {
     }
 
     /// Draw all elements of the main view.
-    fn draw_main_view(&mut self, operational_state: &OperationalState) {
+    fn draw_main_view(&mut self, operational_state: &OperationalState, persistent: &Persistent) {
         const SET_TEMP_ARROW_Y: i32 = 11;
         const SET_TEMP_Y: i32 = 11;
         const ARROW_WIDTH: i32 = 4;
@@ -209,23 +215,6 @@ impl<'d> Display<'d> {
             set_temperature_triangle
                 .draw_styled(&FILLED_STYLE, self.inner)
                 .unwrap();
-        }
-
-        let corner_text = if operational_state.tool_is_off {
-            Some("OFF")
-        } else {
-            None
-        };
-
-        if let Some(corner_text) = corner_text {
-            Text::with_alignment(
-                corner_text,
-                Point::new(DISPLAY_LAST_COL_INDEX, SET_TEMP_Y),
-                MonoTextStyle::new(&PROFONT_12_POINT, BinaryColor::On),
-                Alignment::Right,
-            )
-            .draw(self.inner)
-            .unwrap();
         }
 
         Text::with_alignment(
@@ -254,16 +243,47 @@ impl<'d> Display<'d> {
         .draw(self.inner)
         .unwrap();
 
-        if operational_state.tool_in_stand {
+        let tool_state_text: heapless::String<10> = match operational_state.tool_state {
+            None | Some(ToolState::Active) => heapless::format!(""),
+            Some(ToolState::InStand(instant)) => {
+                let auto_off_duration = Duration::from_secs(persistent.auto_off_duration_s as u64);
+                if let Some(passed_duration) = Instant::now().checked_duration_since(instant) {
+                    let remaining_seconds = auto_off_duration
+                        .checked_sub(passed_duration)
+                        .map(|v| v.as_secs())
+                        .unwrap_or_default();
+
+                    let minutes = remaining_seconds / 60;
+                    let seconds = remaining_seconds.saturating_sub(minutes * 60);
+
+                    heapless::format!("{}:{:02}", minutes, seconds)
+                } else {
+                    heapless::format!("")
+                }
+            }
+            Some(ToolState::AutoOff) => heapless::format!("SLP"),
+        }
+        .unwrap();
+
+        Text::with_alignment(
+            tool_state_text.as_str(),
+            Point::new(DISPLAY_LAST_COL_INDEX, SET_TEMP_Y),
+            MonoTextStyle::new(&PROFONT_12_POINT, BinaryColor::On),
+            Alignment::Right,
+        )
+        .draw(self.inner)
+        .unwrap();
+
+        if operational_state.tool_is_off {
             Text::with_alignment(
-                "Stand",
+                "OFF",
                 Point::new(DISPLAY_LAST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 20),
                 MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
                 Alignment::Right,
             )
             .draw(self.inner)
             .unwrap();
-        }
+        };
 
         Rectangle::new(
             Point::new(DISPLAY_FIRST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 16),
@@ -504,7 +524,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             main_menu.update(display.inner());
             main_menu.draw(display.inner_mut()).unwrap();
         } else {
-            display.draw_main_view(&operational_state);
+            display.draw_main_view(&operational_state, &persistent);
         }
 
         display.show().await;

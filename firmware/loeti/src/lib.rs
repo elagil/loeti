@@ -10,7 +10,7 @@ use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, signal::Signal};
 use serde::{Deserialize, Serialize};
 
-use crate::tool::Error as ToolError;
+use crate::tool::{Error as ToolError, ToolState};
 
 pub mod eeprom;
 pub mod power;
@@ -26,6 +26,8 @@ pub struct Persistent {
     pub set_temperature_deg_c: i16,
     /// Current margin to leave until max. supply current in mA.
     pub current_margin_ma: u16,
+    /// Duration in seconds, after which to switch off completely when in the stand.
+    pub auto_off_duration_s: u16,
     /// If true, display is rotated 180°.
     pub display_is_rotated: bool,
     /// If true, start the controller with heating switched off after power on.
@@ -41,6 +43,7 @@ impl Persistent {
             stand_temperature_deg_c: 180,
             set_temperature_deg_c: 300,
             current_margin_ma: 200,
+            auto_off_duration_s: 600,
             display_is_rotated: false,
             sleep_on_power: true,
             sleep_on_change: true,
@@ -62,10 +65,10 @@ pub struct MenuState {
 pub struct OperationalState {
     /// The state of the control menu.
     pub menu_state: MenuState,
-    /// If true, the tool is in its stand.
-    pub tool_in_stand: bool,
     /// The tool's name, or a tool error.
     pub tool: Result<&'static str, ToolError>,
+    /// The state of the tool (e.g. active, in stand).
+    pub tool_state: Option<ToolState>,
     /// If true, the tool is off (manual sleep).
     pub tool_is_off: bool,
     /// If true, the new set temperature was not confirmed yet.
@@ -80,8 +83,8 @@ impl OperationalState {
                 is_open: false,
                 toggle_pending: false,
             },
-            tool_in_stand: false,
             tool: Err(ToolError::NoTool),
+            tool_state: None,
             tool_is_off: true,
             set_temperature_is_pending: false,
         }

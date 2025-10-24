@@ -4,7 +4,7 @@ use embassy_stm32::gpio::Input;
 use embassy_time::{Duration, Instant, Ticker};
 use rotary_encoder_embedded::{Direction, RotaryEncoder};
 
-use crate::{ui::MENU_STEPS_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
+use crate::{OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG, ui::MENU_STEPS_SIG};
 
 /// The state of the user interface (controlled instance).
 #[derive(Debug, Clone, Copy)]

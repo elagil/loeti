@@ -2,15 +2,15 @@
 
 use core::f32;
 
-use defmt::{debug, error, info, trace, warn, Format};
-use embassy_futures::select::{select, Either};
+use defmt::{Format, debug, error, info, trace, warn};
+use embassy_futures::select::{Either, select};
+use embassy_stm32::Peri;
 use embassy_stm32::dac::Ch1;
 use embassy_stm32::mode::Blocking;
-use embassy_stm32::Peri;
 use embassy_stm32::{
     adc, dac, exti::ExtiInput, gpio::Input, peripherals, timer::simple_pwm::SimplePwm,
 };
-use embassy_time::{Duration, Ticker, Timer};
+use embassy_time::{Duration, Instant, Ticker, Timer};
 use pid::{self, Pid};
 use uom::si::electric_potential;
 use uom::si::electric_potential::volt;
@@ -28,7 +28,7 @@ use uom::si::thermodynamic_temperature::degree_celsius;
 use uom::si::{electric_current, power};
 
 mod library;
-use library::{ToolProperties, TOOLS};
+use library::{TOOLS, ToolProperties};
 use uom::ConstZero;
 
 use crate::ui::display::{show_current_power, show_current_temperature, show_power_limit};
@@ -284,6 +284,17 @@ impl Supply {
     }
 }
 
+/// The state of the tool.
+#[derive(Debug, Clone, Copy, Format)]
+pub enum ToolState {
+    /// The tool is active.
+    Active,
+    /// The tool was placed in its stand at the recorded instant.
+    InStand(Instant),
+    /// The tool was automatically switched off.
+    AutoOff,
+}
+
 /// A tool (soldering iron).
 struct Tool {
     /// Unique properties of the tool.
@@ -300,6 +311,8 @@ struct Tool {
     temperature_deg_c: Option<f32>,
     /// The tool supply's characteristics.
     supply: Supply,
+    /// The state of the tool.
+    state: ToolState,
 }
 
 impl Tool {
@@ -317,6 +330,7 @@ impl Tool {
             pwm_ratio: Ratio::new::<percent>(0.0),
             temperature_deg_c: None,
             supply,
+            state: ToolState::Active,
         };
 
         let gain = {
@@ -337,6 +351,24 @@ impl Tool {
         tool.current_pid.i(gain, f32::INFINITY);
 
         Ok(tool)
+    }
+
+    /// Update the tool's state, based on whether it is currently in its stand, and the auto switch-off duration.
+    fn update_tool_state(&mut self, in_stand: bool, auto_off_duration: Duration) -> ToolState {
+        if !in_stand {
+            self.state = ToolState::Active;
+        } else if matches!(self.state, ToolState::Active) {
+            debug!("Tool in stand");
+            self.state = ToolState::InStand(Instant::now());
+        } else if let ToolState::InStand(instant) = self.state
+            && let Some(passed_duration) = Instant::now().checked_duration_since(instant)
+            && passed_duration >= auto_off_duration
+        {
+            debug!("Tool auto-off");
+            self.state = ToolState::AutoOff
+        }
+
+        self.state
     }
 
     /// The tool's name.
@@ -497,6 +529,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
         '_,
         peripherals::TIM1,
     > = &mut tool_resources.pwm_heater.ch1();
+
     let mut tool = None;
 
     pwm_heater_channel.set_duty_cycle_fully_off();
@@ -519,7 +552,6 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
 
     loop {
         let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
-        let operational_state = OPERATIONAL_STATE_MUTEX.lock(|x| *x.borrow());
 
         let tool_measurement = measure_tool(
             &mut tool_resources.adc_resources,
@@ -536,10 +568,17 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
 
         // Check if tool is in its stand.
         let tool_in_stand = tool_resources.pin_sleep.is_low();
-        OPERATIONAL_STATE_MUTEX.lock(|x| {
+        let tool_state = tool.update_tool_state(
+            tool_in_stand,
+            Duration::from_secs(persistent.auto_off_duration_s as u64),
+        );
+
+        let operational_state = OPERATIONAL_STATE_MUTEX.lock(|x| {
             let mut operational_state = x.borrow_mut();
-            operational_state.tool_in_stand = tool_in_stand;
+            operational_state.tool_state = Some(tool_state);
             operational_state.tool = Ok(tool.name());
+
+            *operational_state
         });
 
         tool.supply.current_margin = ElectricCurrent::new::<electric_current::milliampere>(
@@ -556,7 +595,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
                 .min(operational_temperature_deg_c.unwrap_or(f32::INFINITY)),
         );
 
-        let set_temperature_deg_c = if operational_state.tool_in_stand {
+        let set_temperature_deg_c = if tool_in_stand {
             stand_temperature_deg_c
         } else {
             operational_temperature_deg_c
@@ -570,7 +609,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
         tool.detect_and_calculate_temperature(tool_measurement)?;
         show_current_temperature(tool.temperature_deg_c);
 
-        if operational_state.tool_is_off {
+        if operational_state.tool_is_off || matches!(tool_state, ToolState::AutoOff) {
             let mut power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
             power_measurement.compensate(&idle_power_measurement);
             show_current_power(None);
@@ -651,6 +690,7 @@ pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u3
 
             OPERATIONAL_STATE_MUTEX.lock(|x| {
                 let mut operational_state = x.borrow_mut();
+                operational_state.tool_state = None;
                 operational_state.tool = Err(error);
                 operational_state.tool_is_off = sleep_on_error;
             });
