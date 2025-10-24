@@ -25,18 +25,23 @@ impl TemperatureCalibration {
 pub struct ToolProperties {
     /// The tool's name.
     pub name: &'static str,
-    /// Maximum allowed power in Watt.
+    /// Maximum allowed tool power in Watt.
     pub max_power_w: f32,
-    /// Heater resistance in Ohm.
+    /// Approximate heater resistance in Ohm.
+    ///
+    /// Used for initial setup of the current control loop.
     pub heater_resistance_ohm: f32,
     /// The detection ratio for distinguishing between tools.
+    ///
+    /// This is the voltage divider ratio of the tool identification resistor to ground,
+    /// and the station's built-in 10k pull-up.
     pub detect_ratio: f32,
     /// Temperature calibration settings.
     pub temperature_calibration: TemperatureCalibration,
 
-    /// Temperature control P-value.
+    /// Temperature control P-value in units of A / K.
     pub p: f32,
-    /// Temperature control I-value in units of 1/(°C * ms)
+    /// Temperature control I-value in units of A / (K * ms).
     pub i: f32,
     /// Temperature control D-value.
     pub d: f32,
@@ -74,12 +79,12 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         name: "JBC T210",
         max_power_w: 60.0,
         heater_resistance_ohm: 2.0,
-        detect_ratio: 0.7,
+        detect_ratio: 0.31973, // 4.7k
         temperature_calibration: TemperatureCalibration {
             // FIXME: Values are not tested.
-            quadratic_c_per_vv: 3.89,
-            linear_c_per_v: 150.0,
-            constant_c: 47.1,
+            quadratic_c_per_vv: -1.4275,
+            linear_c_per_v: 171.29,
+            constant_c: 30.614,
         },
 
         p: 0.025,
@@ -91,7 +96,7 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         name: "JBC T245",
         max_power_w: 130.0,
         heater_resistance_ohm: 2.5,
-        detect_ratio: 0.5,
+        detect_ratio: 0.5, // 10k
         temperature_calibration: TemperatureCalibration {
             quadratic_c_per_vv: -1.4275,
             linear_c_per_v: 171.29,

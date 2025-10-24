@@ -52,9 +52,6 @@ const MAX_ADC_V: f32 = VREFBUF_V - 0.1;
 /// The ratio between the defined maximum ADC voltage and analog supply voltage.
 const MAX_ADC_RATIO: f32 = MAX_ADC_V / ANALOG_SUPPLY_V;
 
-/// The idle temperature in °C that is used when the tool is in its stand.
-const STAND_TEMPERATURE_DEG_C: f32 = 180.0;
-
 /// Errors during tool detection.
 #[derive(Debug, Format, Clone, Copy)]
 pub enum Error {
@@ -555,7 +552,8 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
             operational_temperature_deg_c = Some(persistent.set_temperature_deg_c as f32);
         }
         let stand_temperature_deg_c = Some(
-            STAND_TEMPERATURE_DEG_C.min(operational_temperature_deg_c.unwrap_or(f32::INFINITY)),
+            (persistent.stand_temperature_deg_c as f32)
+                .min(operational_temperature_deg_c.unwrap_or(f32::INFINITY)),
         );
 
         let set_temperature_deg_c = if operational_state.tool_in_stand {
