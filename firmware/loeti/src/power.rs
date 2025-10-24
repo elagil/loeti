@@ -1,12 +1,12 @@
 //! Handles USB PD negotiation.
 use crate::NEGOTIATED_SUPPLY_SIG;
 use assign_resources::assign_resources;
-use defmt::{debug, warn, Format};
-use embassy_futures::select::{select, Either};
+use defmt::{Format, debug, warn};
+use embassy_futures::select::{Either, select};
 use embassy_stm32::gpio::Output;
 use embassy_stm32::ucpd::{self, CcPhy, CcPull, CcSel, CcVState, PdPhy, Ucpd};
-use embassy_stm32::{bind_interrupts, peripherals, Peri};
-use embassy_time::{with_timeout, Duration, Timer};
+use embassy_stm32::{Peri, bind_interrupts, peripherals};
+use embassy_time::{Duration, Timer, with_timeout};
 use uom::si::{electric_current, electric_potential};
 use usbpd::protocol_layer::message::{pdo, request};
 use usbpd::sink::device_policy_manager::DevicePolicyManager;
