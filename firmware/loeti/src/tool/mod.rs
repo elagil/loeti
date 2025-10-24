@@ -548,7 +548,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
         show_status_message(tool.name());
 
         if !operational_state.set_temperature_is_pending {
-            operational_temperature_deg_c = Some(persistent.operational_temperature_deg_c as f32);
+            operational_temperature_deg_c = Some(persistent.set_temperature_deg_c as f32);
         }
         let stand_temperature_deg_c = Some(
             STAND_TEMPERATURE_DEG_C.min(operational_temperature_deg_c.unwrap_or(f32::INFINITY)),

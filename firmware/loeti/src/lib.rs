@@ -19,7 +19,7 @@ pub mod ui;
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
 pub struct Persistent {
     /// The operational temperature set point in °C.
-    pub operational_temperature_deg_c: i16,
+    pub set_temperature_deg_c: i16,
     /// Current margin to leave until max. supply current in mA.
     pub current_margin_ma: u16,
     /// If true, display is rotated 180°.
@@ -34,7 +34,7 @@ impl Persistent {
     /// Default persistent settings.
     const fn default() -> Self {
         Self {
-            operational_temperature_deg_c: 300,
+            set_temperature_deg_c: 300,
             current_margin_ma: 200,
             display_is_rotated: false,
             sleep_on_power: true,
