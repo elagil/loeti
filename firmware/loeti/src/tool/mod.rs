@@ -31,9 +31,7 @@ mod library;
 use library::{ToolProperties, TOOLS};
 use uom::ConstZero;
 
-use crate::ui::display::{
-    show_current_power, show_current_temperature, show_power_limit, show_status_message,
-};
+use crate::ui::display::{show_current_power, show_current_temperature, show_power_limit};
 use crate::{OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX};
 
 /// ADC max. value (16 bit).

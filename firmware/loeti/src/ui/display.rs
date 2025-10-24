@@ -178,12 +178,12 @@ impl<'d> Display<'d> {
 
     /// Access to the inner display interface.
     fn inner(&self) -> &InnerDisplay {
-        &self.inner
+        self.inner
     }
 
     /// Mutable access to the inner display interface.
     fn inner_mut(&mut self) -> &mut InnerDisplay {
-        &mut self.inner
+        self.inner
     }
 
     /// Draw all elements of the main view.
