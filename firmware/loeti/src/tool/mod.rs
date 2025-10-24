@@ -402,7 +402,7 @@ impl Tool {
     }
 
     /// Runs a temperature control step.
-    fn control_temperature(&mut self, set_temperature_deg_c: f32) -> Result<(), Error> {
+    fn run_temperature_control(&mut self, set_temperature_deg_c: f32) -> Result<(), Error> {
         let current_limit_a = self.current_limit_a();
         self.temperature_pid.output_limit = current_limit_a;
 
@@ -463,14 +463,17 @@ impl Tool {
     }
 
     /// Runs a power control step.
-    fn control_power(&mut self, power_measurement: &PowerMeasurement) {
-        let output = self
+    fn run_current_control(&mut self, power_measurement: &PowerMeasurement) {
+        let control_output = self
             .current_pid
-            .next_control_output(power_measurement.current.get::<electric_current::ampere>())
-            .output
-            .max(0.0);
+            .next_control_output(power_measurement.current.get::<electric_current::ampere>());
 
-        self.pwm_ratio = Ratio::new::<ratio::ratio>(output);
+        // Mitigate downward setpoint steps to cause undershoot.
+        if control_output.output <= 0.0 && control_output.i < 0.0 {
+            self.current_pid.reset_integral_term();
+        }
+
+        self.pwm_ratio = Ratio::new::<ratio::ratio>(control_output.output);
     }
 }
 
@@ -579,7 +582,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
             continue;
         }
 
-        tool.control_temperature(set_temperature_deg_c.unwrap())?;
+        tool.run_temperature_control(set_temperature_deg_c.unwrap())?;
 
         let mut current_loop_ticker = Ticker::every(Duration::from_millis(CURRENT_LOOP_PERIOD_MS));
         for _ in 0..CURRENT_CONTROL_CYCLE_COUNT {
@@ -609,7 +612,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
             )
             .await
             {
-                Either::First(power_measurement) => tool.control_power(&power_measurement),
+                Either::First(power_measurement) => tool.run_current_control(&power_measurement),
                 Either::Second(_) => {
                     warn!("Current alert");
                     break;
