@@ -146,12 +146,14 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                 UiState::Idle
             }
             (SwitchEvent::ShortPress, UiState::Idle) => {
-                let manual_sleep = OPERATIONAL_STATE_MUTEX.lock(|x| {
+                let tool_is_off = OPERATIONAL_STATE_MUTEX.lock(|x| {
                     let mut operational_state = x.borrow_mut();
-                    operational_state.tool_is_off = !operational_state.tool_is_off;
+                    if operational_state.tool.is_ok() {
+                        operational_state.tool_is_off = !operational_state.tool_is_off;
+                    }
                     operational_state.tool_is_off
                 });
-                debug!("toggle manual sleep ({})", manual_sleep);
+                debug!("toggle tool state ({})", tool_is_off);
 
                 ui_state
             }

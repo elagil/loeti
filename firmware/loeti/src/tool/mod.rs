@@ -58,8 +58,8 @@ const MAX_ADC_RATIO: f32 = MAX_ADC_V / ANALOG_SUPPLY_V;
 const STAND_TEMPERATURE_DEG_C: f32 = 180.0;
 
 /// Errors during tool detection.
-#[derive(Debug, Format)]
-enum Error {
+#[derive(Debug, Format, Clone, Copy)]
+pub enum Error {
     /// No tool was found.
     NoTool,
     /// Tool was detected, but no tip.
@@ -198,7 +198,7 @@ impl PowerMeasurement {
 
     /// Compensate current with an idle power measurement.
     fn compensate(&mut self, idle: &Self) {
-        self.current -= idle.current;
+        self.current = (self.current - idle.current).max(ElectricCurrent::ZERO);
     }
 }
 
@@ -418,8 +418,7 @@ impl Tool {
             .temperature_pid
             .next_control_output(self.temperature_deg_c.unwrap_or_default());
 
-        // Do not request negative currents, or the current loop integrator may wind up.
-        let current_setpoint_a = control_output.output.max(0.0);
+        let current_setpoint_a = control_output.output;
         self.current_pid.setpoint(current_setpoint_a);
 
         const UNLIMITED_OUTPUT: f32 = f32::INFINITY;
@@ -521,10 +520,6 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
     let mut supply = Some(supply);
 
     loop {
-        // Check if tool is in its stand.
-        let tool_in_stand = tool_resources.pin_sleep.is_low();
-        OPERATIONAL_STATE_MUTEX.lock(|x| x.borrow_mut().tool_in_stand = tool_in_stand);
-
         let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
         let operational_state = OPERATIONAL_STATE_MUTEX.lock(|x| *x.borrow());
 
@@ -540,12 +535,20 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
         };
 
         let tool = tool.as_mut().unwrap();
+
+        // Check if tool is in its stand.
+        let tool_in_stand = tool_resources.pin_sleep.is_low();
+        OPERATIONAL_STATE_MUTEX.lock(|x| {
+            let mut operational_state = x.borrow_mut();
+            operational_state.tool_in_stand = tool_in_stand;
+            operational_state.tool = Ok(tool.name());
+        });
+
         tool.supply.current_margin = ElectricCurrent::new::<electric_current::milliampere>(
             persistent.current_margin_ma as f32,
         );
 
-        show_power_limit(tool.power_limit_w());
-        show_status_message(tool.name());
+        show_power_limit(Some(tool.power_limit_w()));
 
         if !operational_state.set_temperature_is_pending {
             operational_temperature_deg_c = Some(persistent.set_temperature_deg_c as f32);
@@ -620,13 +623,6 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
     }
 }
 
-/// Displays a message, while being idle (not heating).
-fn show_idle_message(message: &'static str) {
-    show_current_power(None);
-    show_current_temperature(None);
-    show_status_message(message);
-}
-
 /// Control the tool's heating element.
 ///
 /// Takes current and temperature measurements, and adjusts the heater PWM duty cycle accordingly.
@@ -652,15 +648,13 @@ pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u3
         let result = control(&mut tool_resources, supply).await;
 
         if let Err(error) = result {
-            match error {
-                Error::NoTool => show_idle_message("No tool"),
-                Error::NoTip => show_idle_message("No tip"),
-                Error::UnknownTool => show_idle_message("Unknown"),
-                Error::ToolMismatch => show_idle_message(""),
-            }
-
             let sleep_on_error = PERSISTENT_MUTEX.lock(|x| x.borrow().sleep_on_change);
-            OPERATIONAL_STATE_MUTEX.lock(|x| x.borrow_mut().tool_is_off = sleep_on_error);
+
+            OPERATIONAL_STATE_MUTEX.lock(|x| {
+                let mut operational_state = x.borrow_mut();
+                operational_state.tool = Err(error);
+                operational_state.tool_is_off = sleep_on_error;
+            });
 
             warn!("Tool control error: {}", error);
             Timer::after_millis(100).await
