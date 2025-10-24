@@ -32,7 +32,7 @@ use crate::{
     OperationalState, Persistent, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG,
 };
 
-/// The inner display type (hardware interface).
+/// The inner display type (draw target).
 type InnerDisplay = Ssd1306Async<
     SPIInterface<ExclusiveDevice<Spi<'static, Async>, Output<'static>, NoDelay>, Output<'static>>,
     DisplaySize102x64,
@@ -85,7 +85,7 @@ const OUTLINE_STYLE: PrimitiveStyle<BinaryColor> = PrimitiveStyleBuilder::new()
 
 /// Wraps displayed items.
 struct Display {
-    /// The inner display structure (hardware interface).
+    /// The inner display structure (draw target).
     inner: InnerDisplay,
     /// The current temperature.
     temperature_string: heapless::String<10>,
