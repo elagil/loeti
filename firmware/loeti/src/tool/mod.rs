@@ -577,7 +577,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
         let tool = tool.as_mut().unwrap();
 
         // Check if tool is in its stand.
-        let tool_in_stand = true; // tool_resources.pin_sleep.is_low();
+        let tool_in_stand = tool_resources.pin_sleep.is_low();
         let tool_state = tool.update_tool_state(tool_in_stand, persistent.auto_sleep);
 
         let operational_state = OPERATIONAL_STATE_MUTEX.lock(|x| {
