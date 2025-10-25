@@ -78,13 +78,18 @@ async fn main(spawner: Spawner) {
         );
         let mut eeprom = eeprom24x::Eeprom24x::new_24x64(i2c, eeprom24x::SlaveAddr::Default);
 
+        const RESET: bool = false;
+        if RESET {
+            eeprom::store_defaults(&mut eeprom).await;
+        }
+
         // Load data before any other tasks access persistent storage.
         eeprom::load_persistent(&mut eeprom).await;
 
         // Transfer persistent information to operational state.
         // FIXME: Make a method on the operational state itself?
         let power_on_heater_off =
-            PERSISTENT_MUTEX.lock(|persistent| persistent.borrow().sleep_on_power);
+            PERSISTENT_MUTEX.lock(|persistent| persistent.borrow().off_on_power);
         OPERATIONAL_STATE_MUTEX.lock(|operational| {
             operational.borrow_mut().tool_is_off = power_on_heater_off;
         });

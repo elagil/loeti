@@ -17,6 +17,17 @@ pub mod power;
 pub mod tool;
 pub mod ui;
 
+/// Auto-sleep modes.
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
+pub enum AutoSleep {
+    /// The tool goes to sleep immediately after being placed in the stand.
+    Immediately,
+    /// The tool goes to sleep after the specified number of seconds in the stand.
+    AfterDurationS(u16),
+    /// The tool never goes to sleep in the stand.
+    Never,
+}
+
 /// Persistent storage data.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
 pub struct Persistent {
@@ -26,14 +37,14 @@ pub struct Persistent {
     pub set_temperature_deg_c: i16,
     /// Current margin to leave until max. supply current in mA.
     pub current_margin_ma: u16,
-    /// Duration in seconds, after which to switch off completely when in the stand.
-    pub auto_off_duration_s: u16,
+    /// Auto-sleep behaviour when the tool is in the stand.
+    pub auto_sleep: AutoSleep,
     /// If true, display is rotated 180°.
     pub display_is_rotated: bool,
     /// If true, start the controller with heating switched off after power on.
-    pub sleep_on_power: bool,
+    pub off_on_power: bool,
     /// If true, switch off heating when the tip or iron was removed/changed.
-    pub sleep_on_change: bool,
+    pub off_on_change: bool,
 }
 
 impl Persistent {
@@ -43,10 +54,10 @@ impl Persistent {
             stand_temperature_deg_c: 180,
             set_temperature_deg_c: 300,
             current_margin_ma: 200,
-            auto_off_duration_s: 600,
+            auto_sleep: AutoSleep::AfterDurationS(900),
             display_is_rotated: false,
-            sleep_on_power: true,
-            sleep_on_change: true,
+            off_on_power: false,
+            off_on_change: false,
         }
     }
 }
