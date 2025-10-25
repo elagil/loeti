@@ -360,13 +360,12 @@ impl Tool {
         } else if matches!(self.state, ToolState::Active) {
             debug!("Tool in stand");
             self.state = match auto_sleep {
-                AutoSleep::Immediately => ToolState::Sleeping,
+                AutoSleep::AfterDurationS(0) => ToolState::Sleeping,
                 _ => ToolState::InStand(Instant::now()),
             };
         } else if let ToolState::InStand(instant) = self.state {
             self.state = match auto_sleep {
                 AutoSleep::Never => self.state,
-                AutoSleep::Immediately => ToolState::Sleeping,
                 AutoSleep::AfterDurationS(duration_s) => {
                     if let Some(passed_duration) = Instant::now().checked_duration_since(instant)
                         && passed_duration >= Duration::from_secs(duration_s as u64)
@@ -700,7 +699,7 @@ pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u3
                 let mut operational_state = x.borrow_mut();
                 operational_state.tool_state = None;
                 operational_state.tool = Err(error);
-                operational_state.tool_is_off = sleep_on_error;
+                operational_state.tool_is_off |= sleep_on_error;
             });
 
             warn!("Tool control error: {}", error);

@@ -266,6 +266,8 @@ impl<'d> Display<'d> {
         let tool_state_str: &str = match (operational_state.tool_state, persistent.auto_sleep) {
             (None, _) | (Some(ToolState::Active), _) => "",
             (Some(ToolState::InStand(_)), AutoSleep::Never) => "Stand",
+            (Some(ToolState::InStand(_)), AutoSleep::AfterDurationS(0)) => "Sleep",
+            (Some(ToolState::Sleeping), _) => "Sleep",
             (Some(ToolState::InStand(instant)), AutoSleep::AfterDurationS(duration_s)) => {
                 let auto_sleep_duration = Duration::from_secs(duration_s as u64);
                 if let Some(passed_duration) = Instant::now().checked_duration_since(instant) {
@@ -283,8 +285,6 @@ impl<'d> Display<'d> {
                     ""
                 }
             }
-            (Some(ToolState::InStand(_)), AutoSleep::Immediately) => "Sleep",
-            (Some(ToolState::Sleeping), _) => "Sleep",
         };
 
         Text::with_alignment(
@@ -343,22 +343,73 @@ pub struct DisplayResources {
     pub pin_reset: Output<'static>,
 }
 
+/// Possible settings for auto-sleep (after the tool is in its stand).
+#[derive(SelectValue, PartialEq, PartialOrd, Clone)]
+#[allow(clippy::missing_docs_in_private_items)]
+enum AutoSleepMenu {
+    #[display_as("0")]
+    Immediately,
+    #[display_as("1")]
+    After1Minute,
+    #[display_as("5")]
+    After5Minutes,
+    #[display_as("10")]
+    After10Minutes,
+    #[display_as("30")]
+    After30Minutes,
+    #[display_as("60")]
+    After60Minutes,
+    #[display_as("inf")]
+    Never,
+}
+
+impl From<AutoSleep> for AutoSleepMenu {
+    fn from(value: AutoSleep) -> Self {
+        match value {
+            AutoSleep::AfterDurationS(0) => AutoSleepMenu::Immediately,
+            AutoSleep::AfterDurationS(60) => AutoSleepMenu::After1Minute,
+            AutoSleep::AfterDurationS(300) => AutoSleepMenu::After5Minutes,
+            AutoSleep::AfterDurationS(600) => AutoSleepMenu::After10Minutes,
+            AutoSleep::AfterDurationS(1800) => AutoSleepMenu::After30Minutes,
+            AutoSleep::AfterDurationS(3600) => AutoSleepMenu::After60Minutes,
+            AutoSleep::Never => AutoSleepMenu::Never,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl From<AutoSleepMenu> for AutoSleep {
+    fn from(value: AutoSleepMenu) -> Self {
+        match value {
+            AutoSleepMenu::Immediately => AutoSleep::AfterDurationS(0),
+            AutoSleepMenu::After1Minute => AutoSleep::AfterDurationS(60),
+            AutoSleepMenu::After5Minutes => AutoSleep::AfterDurationS(300),
+            AutoSleepMenu::After10Minutes => AutoSleep::AfterDurationS(600),
+            AutoSleepMenu::After30Minutes => AutoSleep::AfterDurationS(1800),
+            AutoSleepMenu::After60Minutes => AutoSleep::AfterDurationS(3600),
+            AutoSleepMenu::Never => AutoSleep::Never,
+        }
+    }
+}
+
 /// Possible results from menu item modifications.
-pub enum MenuResult {
-    /// Display rotation was changed.
+enum MenuResult {
+    /// Display rotation (normal or inverted).
     DisplayRotation(DisplayRotation),
-    /// The current margin in mA.
-    CurrentMargin(CurrentMarginMa),
-    /// Sleep when powering on.
-    SleepOnPower(bool),
-    /// Sleep when a tool/tip change occurs.
-    SleepOnChange(bool),
+    /// The current margin setting.
+    CurrentMargin(CurrentMarginMenu),
+    /// The auto sleep setting.
+    AutoSleep(AutoSleepMenu),
+    /// Switch off after power-cycle.
+    OffOnPower(bool),
+    /// Switch off after a tool/tip change occurs.
+    OffOnChange(bool),
 }
 
 /// The selected current margin w.r.t. the supply's current limit in mA.
 #[derive(SelectValue, PartialEq, PartialOrd, Clone)]
-#[allow(missing_docs)]
-pub enum CurrentMarginMa {
+#[allow(clippy::missing_docs_in_private_items)]
+enum CurrentMarginMenu {
     #[display_as("0.1")]
     _100,
     #[display_as("0.2")]
@@ -369,25 +420,25 @@ pub enum CurrentMarginMa {
     _1000,
 }
 
-impl From<u16> for CurrentMarginMa {
+impl From<u16> for CurrentMarginMenu {
     fn from(value: u16) -> Self {
         match value {
-            100 => CurrentMarginMa::_100,
-            200 => CurrentMarginMa::_200,
-            500 => CurrentMarginMa::_500,
-            1000 => CurrentMarginMa::_1000,
+            100 => CurrentMarginMenu::_100,
+            200 => CurrentMarginMenu::_200,
+            500 => CurrentMarginMenu::_500,
+            1000 => CurrentMarginMenu::_1000,
             _ => unreachable!(),
         }
     }
 }
 
-impl From<CurrentMarginMa> for u16 {
-    fn from(value: CurrentMarginMa) -> Self {
+impl From<CurrentMarginMenu> for u16 {
+    fn from(value: CurrentMarginMenu) -> Self {
         match value {
-            CurrentMarginMa::_100 => 100,
-            CurrentMarginMa::_200 => 200,
-            CurrentMarginMa::_500 => 500,
-            CurrentMarginMa::_1000 => 1000,
+            CurrentMarginMenu::_100 => 100,
+            CurrentMarginMenu::_200 => 200,
+            CurrentMarginMenu::_500 => 500,
+            CurrentMarginMenu::_1000 => 1000,
         }
     }
 }
@@ -452,10 +503,13 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         MenuResult::CurrentMargin,
     )
     .add_item("Off on power", persistent.off_on_power, |v| {
-        MenuResult::SleepOnPower(v)
+        MenuResult::OffOnPower(v)
     })
     .add_item("Off on change", persistent.off_on_change, |v| {
-        MenuResult::SleepOnChange(v)
+        MenuResult::OffOnChange(v)
+    })
+    .add_item("Sleep / min", persistent.auto_sleep.into(), |v| {
+        MenuResult::AutoSleep(v)
     })
     .build();
 
@@ -523,12 +577,16 @@ pub async fn display_task(mut display_resources: DisplayResources) {
                         PERSISTENT_MUTEX.lock(|x| x.borrow_mut().current_margin_ma = c.into());
                         STORE_PERSISTENT_SIG.signal(());
                     }
-                    Some(MenuResult::SleepOnPower(v)) => {
+                    Some(MenuResult::OffOnPower(v)) => {
                         PERSISTENT_MUTEX.lock(|x| x.borrow_mut().off_on_power = v);
                         STORE_PERSISTENT_SIG.signal(());
                     }
-                    Some(MenuResult::SleepOnChange(v)) => {
+                    Some(MenuResult::OffOnChange(v)) => {
                         PERSISTENT_MUTEX.lock(|x| x.borrow_mut().off_on_change = v);
+                        STORE_PERSISTENT_SIG.signal(());
+                    }
+                    Some(MenuResult::AutoSleep(v)) => {
+                        PERSISTENT_MUTEX.lock(|x| x.borrow_mut().auto_sleep = v.into());
                         STORE_PERSISTENT_SIG.signal(());
                     }
                     _ => (),
