@@ -1,12 +1,12 @@
 //! Handles USB PD negotiation.
 use crate::NEGOTIATED_SUPPLY_SIG;
 use assign_resources::assign_resources;
-use defmt::{info, warn, Format};
-use embassy_futures::select::{select, Either};
+use defmt::{Format, debug, warn};
+use embassy_futures::select::{Either, select};
 use embassy_stm32::gpio::Output;
 use embassy_stm32::ucpd::{self, CcPhy, CcPull, CcSel, CcVState, PdPhy, Ucpd};
-use embassy_stm32::{bind_interrupts, peripherals, Peri};
-use embassy_time::{with_timeout, Duration, Timer};
+use embassy_stm32::{Peri, bind_interrupts, peripherals};
+use embassy_time::{Duration, Timer, with_timeout};
 use uom::si::{electric_current, electric_potential};
 use usbpd::protocol_layer::message::{pdo, request};
 use usbpd::sink::device_policy_manager::DevicePolicyManager;
@@ -178,17 +178,17 @@ pub async fn ucpd_task(mut ucpd_resources: UcpdResources, mut ndb_pin: Output<'s
         ucpd.cc_phy().set_pull(CcPull::Sink);
         ndb_pin.set_high();
 
-        info!("Waiting for USB connection");
+        debug!("Waiting for USB connection");
         let cable_orientation = wait_attached(ucpd.cc_phy()).await;
-        info!("USB cable attached, orientation: {}", cable_orientation);
+        debug!("USB cable attached, orientation: {}", cable_orientation);
 
         let cc_sel = match cable_orientation {
             CableOrientation::Normal => {
-                info!("Starting PD communication on CC1 pin");
+                debug!("Starting PD communication on CC1 pin");
                 CcSel::CC1
             }
             CableOrientation::Flipped => {
-                info!("Starting PD communication on CC2 pin");
+                debug!("Starting PD communication on CC2 pin");
                 CcSel::CC2
             }
             CableOrientation::DebugAccessoryMode => panic!("No PD communication in DAM"),
@@ -206,12 +206,12 @@ pub async fn ucpd_task(mut ucpd_resources: UcpdResources, mut ndb_pin: Output<'s
                 negotiated_potential_mv: None,
             },
         );
-        info!("Run sink");
+        debug!("Run sink");
 
         match select(sink.run(), wait_detached(&mut cc_phy)).await {
             Either::First(result) => warn!("Sink loop broken with result: {}", result),
             Either::Second(_) => {
-                info!("Detached");
+                debug!("Detached");
                 continue;
             }
         }

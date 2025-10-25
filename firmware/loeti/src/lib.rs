@@ -10,35 +10,52 @@ use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, signal::Signal};
 use serde::{Deserialize, Serialize};
 
+use crate::tool::{Error as ToolError, ToolState};
+
 pub mod eeprom;
 pub mod power;
 pub mod tool;
 pub mod ui;
 
+/// Auto-sleep modes.
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
+pub enum AutoSleep {
+    /// The tool goes to sleep after the specified number of seconds in the stand.
+    AfterDurationS(u16),
+    /// The tool never goes to sleep in the stand.
+    Never,
+}
+
 /// Persistent storage data.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
 pub struct Persistent {
+    /// The max. set temperature if the tool is in its stand.
+    pub stand_temperature_deg_c: i16,
+    /// The operational temperature set point in °C.
+    pub set_temperature_deg_c: i16,
+    /// Current margin to leave until max. supply current in mA.
+    pub current_margin_ma: u16,
+    /// Auto-sleep behaviour when the tool is in the stand.
+    pub auto_sleep: AutoSleep,
     /// If true, display is rotated 180°.
     pub display_is_rotated: bool,
     /// If true, start the controller with heating switched off after power on.
-    pub sleep_on_power: bool,
-    /// If true, switch off heating on error (tip or iron removed).
-    pub sleep_on_error: bool,
-    /// The operational temperature set point in °C.
-    pub operational_temperature_deg_c: isize,
-    /// Current margin to leave until max. supply current.
-    pub current_margin_ma: u16,
+    pub off_on_power: bool,
+    /// If true, switch off heating when the tip or iron was removed/changed.
+    pub off_on_change: bool,
 }
 
 impl Persistent {
     /// Default persistent settings.
     const fn default() -> Self {
         Self {
+            stand_temperature_deg_c: 180,
+            set_temperature_deg_c: 300,
+            current_margin_ma: 200,
+            auto_sleep: AutoSleep::AfterDurationS(600),
             display_is_rotated: false,
-            sleep_on_power: false,
-            sleep_on_error: true,
-            operational_temperature_deg_c: 300,
-            current_margin_ma: 150,
+            off_on_power: false,
+            off_on_change: false,
         }
     }
 }
@@ -57,8 +74,10 @@ pub struct MenuState {
 pub struct OperationalState {
     /// The state of the control menu.
     pub menu_state: MenuState,
-    /// If true, the tool is in its stand.
-    pub tool_in_stand: bool,
+    /// The tool's name, or a tool error.
+    pub tool: Result<&'static str, ToolError>,
+    /// The state of the tool (e.g. active, in stand).
+    pub tool_state: Option<ToolState>,
     /// If true, the tool is off (manual sleep).
     pub tool_is_off: bool,
     /// If true, the new set temperature was not confirmed yet.
@@ -73,7 +92,8 @@ impl OperationalState {
                 is_open: false,
                 toggle_pending: false,
             },
-            tool_in_stand: false,
+            tool: Err(ToolError::NoTool),
+            tool_state: None,
             tool_is_off: true,
             set_temperature_is_pending: false,
         }
@@ -82,18 +102,6 @@ impl OperationalState {
 
 /// Signals a change in the negotiated supply (potential/mV, current/mA).
 pub static NEGOTIATED_SUPPLY_SIG: Signal<ThreadModeRawMutex, (u32, u32)> = Signal::new();
-
-/// Displays negotiated power (power/W).
-static DISPLAY_POWER_SIG: Signal<ThreadModeRawMutex, f32> = Signal::new();
-
-/// Signals a new tool temperature.
-static TEMPERATURE_MEASUREMENT_DEG_C_SIG: Signal<ThreadModeRawMutex, Option<f32>> = Signal::new();
-
-/// Signals a new power bargraph value.
-static POWER_RATIO_BARGRAPH_SIG: Signal<ThreadModeRawMutex, Option<f32>> = Signal::new();
-
-/// Signals a new message to display.
-static MESSAGE_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();
 
 /// Signals storage of persistent data.
 static STORE_PERSISTENT_SIG: Signal<ThreadModeRawMutex, ()> = Signal::new();

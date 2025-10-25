@@ -1,18 +1,19 @@
 #![no_std]
 #![no_main]
 
-use defmt::unwrap;
+use defmt::{info, unwrap};
 use embassy_executor::Spawner;
 use embassy_stm32::exti::ExtiInput;
 use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
 use embassy_stm32::time::Hertz;
-use embassy_stm32::{bind_interrupts, i2c, peripherals, usb, Config};
+use embassy_stm32::{Config, bind_interrupts, i2c, peripherals, usb};
+use embassy_time::{Duration, WithTimeout};
 use loeti::power::{AssignedResources, UcpdResources};
 use loeti::tool::{AdcResources, ToolResources};
 use loeti::ui::{self, encoder::RotaryEncoderResources};
-use loeti::{eeprom, power, OPERATIONAL_STATE_MUTEX};
-use loeti::{split_resources, tool, ui::display};
 use loeti::{NEGOTIATED_SUPPLY_SIG, PERSISTENT_MUTEX};
+use loeti::{OPERATIONAL_STATE_MUTEX, eeprom, power};
+use loeti::{split_resources, tool, ui::display};
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
@@ -23,6 +24,8 @@ bind_interrupts!(struct Irqs {
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
+    info!("Hi");
+
     let mut config = Config::default();
     {
         use embassy_stm32::rcc::*;
@@ -57,7 +60,10 @@ async fn main(spawner: Spawner) {
         spawner.spawn(unwrap!(power::ucpd_task(resources.ucpd, ndb_pin)));
     }
 
-    let negotiated_supply = NEGOTIATED_SUPPLY_SIG.wait().await;
+    let negotiated_supply = NEGOTIATED_SUPPLY_SIG
+        .wait()
+        .with_timeout(Duration::from_secs(3))
+        .await;
 
     // Launch EEPROM config storage
     {
@@ -72,13 +78,18 @@ async fn main(spawner: Spawner) {
         );
         let mut eeprom = eeprom24x::Eeprom24x::new_24x64(i2c, eeprom24x::SlaveAddr::Default);
 
+        const RESET: bool = false;
+        if RESET {
+            eeprom::store_defaults(&mut eeprom).await;
+        }
+
         // Load data before any other tasks access persistent storage.
         eeprom::load_persistent(&mut eeprom).await;
 
         // Transfer persistent information to operational state.
         // FIXME: Make a method on the operational state itself?
         let power_on_heater_off =
-            PERSISTENT_MUTEX.lock(|persistent| persistent.borrow().sleep_on_power);
+            PERSISTENT_MUTEX.lock(|persistent| persistent.borrow().off_on_power);
         OPERATIONAL_STATE_MUTEX.lock(|operational| {
             operational.borrow_mut().tool_is_off = power_on_heater_off;
         });
@@ -120,7 +131,7 @@ async fn main(spawner: Spawner) {
     }
 
     // Launch iron control
-    {
+    if let Ok(negotiated_supply) = negotiated_supply {
         use embassy_stm32::adc::{Adc, AdcChannel};
         use embassy_stm32::dac::DacCh1;
         use embassy_stm32::pac::VREFBUF;
@@ -165,6 +176,7 @@ async fn main(spawner: Spawner) {
             ),
             pin_sleep: Input::new(p.PB10, Pull::Up),
         };
+
         spawner.spawn(unwrap!(tool::tool_task(tool_resources, negotiated_supply)));
     }
 }

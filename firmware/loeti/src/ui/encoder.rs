@@ -1,10 +1,10 @@
 //! Handles user inputs by means of a rotary encoder.
-use defmt::info;
+use defmt::debug;
 use embassy_stm32::gpio::Input;
 use embassy_time::{Duration, Instant, Ticker};
 use rotary_encoder_embedded::{Direction, RotaryEncoder};
 
-use crate::{ui::MENU_STEPS_SIG, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG};
+use crate::{OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, STORE_PERSISTENT_SIG, ui::MENU_STEPS_SIG};
 
 /// The state of the user interface (controlled instance).
 #[derive(Debug, Clone, Copy)]
@@ -83,14 +83,14 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                     let set_temperature_pending = PERSISTENT_MUTEX.lock(|x| {
                         let mut persistent = x.borrow_mut();
 
-                        if persistent.operational_temperature_deg_c >= 450 && steps > 0 {
+                        if persistent.set_temperature_deg_c >= 450 && steps > 0 {
                             // Upper temperature limit.
                             false
-                        } else if persistent.operational_temperature_deg_c <= 100 && steps < 0 {
+                        } else if persistent.set_temperature_deg_c <= 100 && steps < 0 {
                             // Lower temperature limit.
                             false
                         } else {
-                            persistent.operational_temperature_deg_c += steps * 10;
+                            persistent.set_temperature_deg_c += steps * 10;
                             true
                         }
                     });
@@ -102,7 +102,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                     UiState::Temperature
                 }
                 UiState::Menu => {
-                    MENU_STEPS_SIG.signal(steps);
+                    MENU_STEPS_SIG.signal(steps as isize);
 
                     ui_state
                 }
@@ -141,17 +141,19 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                     x.borrow_mut().set_temperature_is_pending = false;
                 });
                 STORE_PERSISTENT_SIG.signal(());
-                info!("store temperature");
+                debug!("Store temperature");
 
                 UiState::Idle
             }
             (SwitchEvent::ShortPress, UiState::Idle) => {
-                let manual_sleep = OPERATIONAL_STATE_MUTEX.lock(|x| {
+                let tool_is_off = OPERATIONAL_STATE_MUTEX.lock(|x| {
                     let mut operational_state = x.borrow_mut();
-                    operational_state.tool_is_off = !operational_state.tool_is_off;
+                    if operational_state.tool.is_ok() {
+                        operational_state.tool_is_off = !operational_state.tool_is_off;
+                    }
                     operational_state.tool_is_off
                 });
-                info!("toggle manual sleep ({})", manual_sleep);
+                debug!("Toggle tool state ({})", tool_is_off);
 
                 ui_state
             }
@@ -166,7 +168,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                 OPERATIONAL_STATE_MUTEX.lock(|x| {
                     x.borrow_mut().menu_state.is_open = true;
                 });
-                info!("open menu");
+                debug!("Open menu");
 
                 UiState::Menu
             }
@@ -174,7 +176,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                 OPERATIONAL_STATE_MUTEX.lock(|x| {
                     x.borrow_mut().menu_state.is_open = false;
                 });
-                info!("close menu");
+                debug!("Close menu");
 
                 UiState::Idle
             }
