@@ -141,7 +141,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                     x.borrow_mut().set_temperature_is_pending = false;
                 });
                 STORE_PERSISTENT_SIG.signal(());
-                debug!("store temperature");
+                debug!("Store temperature");
 
                 UiState::Idle
             }
@@ -153,7 +153,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                     }
                     operational_state.tool_is_off
                 });
-                debug!("toggle tool state ({})", tool_is_off);
+                debug!("Toggle tool state ({})", tool_is_off);
 
                 ui_state
             }
@@ -168,7 +168,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                 OPERATIONAL_STATE_MUTEX.lock(|x| {
                     x.borrow_mut().menu_state.is_open = true;
                 });
-                debug!("open menu");
+                debug!("Open menu");
 
                 UiState::Menu
             }
@@ -176,7 +176,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
                 OPERATIONAL_STATE_MUTEX.lock(|x| {
                     x.borrow_mut().menu_state.is_open = false;
                 });
-                debug!("close menu");
+                debug!("Close menu");
 
                 UiState::Idle
             }

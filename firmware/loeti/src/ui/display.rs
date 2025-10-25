@@ -22,7 +22,7 @@ use embedded_menu::interaction::{Action, Interaction, Navigation};
 use embedded_menu::{Menu, MenuStyle, SelectValue};
 use micromath::F32Ext;
 use panic_probe as _;
-use profont::{PROFONT_9_POINT, PROFONT_12_POINT, PROFONT_24_POINT};
+use profont::{PROFONT_9_POINT, PROFONT_24_POINT};
 use ssd1306::Ssd1306Async;
 use ssd1306::mode::BufferedGraphicsModeAsync;
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize102x64, SPIInterface};
@@ -30,7 +30,8 @@ use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize102x64, SPIInterf
 use crate::tool::{Error as ToolError, ToolState};
 use crate::ui::MENU_STEPS_SIG;
 use crate::{
-    OPERATIONAL_STATE_MUTEX, OperationalState, PERSISTENT_MUTEX, Persistent, STORE_PERSISTENT_SIG,
+    AutoSleep, OPERATIONAL_STATE_MUTEX, OperationalState, PERSISTENT_MUTEX, Persistent,
+    STORE_PERSISTENT_SIG,
 };
 
 /// The inner display type (draw target).
@@ -138,11 +139,17 @@ impl<'d> Display<'d> {
 
     /// Update the current tool temperature.
     ///
-    /// If `None`, tool temperature is invalid. A question mark is displayed.
-    fn update_current_temperature(&mut self, temperature_deg_c: Option<f32>) {
+    /// If `None`, tool temperature is too low to measure.
+    fn update_current_temperature(
+        &mut self,
+        temperature_deg_c: Option<f32>,
+        operational_state: &OperationalState,
+    ) {
         self.temperature_string.clear();
 
-        if let Some(temperature_deg_c) = temperature_deg_c
+        if operational_state.tool.is_err() {
+            // Do not write a temperature string, when no tool is present.
+        } else if let Some(temperature_deg_c) = temperature_deg_c
             && temperature_deg_c > 40.0
         {
             write!(
@@ -152,7 +159,7 @@ impl<'d> Display<'d> {
             )
             .unwrap();
         } else {
-            write!(&mut self.temperature_string, "cold",).unwrap();
+            write!(&mut self.temperature_string, "Cold",).unwrap();
         }
     }
 
@@ -194,9 +201,21 @@ impl<'d> Display<'d> {
 
     /// Draw all elements of the main view.
     fn draw_main_view(&mut self, operational_state: &OperationalState, persistent: &Persistent) {
-        const SET_TEMP_ARROW_Y: i32 = 11;
-        const SET_TEMP_Y: i32 = 11;
-        const ARROW_WIDTH: i32 = 4;
+        const SET_TEMP_ARROW_Y: i32 = 7;
+        const SET_TEMP_Y: i32 = 7;
+        const ARROW_WIDTH: i32 = 3;
+
+        if operational_state.tool.is_err() {
+            display_idle_state();
+        }
+
+        self.message_string = match operational_state.tool {
+            Err(ToolError::NoTool) => "No tool",
+            Err(ToolError::NoTip) => "No tip",
+            Err(ToolError::UnknownTool) => "Unknown",
+            Err(ToolError::ToolMismatch) => "",
+            Ok(name) => name,
+        };
 
         let set_temperature_triangle = Triangle::new(
             Point::new(DISPLAY_FIRST_COL_INDEX, SET_TEMP_ARROW_Y - 2 * ARROW_WIDTH),
@@ -219,7 +238,7 @@ impl<'d> Display<'d> {
 
         Text::with_alignment(
             &self.temperature_string,
-            Point::new(DISPLAY_WIDTH / 2, 34),
+            Point::new(DISPLAY_WIDTH / 2, 32),
             MonoTextStyle::new(&PROFONT_24_POINT, BinaryColor::On),
             Alignment::Center,
         )
@@ -229,7 +248,7 @@ impl<'d> Display<'d> {
         Text::new(
             &self.set_temperature_string,
             Point::new(DISPLAY_FIRST_COL_INDEX + 2 * ARROW_WIDTH, SET_TEMP_Y),
-            MonoTextStyle::new(&PROFONT_12_POINT, BinaryColor::On),
+            MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
         )
         .draw(self.inner)
         .unwrap();
@@ -243,12 +262,14 @@ impl<'d> Display<'d> {
         .draw(self.inner)
         .unwrap();
 
-        let tool_state_text: heapless::String<10> = match operational_state.tool_state {
-            None | Some(ToolState::Active) => heapless::format!(""),
-            Some(ToolState::InStand(instant)) => {
-                let auto_off_duration = Duration::from_secs(persistent.auto_off_duration_s as u64);
+        let mut tool_state_string = heapless::String::<15>::new();
+        let tool_state_str: &str = match (operational_state.tool_state, persistent.auto_sleep) {
+            (None, _) | (Some(ToolState::Active), _) => "",
+            (Some(ToolState::InStand(_)), AutoSleep::Never) => "Stand",
+            (Some(ToolState::InStand(instant)), AutoSleep::AfterDurationS(duration_s)) => {
+                let auto_sleep_duration = Duration::from_secs(duration_s as u64);
                 if let Some(passed_duration) = Instant::now().checked_duration_since(instant) {
-                    let remaining_seconds = auto_off_duration
+                    let remaining_seconds = auto_sleep_duration
                         .checked_sub(passed_duration)
                         .map(|v| v.as_secs())
                         .unwrap_or_default();
@@ -256,19 +277,20 @@ impl<'d> Display<'d> {
                     let minutes = remaining_seconds / 60;
                     let seconds = remaining_seconds.saturating_sub(minutes * 60);
 
-                    heapless::format!("{}:{:02}", minutes, seconds)
+                    write!(&mut tool_state_string, "Sleep {}:{:02}", minutes, seconds).unwrap();
+                    tool_state_string.as_str()
                 } else {
-                    heapless::format!("")
+                    ""
                 }
             }
-            Some(ToolState::AutoOff) => heapless::format!("SLP"),
-        }
-        .unwrap();
+            (Some(ToolState::InStand(_)), AutoSleep::Immediately) => "Sleep",
+            (Some(ToolState::Sleeping), _) => "Sleep",
+        };
 
         Text::with_alignment(
-            tool_state_text.as_str(),
+            tool_state_str,
             Point::new(DISPLAY_LAST_COL_INDEX, SET_TEMP_Y),
-            MonoTextStyle::new(&PROFONT_12_POINT, BinaryColor::On),
+            MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
             Alignment::Right,
         )
         .draw(self.inner)
@@ -276,7 +298,7 @@ impl<'d> Display<'d> {
 
         if operational_state.tool_is_off {
             Text::with_alignment(
-                "OFF",
+                "Off",
                 Point::new(DISPLAY_LAST_COL_INDEX, DISPLAY_LAST_ROW_INDEX - 20),
                 MonoTextStyle::new(&PROFONT_9_POINT, BinaryColor::On),
                 Alignment::Right,
@@ -429,10 +451,10 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         persistent.current_margin_ma.into(),
         MenuResult::CurrentMargin,
     )
-    .add_item("Slp on power", persistent.sleep_on_power, |v| {
+    .add_item("Off on power", persistent.off_on_power, |v| {
         MenuResult::SleepOnPower(v)
     })
-    .add_item("Slp on change", persistent.sleep_on_change, |v| {
+    .add_item("Off on change", persistent.off_on_change, |v| {
         MenuResult::SleepOnChange(v)
     })
     .build();
@@ -443,18 +465,10 @@ pub async fn display_task(mut display_resources: DisplayResources) {
         let operational_state = OPERATIONAL_STATE_MUTEX.lock(|x| *x.borrow());
         let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
 
-        match operational_state.tool {
-            Err(ToolError::NoTool) => show_idle_message("No tool"),
-            Err(ToolError::NoTip) => show_idle_message("No tip"),
-            Err(ToolError::UnknownTool) => show_idle_message("Unknown"),
-            Err(ToolError::ToolMismatch) => show_idle_message(""),
-            Ok(name) => show_status_message(name),
-        }
-
         display.update_set_temperature(persistent.set_temperature_deg_c);
 
         if let Some(temperature_deg_c) = TEMPERATURE_MEASUREMENT_DEG_C_SIG.try_take() {
-            display.update_current_temperature(temperature_deg_c);
+            display.update_current_temperature(temperature_deg_c, &operational_state);
         }
 
         if let Some(message) = MESSAGE_SIG.try_take() {
@@ -503,18 +517,18 @@ pub async fn display_task(mut display_resources: DisplayResources) {
                         STORE_PERSISTENT_SIG.signal(());
 
                         display.inner_mut().set_rotation(r).await.unwrap();
-                        info!("set rotation");
+                        info!("Set rotation");
                     }
                     Some(MenuResult::CurrentMargin(c)) => {
                         PERSISTENT_MUTEX.lock(|x| x.borrow_mut().current_margin_ma = c.into());
                         STORE_PERSISTENT_SIG.signal(());
                     }
                     Some(MenuResult::SleepOnPower(v)) => {
-                        PERSISTENT_MUTEX.lock(|x| x.borrow_mut().sleep_on_power = v);
+                        PERSISTENT_MUTEX.lock(|x| x.borrow_mut().off_on_power = v);
                         STORE_PERSISTENT_SIG.signal(());
                     }
                     Some(MenuResult::SleepOnChange(v)) => {
-                        PERSISTENT_MUTEX.lock(|x| x.borrow_mut().sleep_on_change = v);
+                        PERSISTENT_MUTEX.lock(|x| x.borrow_mut().off_on_change = v);
                         STORE_PERSISTENT_SIG.signal(());
                     }
                     _ => (),
@@ -534,33 +548,25 @@ pub async fn display_task(mut display_resources: DisplayResources) {
 /// Display the current tool temperature.
 ///
 /// Passing `None` hides tool temperature.
-pub fn show_current_temperature(tool_temperature_deg_c: Option<f32>) {
+pub fn display_current_temperature(tool_temperature_deg_c: Option<f32>) {
     TEMPERATURE_MEASUREMENT_DEG_C_SIG.signal(tool_temperature_deg_c);
 }
 
 /// Display a relative power bargraph.
 ///
 /// Passing `None` hides the bargraph.
-pub fn show_current_power(power_ratio: Option<f32>) {
+pub fn display_current_power(power_ratio: Option<f32>) {
     POWER_RATIO_BARGRAPH_SIG.signal(power_ratio);
 }
 
 /// Displays the effective power limit (depends on supply minus margin, and tool capabilities).
-pub fn show_power_limit(power_limit: Option<f32>) {
+pub fn display_power_limit(power_limit: Option<f32>) {
     POWER_LIMIT_W_SIG.signal(power_limit);
 }
 
-/// Displays a status message.
-///
-/// Mostly used for displaying the current tool's name, but also (tool) error messages.
-pub fn show_status_message(message: &'static str) {
-    MESSAGE_SIG.signal(message);
-}
-
-/// Displays a message, while being idle (not heating).
-pub fn show_idle_message(message: &'static str) {
-    show_power_limit(None);
-    show_current_power(None);
-    show_current_temperature(None);
-    show_status_message(message);
+/// Display the idle state, switching off fields that are only present when a tool is present and active.
+pub fn display_idle_state() {
+    display_power_limit(None);
+    display_current_power(None);
+    display_current_temperature(None);
 }

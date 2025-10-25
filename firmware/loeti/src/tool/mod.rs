@@ -31,8 +31,8 @@ mod library;
 use library::{TOOLS, ToolProperties};
 use uom::ConstZero;
 
-use crate::ui::display::{show_current_power, show_current_temperature, show_power_limit};
-use crate::{OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX};
+use crate::ui::display::{display_current_power, display_current_temperature, display_power_limit};
+use crate::{AutoSleep, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX};
 
 /// ADC max. value (16 bit).
 const ADC_MAX: f32 = 65535.0;
@@ -291,8 +291,8 @@ pub enum ToolState {
     Active,
     /// The tool was placed in its stand at the recorded instant.
     InStand(Instant),
-    /// The tool was automatically switched off.
-    AutoOff,
+    /// The tool was automatically switched to sleep mode.
+    Sleeping,
 }
 
 /// A tool (soldering iron).
@@ -353,19 +353,30 @@ impl Tool {
         Ok(tool)
     }
 
-    /// Update the tool's state, based on whether it is currently in its stand, and the auto switch-off duration.
-    fn update_tool_state(&mut self, in_stand: bool, auto_off_duration: Duration) -> ToolState {
+    /// Update the tool's state, based on whether it is currently in its stand, and the auto sleep duration.
+    fn update_tool_state(&mut self, in_stand: bool, auto_sleep: AutoSleep) -> ToolState {
         if !in_stand {
             self.state = ToolState::Active;
         } else if matches!(self.state, ToolState::Active) {
             debug!("Tool in stand");
-            self.state = ToolState::InStand(Instant::now());
-        } else if let ToolState::InStand(instant) = self.state
-            && let Some(passed_duration) = Instant::now().checked_duration_since(instant)
-            && passed_duration >= auto_off_duration
-        {
-            debug!("Tool auto-off");
-            self.state = ToolState::AutoOff
+            self.state = match auto_sleep {
+                AutoSleep::Immediately => ToolState::Sleeping,
+                _ => ToolState::InStand(Instant::now()),
+            };
+        } else if let ToolState::InStand(instant) = self.state {
+            self.state = match auto_sleep {
+                AutoSleep::Never => self.state,
+                AutoSleep::Immediately => ToolState::Sleeping,
+                AutoSleep::AfterDurationS(duration_s) => {
+                    if let Some(passed_duration) = Instant::now().checked_duration_since(instant)
+                        && passed_duration >= Duration::from_secs(duration_s as u64)
+                    {
+                        ToolState::Sleeping
+                    } else {
+                        self.state
+                    }
+                }
+            };
         }
 
         self.state
@@ -567,11 +578,8 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
         let tool = tool.as_mut().unwrap();
 
         // Check if tool is in its stand.
-        let tool_in_stand = tool_resources.pin_sleep.is_low();
-        let tool_state = tool.update_tool_state(
-            tool_in_stand,
-            Duration::from_secs(persistent.auto_off_duration_s as u64),
-        );
+        let tool_in_stand = true; // tool_resources.pin_sleep.is_low();
+        let tool_state = tool.update_tool_state(tool_in_stand, persistent.auto_sleep);
 
         let operational_state = OPERATIONAL_STATE_MUTEX.lock(|x| {
             let mut operational_state = x.borrow_mut();
@@ -585,7 +593,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
             persistent.current_margin_ma as f32,
         );
 
-        show_power_limit(Some(tool.power_limit_w()));
+        display_power_limit(Some(tool.power_limit_w()));
 
         if !operational_state.set_temperature_is_pending {
             operational_temperature_deg_c = Some(persistent.set_temperature_deg_c as f32);
@@ -607,12 +615,12 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
         }
 
         tool.detect_and_calculate_temperature(tool_measurement)?;
-        show_current_temperature(tool.temperature_deg_c);
+        display_current_temperature(tool.temperature_deg_c);
 
-        if operational_state.tool_is_off || matches!(tool_state, ToolState::AutoOff) {
+        if operational_state.tool_is_off || matches!(tool_state, ToolState::Sleeping) {
             let mut power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
             power_measurement.compensate(&idle_power_measurement);
-            show_current_power(None);
+            display_current_power(None);
 
             // Skip the rest of the control loop.
             Timer::after_millis(LOOP_PERIOD_MS).await;
@@ -628,7 +636,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
             pwm_heater_channel
                 .set_duty_cycle((ratio * pwm_heater_channel.max_duty_cycle() as f32) as u16);
 
-            show_current_power(Some(tool.power_ratio()));
+            display_current_power(Some(tool.power_ratio()));
 
             let tool_power_fut = async {
                 // Measure current and voltage after the low-pass filter settles - in the middle of the loop period.
@@ -686,7 +694,7 @@ pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u3
         let result = control(&mut tool_resources, supply).await;
 
         if let Err(error) = result {
-            let sleep_on_error = PERSISTENT_MUTEX.lock(|x| x.borrow().sleep_on_change);
+            let sleep_on_error = PERSISTENT_MUTEX.lock(|x| x.borrow().off_on_change);
 
             OPERATIONAL_STATE_MUTEX.lock(|x| {
                 let mut operational_state = x.borrow_mut();
