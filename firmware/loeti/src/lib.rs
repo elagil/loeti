@@ -20,8 +20,6 @@ pub mod ui;
 /// Auto-sleep modes.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
 pub enum AutoSleep {
-    /// The tool goes to sleep immediately after being placed in the stand.
-    Immediately,
     /// The tool goes to sleep after the specified number of seconds in the stand.
     AfterDurationS(u16),
     /// The tool never goes to sleep in the stand.
@@ -54,7 +52,7 @@ impl Persistent {
             stand_temperature_deg_c: 180,
             set_temperature_deg_c: 300,
             current_margin_ma: 200,
-            auto_sleep: AutoSleep::AfterDurationS(900),
+            auto_sleep: AutoSleep::AfterDurationS(600),
             display_is_rotated: false,
             off_on_power: false,
             off_on_change: false,
