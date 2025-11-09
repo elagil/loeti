@@ -9664,6 +9664,12 @@
 		(uuid "89bcd3e0-4973-4a85-9d9e-d023d3c8df7f")
 	)
 	(junction
+		(at 132.08 190.5)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "8b01ac8a-8631-4f2f-a437-69d5680dfdaf")
+	)
+	(junction
 		(at 63.5 228.6)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -9746,6 +9752,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "ad6735bc-7f39-418c-92f0-c1af24e2c9d6")
+	)
+	(junction
+		(at 132.08 195.58)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "ae8c4b47-65f4-4d46-9912-e5af3c605ebb")
 	)
 	(junction
 		(at 195.58 22.86)
@@ -10193,7 +10205,7 @@
 	)
 	(wire
 		(pts
-			(xy 127 195.58) (xy 139.7 195.58)
+			(xy 120.65 195.58) (xy 132.08 195.58)
 		)
 		(stroke
 			(width 0)
@@ -10660,6 +10672,16 @@
 			(type default)
 		)
 		(uuid "2261f754-2867-43b2-8366-0e99bc8a02c2")
+	)
+	(wire
+		(pts
+			(xy 132.08 195.58) (xy 139.7 195.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "236fe8ff-704f-4d5c-a4d1-d11be1817512")
 	)
 	(wire
 		(pts
@@ -11703,6 +11725,16 @@
 	)
 	(wire
 		(pts
+			(xy 132.08 190.5) (xy 139.7 190.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "64cc3947-2799-4222-a7fa-7855c9cca9a1")
+	)
+	(wire
+		(pts
 			(xy 50.8 207.01) (xy 50.8 209.55)
 		)
 		(stroke
@@ -11733,7 +11765,7 @@
 	)
 	(wire
 		(pts
-			(xy 127 190.5) (xy 139.7 190.5)
+			(xy 120.65 190.5) (xy 132.08 190.5)
 		)
 		(stroke
 			(width 0)
@@ -12513,6 +12545,16 @@
 	)
 	(wire
 		(pts
+			(xy 132.08 204.47) (xy 132.08 205.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "942b0f21-62c4-44a7-8742-eb266cedcc68")
+	)
+	(wire
+		(pts
 			(xy 364.49 187.96) (xy 374.65 187.96)
 		)
 		(stroke
@@ -12640,6 +12682,16 @@
 			(type default)
 		)
 		(uuid "9a612f31-7a49-4d46-8dbe-cde06273e72f")
+	)
+	(wire
+		(pts
+			(xy 132.08 195.58) (xy 132.08 196.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9a6f9c23-82dc-47d2-b6fb-9c98f3ea9435")
 	)
 	(wire
 		(pts
@@ -12890,6 +12942,16 @@
 			(type solid)
 		)
 		(uuid "a4824fb3-66f9-41c5-8956-2b001be86e54")
+	)
+	(wire
+		(pts
+			(xy 132.08 180.34) (xy 132.08 181.61)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a58597a2-851d-43ad-aff5-132cf03bbdc7")
 	)
 	(wire
 		(pts
@@ -13650,6 +13712,16 @@
 			(type default)
 		)
 		(uuid "c6977406-b9b0-4295-943d-4d41c103efbe")
+	)
+	(wire
+		(pts
+			(xy 132.08 189.23) (xy 132.08 190.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c6ea492d-dcdc-421f-9e42-4876a4672706")
 	)
 	(wire
 		(pts
@@ -16324,7 +16396,7 @@
 		(uuid "b50c331b-d151-42b7-bd88-8e2b3470ccca")
 	)
 	(label "RED"
-		(at 127 195.58 0)
+		(at 120.65 195.58 0)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -16580,7 +16652,7 @@
 		(uuid "fc14d3e2-2c19-445f-b786-855459048ba7")
 	)
 	(label "GREEN"
-		(at 127 190.5 0)
+		(at 120.65 190.5 0)
 		(effects
 			(font
 				(size 1.524 1.524)
@@ -19472,6 +19544,71 @@
 		)
 	)
 	(symbol
+		(lib_id "power:GND")
+		(at 132.08 180.34 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "0c6f9234-ce9c-4ccd-a81a-86d31d7ede05")
+		(property "Reference" "#PWR097"
+			(at 132.08 173.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 131.953 175.9458 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 132.08 180.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 132.08 180.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 132.08 180.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "78d3b88e-5fa7-4fd9-82c4-27d25283f979")
+		)
+		(instances
+			(project "loeti"
+				(path "/e4270527-a28c-4130-b442-7148380c12e2"
+					(reference "#PWR097")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:+3V3")
 		(at 374.65 54.61 0)
 		(unit 1)
@@ -20055,6 +20192,102 @@
 			(project "loeti"
 				(path "/e4270527-a28c-4130-b442-7148380c12e2"
 					(reference "C12")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 132.08 185.42 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "1e468db2-6597-47d1-9f11-d31e85ee916d")
+		(property "Reference" "R39"
+			(at 133.8326 184.2516 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "2M"
+			(at 133.8326 186.563 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 130.302 185.42 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 132.08 185.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 132.08 185.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Library" ""
+			(at 132.08 185.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Name" ""
+			(at 132.08 185.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MPN" "C22976"
+			(at 132.08 185.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "9be7b3e4-56fa-4ef2-9436-e5dcdd247044")
+		)
+		(pin "2"
+			(uuid "aff4025b-ec10-4af6-91d8-1cfd5674216e")
+		)
+		(instances
+			(project "loeti"
+				(path "/e4270527-a28c-4130-b442-7148380c12e2"
+					(reference "R39")
 					(unit 1)
 				)
 			)
@@ -21190,6 +21423,71 @@
 			(project "loeti"
 				(path "/e4270527-a28c-4130-b442-7148380c12e2"
 					(reference "C23")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 132.08 205.74 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "372b5930-b195-4c73-b6e9-c46c2f055d9a")
+		(property "Reference" "#PWR081"
+			(at 132.08 201.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 131.699 210.1342 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 132.08 205.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 132.08 205.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at 132.08 205.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "874986a1-2691-4b17-a693-41d91cd6eb77")
+		)
+		(instances
+			(project "loeti"
+				(path "/e4270527-a28c-4130-b442-7148380c12e2"
+					(reference "#PWR081")
 					(unit 1)
 				)
 			)
@@ -33305,6 +33603,102 @@
 			(project "loeti"
 				(path "/e4270527-a28c-4130-b442-7148380c12e2"
 					(reference "#PWR050")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 132.08 200.66 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "eca09fc5-69a6-4da8-a1dc-9c2bedb08028")
+		(property "Reference" "R40"
+			(at 133.8326 199.4916 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "2M"
+			(at 133.8326 201.803 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 130.302 200.66 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 132.08 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 132.08 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Library" ""
+			(at 132.08 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Name" ""
+			(at 132.08 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MPN" "C22976"
+			(at 132.08 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "96df79a1-884e-43f9-98e7-e8a9e8b34e31")
+		)
+		(pin "2"
+			(uuid "529d4c95-4601-4b43-92fe-784f2082cc10")
+		)
+		(instances
+			(project "loeti"
+				(path "/e4270527-a28c-4130-b442-7148380c12e2"
+					(reference "R40")
 					(unit 1)
 				)
 			)
