@@ -59,6 +59,12 @@ display-interface = "0.5.0"
 biquad = "0.4.2"
 crc = "3.3.0"
 
+[features]
+default = ["board_v7"]
+
+board_v6 = []
+board_v7 = []
+
 # cargo build/run
 [profile.dev]
 codegen-units = 1

@@ -14,6 +14,16 @@ pub struct TemperatureCalibration {
 impl TemperatureCalibration {
     /// Calculate temperature from thermocouple voltage.
     pub fn calc_temperature_c(&self, tc_potential_v: f32) -> f32 {
+        #[cfg(feature = "board_v6")]
+        const GAIN: f32 = 221.0;
+        #[cfg(feature = "board_v7")]
+        const GAIN: f32 = 230.0;
+
+        // Convert measured voltage to actual thermocouple voltage.
+        //
+        // `GAIN` is the thermocouple amplifier gain.
+        let tc_potential_v = tc_potential_v / GAIN;
+
         self.quadratic_c_per_vv * tc_potential_v * tc_potential_v
             + self.linear_c_per_v * tc_potential_v
             + self.constant_c
@@ -82,8 +92,8 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         detect_ratio: 0.31973, // 4.7k
         temperature_calibration: TemperatureCalibration {
             // FIXME: Values are not tested.
-            quadratic_c_per_vv: -1.4275,
-            linear_c_per_v: 171.29,
+            quadratic_c_per_vv: -69720.5,
+            linear_c_per_v: 37855.0,
             constant_c: 30.614,
         },
 
@@ -98,8 +108,8 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         heater_resistance_ohm: 2.5,
         detect_ratio: 0.5, // 10k
         temperature_calibration: TemperatureCalibration {
-            quadratic_c_per_vv: -1.4275,
-            linear_c_per_v: 171.29,
+            quadratic_c_per_vv: -69720.5,
+            linear_c_per_v: 37855.0,
             constant_c: 30.614,
         },
 
