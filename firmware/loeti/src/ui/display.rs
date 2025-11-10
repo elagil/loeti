@@ -4,6 +4,7 @@ use core::cmp::Ordering::{Greater, Less};
 use core::fmt::Write;
 use defmt::info;
 use embassy_stm32::spi::Spi;
+use embassy_stm32::spi::mode::Master;
 use embassy_stm32::{gpio::Output, mode::Async};
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::signal::Signal;
@@ -37,7 +38,7 @@ use crate::{
 /// The inner display type (draw target).
 type InnerDisplay = Ssd1306Async<
     SPIInterface<
-        ExclusiveDevice<Spi<'static, Async>, Output<'static>, embassy_time::Delay>,
+        ExclusiveDevice<Spi<'static, Async, Master>, Output<'static>, embassy_time::Delay>,
         Output<'static>,
     >,
     DisplaySize102x64,
@@ -334,7 +335,7 @@ impl<'d> Display<'d> {
 /// Resources for driving the display.
 pub struct DisplayResources {
     /// The display SPI controller.
-    pub spi: Spi<'static, Async>,
+    pub spi: Spi<'static, Async, Master>,
     /// The display chip select (for SPI)
     pub pin_cs: Output<'static>,
     /// The display data/control line.
