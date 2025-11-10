@@ -8,9 +8,9 @@
 	)
 	(paper "A4")
 	(title_block
-		(title "MiniXLR adapter")
-		(date "2025-08-18")
-		(rev "6c")
+		(title "MiniXLR adapter (handle)")
+		(date "2025-11-10")
+		(rev "7a")
 		(company "elagil")
 	)
 	(layers
@@ -124,7 +124,7 @@
 	)
 	(net 0 "")
 	(net 1 "/DET")
-	(net 2 "/GND")
+	(net 2 "/BLUE")
 	(net 3 "unconnected-(J1-P3-Pad4)")
 	(net 4 "unconnected-(J1-P3-Pad3)")
 	(net 5 "unconnected-(J1-P2-Pad2)")
@@ -1498,7 +1498,7 @@
 			(drill 1.45)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 2 "/GND")
+			(net 2 "/BLUE")
 			(pinfunction "P1")
 			(pintype "passive")
 			(uuid "b0433897-331f-41d4-97e0-96bc5bdfa826")
@@ -1811,7 +1811,7 @@
 			(size 0.8 0.95)
 			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
-			(net 2 "/GND")
+			(net 2 "/BLUE")
 			(pintype "passive")
 			(uuid "fadc43ae-c71a-4fba-9d5e-e8700fde2696")
 		)
@@ -1838,6 +1838,30 @@
 		(fill no)
 		(layer "Edge.Cuts")
 		(uuid "1c2c1eaf-1fb7-4237-b0c2-abcef7eeb3b8")
+	)
+	(gr_text "af 25"
+		(at 137.5 103 -0)
+		(layer "F.SilkS")
+		(uuid "69d5bd9a-ef30-4a34-92e6-bd67caf51422")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "v7a"
+		(at 141.5 103.125 342.5)
+		(layer "B.SilkS")
+		(uuid "82a7a7df-2e00-4f7d-8dd8-8acfd2312c44")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+			(justify left bottom mirror)
+		)
 	)
 	(segment
 		(start 140.286816 103.498082)

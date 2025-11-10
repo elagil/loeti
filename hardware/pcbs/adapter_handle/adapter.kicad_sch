@@ -5,9 +5,9 @@
 	(uuid "95e8c498-3a26-4530-acb0-521a20a9800f")
 	(paper "A4")
 	(title_block
-		(title "MiniXLR adapter")
-		(date "2025-08-18")
-		(rev "6c")
+		(title "MiniXLR adapter (handle)")
+		(date "2025-11-10")
+		(rev "7a")
 		(company "elagil")
 	)
 	(lib_symbols
@@ -607,15 +607,18 @@
 		)
 		(uuid "cf8ad6a1-aae7-4387-bca9-6ee539aa8ecb")
 	)
-	(label "GND"
+	(label "BLUE"
 		(at 153.67 97.79 0)
 		(effects
 			(font
 				(size 1.524 1.524)
+				(thickness 0.3048)
+				(bold yes)
+				(color 0 0 255 1)
 			)
 			(justify left bottom)
 		)
-		(uuid "175c2fde-ed1b-4cda-b082-9ad32405ae1d")
+		(uuid "02caee2f-f38d-49fa-bb67-dae4b4d6236d")
 	)
 	(label "DET"
 		(at 153.67 95.25 0)
