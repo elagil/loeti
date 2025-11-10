@@ -3440,7 +3440,7 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "MCU_ST_STM32G4:STM32G431CBTx"
+		(symbol "MCU_ST_STM32G4:STM32G491CCTx"
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -3453,7 +3453,7 @@
 					(justify left)
 				)
 			)
-			(property "Value" "STM32G431CBTx"
+			(property "Value" "STM32G491CCTx"
 				(at 7.62 39.37 0)
 				(effects
 					(font
@@ -3472,7 +3472,7 @@
 					(hide yes)
 				)
 			)
-			(property "Datasheet" "https://www.st.com/resource/en/datasheet/stm32g431cb.pdf"
+			(property "Datasheet" "https://www.st.com/resource/en/datasheet/stm32g491cc.pdf"
 				(at 0 0 0)
 				(effects
 					(font
@@ -3481,7 +3481,7 @@
 					(hide yes)
 				)
 			)
-			(property "Description" "STMicroelectronics Arm Cortex-M4 MCU, 128KB flash, 32KB RAM, 170 MHz, 1.71-3.6V, 38 GPIO, LQFP48"
+			(property "Description" "STMicroelectronics Arm Cortex-M4 MCU, 256KB flash, 112KB RAM, 170 MHz, 1.71-3.6V, 38 GPIO, LQFP48"
 				(at 0 0 0)
 				(effects
 					(font
@@ -3508,7 +3508,7 @@
 					(hide yes)
 				)
 			)
-			(symbol "STM32G431CBTx_0_1"
+			(symbol "STM32G491CCTx_0_1"
 				(rectangle
 					(start -15.24 -38.1)
 					(end 15.24 38.1)
@@ -3521,7 +3521,7 @@
 					)
 				)
 			)
-			(symbol "STM32G431CBTx_1_1"
+			(symbol "STM32G491CCTx_1_1"
 				(pin input line
 					(at -17.78 33.02 0)
 					(length 2.54)
@@ -3692,11 +3692,13 @@
 						)
 					)
 					(alternate "ADC1_IN15" bidirectional line)
+					(alternate "ADC3_IN12" bidirectional line)
 					(alternate "COMP4_INP" bidirectional line)
 					(alternate "OPAMP2_VINP" bidirectional line)
 					(alternate "OPAMP2_VINP_SEC" bidirectional line)
 					(alternate "OPAMP3_VINP" bidirectional line)
 					(alternate "OPAMP3_VINP_SEC" bidirectional line)
+					(alternate "QUADSPI1_BK1_IO1" bidirectional line)
 					(alternate "TIM1_CH2N" bidirectional line)
 					(alternate "TIM3_CH3" bidirectional line)
 					(alternate "TIM8_CH2N" bidirectional line)
@@ -3721,11 +3723,16 @@
 						)
 					)
 					(alternate "ADC1_IN12" bidirectional line)
+					(alternate "ADC3_IN1" bidirectional line)
 					(alternate "COMP1_INP" bidirectional line)
 					(alternate "COMP4_OUT" bidirectional line)
 					(alternate "LPUART1_DE" bidirectional line)
 					(alternate "LPUART1_RTS" bidirectional line)
 					(alternate "OPAMP3_VOUT" bidirectional line)
+					(alternate "OPAMP6_VINM" bidirectional line)
+					(alternate "OPAMP6_VINM1" bidirectional line)
+					(alternate "OPAMP6_VINM_SEC" bidirectional line)
+					(alternate "QUADSPI1_BK1_IO0" bidirectional line)
 					(alternate "TIM1_CH3N" bidirectional line)
 					(alternate "TIM3_CH4" bidirectional line)
 					(alternate "TIM8_CH3N" bidirectional line)
@@ -3748,13 +3755,16 @@
 						)
 					)
 					(alternate "ADC2_IN12" bidirectional line)
+					(alternate "ADC3_EXTI2" bidirectional line)
 					(alternate "COMP4_INM" bidirectional line)
 					(alternate "I2C3_SMBA" bidirectional line)
 					(alternate "LPTIM1_OUT" bidirectional line)
 					(alternate "OPAMP3_VINM" bidirectional line)
 					(alternate "OPAMP3_VINM0" bidirectional line)
 					(alternate "OPAMP3_VINM_SEC" bidirectional line)
+					(alternate "QUADSPI1_BK2_IO1" bidirectional line)
 					(alternate "RTC_OUT2" bidirectional line)
+					(alternate "TIM20_CH1" bidirectional line)
 				)
 				(pin bidirectional line
 					(at -17.78 -2.54 0)
@@ -3773,6 +3783,7 @@
 							)
 						)
 					)
+					(alternate "ADC3_EXTI3" bidirectional line)
 					(alternate "CRS_SYNC" bidirectional line)
 					(alternate "I2S3_CK" bidirectional line)
 					(alternate "SAI1_SCK_B" bidirectional line)
@@ -3830,6 +3841,7 @@
 							)
 						)
 					)
+					(alternate "FDCAN2_RX" bidirectional line)
 					(alternate "I2C1_SMBA" bidirectional line)
 					(alternate "I2C3_SDA" bidirectional line)
 					(alternate "I2S3_SD" bidirectional line)
@@ -3861,6 +3873,7 @@
 						)
 					)
 					(alternate "COMP4_OUT" bidirectional line)
+					(alternate "FDCAN2_TX" bidirectional line)
 					(alternate "LPTIM1_ETR" bidirectional line)
 					(alternate "SAI1_FS_B" bidirectional line)
 					(alternate "TIM16_CH1N" bidirectional line)
@@ -3980,6 +3993,7 @@
 					(alternate "OPAMP3_VINM" bidirectional line)
 					(alternate "OPAMP3_VINM1" bidirectional line)
 					(alternate "OPAMP3_VINM_SEC" bidirectional line)
+					(alternate "QUADSPI1_CLK" bidirectional line)
 					(alternate "SAI1_SCK_A" bidirectional line)
 					(alternate "TIM1_BKIN" bidirectional line)
 					(alternate "TIM2_CH3" bidirectional line)
@@ -4007,6 +4021,8 @@
 					(alternate "ADC2_EXTI11" bidirectional line)
 					(alternate "ADC2_IN14" bidirectional line)
 					(alternate "LPUART1_TX" bidirectional line)
+					(alternate "OPAMP6_VOUT" bidirectional line)
+					(alternate "QUADSPI1_BK1_NCS" bidirectional line)
 					(alternate "TIM2_CH4" bidirectional line)
 					(alternate "USART3_RX" bidirectional line)
 				)
@@ -4028,10 +4044,13 @@
 						)
 					)
 					(alternate "ADC1_IN11" bidirectional line)
+					(alternate "FDCAN2_RX" bidirectional line)
 					(alternate "I2C2_SMBA" bidirectional line)
 					(alternate "I2S2_WS" bidirectional line)
 					(alternate "LPUART1_DE" bidirectional line)
 					(alternate "LPUART1_RTS" bidirectional line)
+					(alternate "OPAMP6_VINP" bidirectional line)
+					(alternate "OPAMP6_VINP_SEC" bidirectional line)
 					(alternate "SPI2_NSS" bidirectional line)
 					(alternate "TIM1_BKIN" bidirectional line)
 					(alternate "USART3_CK" bidirectional line)
@@ -4053,10 +4072,14 @@
 							)
 						)
 					)
+					(alternate "ADC3_IN5" bidirectional line)
+					(alternate "FDCAN2_TX" bidirectional line)
 					(alternate "I2S2_CK" bidirectional line)
 					(alternate "LPUART1_CTS" bidirectional line)
 					(alternate "OPAMP3_VINP" bidirectional line)
 					(alternate "OPAMP3_VINP_SEC" bidirectional line)
+					(alternate "OPAMP6_VINP" bidirectional line)
+					(alternate "OPAMP6_VINP_SEC" bidirectional line)
 					(alternate "SPI2_SCK" bidirectional line)
 					(alternate "TIM1_CH1N" bidirectional line)
 					(alternate "USART3_CTS" bidirectional line)
@@ -4336,6 +4359,9 @@
 					(alternate "OPAMP1_VINP_SEC" bidirectional line)
 					(alternate "OPAMP3_VINP" bidirectional line)
 					(alternate "OPAMP3_VINP_SEC" bidirectional line)
+					(alternate "OPAMP6_VINM" bidirectional line)
+					(alternate "OPAMP6_VINM0" bidirectional line)
+					(alternate "OPAMP6_VINM_SEC" bidirectional line)
 					(alternate "RTC_REFIN" bidirectional line)
 					(alternate "TIM15_CH1N" bidirectional line)
 					(alternate "TIM2_CH2" bidirectional line)
@@ -4360,10 +4386,12 @@
 						)
 					)
 					(alternate "ADC1_IN3" bidirectional line)
+					(alternate "ADC3_EXTI2" bidirectional line)
 					(alternate "COMP2_INM" bidirectional line)
 					(alternate "COMP2_OUT" bidirectional line)
 					(alternate "LPUART1_TX" bidirectional line)
 					(alternate "OPAMP1_VOUT" bidirectional line)
+					(alternate "QUADSPI1_BK1_NCS" bidirectional line)
 					(alternate "RCC_LSCO" bidirectional line)
 					(alternate "SYS_WKUP4" bidirectional line)
 					(alternate "TIM15_CH1" bidirectional line)
@@ -4390,6 +4418,7 @@
 						)
 					)
 					(alternate "ADC1_IN4" bidirectional line)
+					(alternate "ADC3_EXTI3" bidirectional line)
 					(alternate "COMP2_INP" bidirectional line)
 					(alternate "LPUART1_RX" bidirectional line)
 					(alternate "OPAMP1_VINM" bidirectional line)
@@ -4397,6 +4426,7 @@
 					(alternate "OPAMP1_VINM_SEC" bidirectional line)
 					(alternate "OPAMP1_VINP" bidirectional line)
 					(alternate "OPAMP1_VINP_SEC" bidirectional line)
+					(alternate "QUADSPI1_CLK" bidirectional line)
 					(alternate "SAI1_CK1" bidirectional line)
 					(alternate "SAI1_MCLK_A" bidirectional line)
 					(alternate "TIM15_CH2" bidirectional line)
@@ -4480,6 +4510,7 @@
 					(alternate "COMP1_OUT" bidirectional line)
 					(alternate "LPUART1_CTS" bidirectional line)
 					(alternate "OPAMP2_VOUT" bidirectional line)
+					(alternate "QUADSPI1_BK1_IO3" bidirectional line)
 					(alternate "SPI1_MISO" bidirectional line)
 					(alternate "TIM16_CH1" bidirectional line)
 					(alternate "TIM1_BKIN" bidirectional line)
@@ -4510,6 +4541,7 @@
 					(alternate "OPAMP1_VINP_SEC" bidirectional line)
 					(alternate "OPAMP2_VINP" bidirectional line)
 					(alternate "OPAMP2_VINP_SEC" bidirectional line)
+					(alternate "QUADSPI1_BK1_IO2" bidirectional line)
 					(alternate "SPI1_MOSI" bidirectional line)
 					(alternate "TIM17_CH1" bidirectional line)
 					(alternate "TIM1_CH1N" bidirectional line)
@@ -4740,6 +4772,7 @@
 					(alternate "SPI3_NSS" bidirectional line)
 					(alternate "SYS_JTDI" bidirectional line)
 					(alternate "TIM1_BKIN" bidirectional line)
+					(alternate "TIM20_ETR" bidirectional line)
 					(alternate "TIM2_CH1" bidirectional line)
 					(alternate "TIM2_ETR" bidirectional line)
 					(alternate "TIM8_CH1" bidirectional line)
@@ -22274,13 +22307,13 @@
 			)
 		)
 		(pin "4"
-			(uuid "c823f06e-e359-414b-a0ef-6e1d75f421ac")
+			(uuid "c823f06e-e359-414b-a0ef-6e1d75f421ad")
 		)
 		(pin "7"
 			(uuid "ff5e0ddd-c0d5-463e-a571-93c1b20e84f2")
 		)
 		(pin "8"
-			(uuid "cb9bdd63-bc36-4de3-8cc5-e982a0169fed")
+			(uuid "cb9bdd63-bc36-4de3-8cc5-e982a0169fee")
 		)
 		(pin "6"
 			(uuid "6b47588d-f8ad-4de5-aa29-d6524418e8a7")
@@ -22289,13 +22322,13 @@
 			(uuid "c1b4b39f-d6d7-428e-a472-15038b88e8e6")
 		)
 		(pin "1"
-			(uuid "6d905ce8-bd5d-4513-82e0-d49dafd416d2")
+			(uuid "6d905ce8-bd5d-4513-82e0-d49dafd416d3")
 		)
 		(pin "2"
-			(uuid "66dd248d-dc51-494a-a319-4d73955cbbda")
+			(uuid "66dd248d-dc51-494a-a319-4d73955cbbdb")
 		)
 		(pin "3"
-			(uuid "f579daf0-f73a-461b-8865-a34ce83808fe")
+			(uuid "f579daf0-f73a-461b-8865-a34ce83808ff")
 		)
 		(instances
 			(project ""
@@ -31536,7 +31569,7 @@
 		)
 	)
 	(symbol
-		(lib_id "MCU_ST_STM32G4:STM32G431CBTx")
+		(lib_id "MCU_ST_STM32G4:STM32G491CCTx")
 		(at 200.66 64.77 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -31563,7 +31596,7 @@
 			)
 		)
 		(property "Footprint" "Package_QFP:LQFP-48_7x7mm_P0.5mm"
-			(at 187.96 100.33 0)
+			(at 185.42 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -31572,7 +31605,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://www.st.com/resource/en/datasheet/stm32g431cb.pdf"
+		(property "Datasheet" "https://www.st.com/resource/en/datasheet/stm32g491cc.pdf"
 			(at 200.66 64.77 0)
 			(effects
 				(font
@@ -31581,7 +31614,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "STMicroelectronics Arm Cortex-M4 MCU, 128KB flash, 32KB RAM, 170 MHz, 1.71-3.6V, 38 GPIO, LQFP48"
+		(property "Description" "STMicroelectronics Arm Cortex-M4 MCU, 256KB flash, 112KB RAM, 170 MHz, 1.71-3.6V, 38 GPIO, LQFP48"
 			(at 200.66 64.77 0)
 			(effects
 				(font
@@ -34903,28 +34936,28 @@
 			)
 		)
 		(pin "4"
-			(uuid "c823f06e-e359-414b-a0ef-6e1d75f421ac")
+			(uuid "c823f06e-e359-414b-a0ef-6e1d75f421ae")
 		)
 		(pin "7"
-			(uuid "ff5e0ddd-c0d5-463e-a571-93c1b20e84f2")
+			(uuid "ff5e0ddd-c0d5-463e-a571-93c1b20e84f3")
 		)
 		(pin "8"
-			(uuid "cb9bdd63-bc36-4de3-8cc5-e982a0169fed")
+			(uuid "cb9bdd63-bc36-4de3-8cc5-e982a0169fef")
 		)
 		(pin "6"
-			(uuid "6b47588d-f8ad-4de5-aa29-d6524418e8a7")
+			(uuid "6b47588d-f8ad-4de5-aa29-d6524418e8a8")
 		)
 		(pin "5"
-			(uuid "c1b4b39f-d6d7-428e-a472-15038b88e8e6")
+			(uuid "c1b4b39f-d6d7-428e-a472-15038b88e8e7")
 		)
 		(pin "1"
-			(uuid "6d905ce8-bd5d-4513-82e0-d49dafd416d2")
+			(uuid "6d905ce8-bd5d-4513-82e0-d49dafd416d4")
 		)
 		(pin "2"
-			(uuid "66dd248d-dc51-494a-a319-4d73955cbbda")
+			(uuid "66dd248d-dc51-494a-a319-4d73955cbbdc")
 		)
 		(pin "3"
-			(uuid "f579daf0-f73a-461b-8865-a34ce83808fe")
+			(uuid "f579daf0-f73a-461b-8865-a34ce8380900")
 		)
 		(instances
 			(project ""
