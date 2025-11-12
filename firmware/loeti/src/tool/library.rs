@@ -89,16 +89,15 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         name: "JBC T210",
         max_power_w: 60.0,
         heater_resistance_ohm: 2.0,
-        detect_ratio: 0.31973, // 4.7k
+        detect_ratio: 0.0, //0.31973, // 4.7k
         temperature_calibration: TemperatureCalibration {
-            // FIXME: Values are not tested.
-            quadratic_c_per_vv: -69720.5,
-            linear_c_per_v: 37855.0,
-            constant_c: 30.614,
+            quadratic_c_per_vv: -7423.7,
+            linear_c_per_v: 90912.0,
+            constant_c: 51.865,
         },
 
-        p: 0.025,
-        i: 0.005,
+        p: 0.01,
+        i: 0.1,
         d: 0.0,
     },
     {
