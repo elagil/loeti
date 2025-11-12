@@ -163,6 +163,11 @@ async fn measure_tool(
         / ElectricPotential::new::<electric_potential::volt>(3.3);
     let temperature_potential = adc_value_to_potential(adc_buffer[1]);
 
+    info!(
+        "temp: {}",
+        temperature_potential.get::<electric_potential::volt>()
+    );
+
     if detect_ratio > detect_ratio_threshold {
         Err(Error::NoTool)
     } else if temperature_potential > temperature_potential_threshold {
