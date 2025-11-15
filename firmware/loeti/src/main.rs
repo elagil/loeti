@@ -5,15 +5,10 @@ use defmt::{info, unwrap};
 use embassy_executor::Spawner;
 use embassy_stm32::exti::ExtiInput;
 use embassy_stm32::gpio::{Input, Level, Output, OutputType, Pull, Speed};
-use embassy_stm32::time::Hertz;
+
 use embassy_stm32::{Config, bind_interrupts, i2c, peripherals, usb};
 use embassy_time::{Duration, WithTimeout};
-use loeti::power::{AssignedResources, UcpdResources};
-use loeti::tool::{AdcResources, ToolResources};
-use loeti::ui::{self, encoder::RotaryEncoderResources};
-use loeti::{NEGOTIATED_SUPPLY_SIG, PERSISTENT_MUTEX};
-use loeti::{OPERATIONAL_STATE_MUTEX, eeprom, power};
-use loeti::{split_resources, tool, ui::display};
+use loeti::{split_resources, tool};
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
@@ -55,18 +50,43 @@ async fn main(spawner: Spawner) {
 
     // Launch USB PD power negotiation
     {
+        use loeti::power;
+        use loeti::power::{AssignedResources, UcpdResources};
+
         let resources = split_resources!(p);
         let ndb_pin = Output::new(p.PB5, Level::Low, Speed::Low);
-        spawner.spawn(unwrap!(power::ucpd_task(resources.ucpd, ndb_pin)));
+        unwrap!(spawner.spawn(power::ucpd_task(resources.ucpd, ndb_pin)));
     }
 
-    let negotiated_supply = NEGOTIATED_SUPPLY_SIG
+    let negotiated_supply = loeti::NEGOTIATED_SUPPLY_SIG
         .wait()
         .with_timeout(Duration::from_secs(3))
         .await;
 
+    // USB/RPC INIT
+    #[cfg(feature = "comm")]
+    {
+        use loeti::comm::{self, MAX_PACKET_SIZE, OUT_QUEUE, STACK, STORAGE, kit};
+        use static_cell::ConstStaticCell;
+
+        let driver = usb::Driver::new(p.USB, Irqs, p.PA12, p.PA11);
+        let config = comm::usb_config("123");
+        let (device, tx_impl, ep_out) = STORAGE.init_ergot(driver, config);
+        let rxvr: comm::RxWorker = kit::RxWorker::new(&STACK, ep_out);
+
+        static RX_BUF: ConstStaticCell<[u8; MAX_PACKET_SIZE]> =
+            ConstStaticCell::new([0u8; MAX_PACKET_SIZE]);
+
+        spawner.must_spawn(comm::usb_task(device));
+        spawner.must_spawn(comm::pingserver());
+        spawner.must_spawn(comm::run_tx(tx_impl, OUT_QUEUE.framed_consumer()));
+        spawner.must_spawn(comm::run_rx(rxvr, RX_BUF.take()));
+    }
+
     // Launch EEPROM config storage
     {
+        use loeti::eeprom;
+
         let i2c = i2c::I2c::new(
             p.I2C1,
             p.PA15,
@@ -89,21 +109,23 @@ async fn main(spawner: Spawner) {
         // Transfer persistent information to operational state.
         // FIXME: Make a method on the operational state itself?
         let power_on_heater_off =
-            PERSISTENT_MUTEX.lock(|persistent| persistent.borrow().off_on_power);
-        OPERATIONAL_STATE_MUTEX.lock(|operational| {
+            loeti::PERSISTENT_MUTEX.lock(|persistent| persistent.borrow().off_on_power);
+        loeti::OPERATIONAL_STATE_MUTEX.lock(|operational| {
             operational.borrow_mut().tool_is_off = power_on_heater_off;
         });
 
-        spawner.spawn(unwrap!(eeprom::eeprom_task(eeprom)));
+        unwrap!(spawner.spawn(eeprom::eeprom_task(eeprom)));
     }
 
     // Launch display
+    #[cfg(feature = "display")]
     {
         use embassy_stm32::spi;
+        use loeti::ui::display;
 
-        let display_resources = {
+        let _display_resources = {
             let mut spi_config = spi::Config::default();
-            spi_config.frequency = Hertz(10_000_000);
+            spi_config.frequency = embassy_stm32::time::Hertz(10_000_000);
 
             let spi = spi::Spi::new_txonly(p.SPI2, p.PB13, p.PB15, p.DMA2_CH1, spi_config);
 
@@ -114,20 +136,20 @@ async fn main(spawner: Spawner) {
                 pin_cs: Output::new(p.PB12, Level::Low, Speed::High),
             }
         };
-        spawner.spawn(unwrap!(display::display_task(display_resources)));
+        unwrap!(spawner.spawn(display::display_task(_display_resources)));
     }
 
     // Launch UI with rotary encoder control
     {
-        let rotary_encoder_resources = RotaryEncoderResources {
+        use loeti::ui;
+
+        let rotary_encoder_resources = ui::encoder::RotaryEncoderResources {
             pin_sw: Input::new(p.PB0, Pull::None),
             pin_a: Input::new(p.PB1, Pull::None),
             pin_b: Input::new(p.PB2, Pull::None),
         };
 
-        spawner.spawn(unwrap!(ui::encoder::rotary_encoder_task(
-            rotary_encoder_resources
-        )));
+        unwrap!(spawner.spawn(ui::encoder::rotary_encoder_task(rotary_encoder_resources)));
     }
 
     // Launch iron control
@@ -138,6 +160,7 @@ async fn main(spawner: Spawner) {
         use embassy_stm32::time::khz;
         use embassy_stm32::timer::simple_pwm::PwmPin;
         use embassy_stm32::timer::simple_pwm::SimplePwm;
+        use loeti::tool::{AdcResources, ToolResources};
 
         VREFBUF.csr().write(|w| {
             w.set_envr(true);
@@ -177,6 +200,6 @@ async fn main(spawner: Spawner) {
             pin_sleep: Input::new(p.PB10, Pull::Up),
         };
 
-        spawner.spawn(unwrap!(tool::tool_task(tool_resources, negotiated_supply)));
+        unwrap!(spawner.spawn(tool::tool_task(tool_resources, negotiated_supply)));
     }
 }

@@ -12,6 +12,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::tool::{Error as ToolError, ToolState};
 
+#[cfg(feature = "comm")]
+pub mod comm;
 pub mod eeprom;
 pub mod power;
 pub mod tool;
