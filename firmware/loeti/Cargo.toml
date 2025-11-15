@@ -82,18 +82,18 @@ board_v7 = []
 [profile.dev]
 codegen-units = 1
 debug = 2
-debug-assertions = true # <-
+debug-assertions = true
 incremental = false
 lto = true
-opt-level = 'z'         # <-
-overflow-checks = true  # <-
+opt-level = 'z'
+overflow-checks = true
 
 # cargo build/run --release
 [profile.release]
 codegen-units = 1
 debug = 2
-debug-assertions = false # <-
+debug-assertions = false
 incremental = false
 lto = true
-opt-level = 'z'          # <-
-overflow-checks = false  # <-
+opt-level = 'z'
+overflow-checks = false

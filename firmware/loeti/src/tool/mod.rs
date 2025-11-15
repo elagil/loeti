@@ -631,6 +631,21 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
         tool.detect_and_calculate_temperature(tool_measurement)?;
         display_current_temperature(tool.temperature_deg_c);
 
+        #[cfg(feature = "comm")]
+        {
+            let status = loeti_protocol::Status {
+                time_ms: Instant::now().as_millis(),
+                control_state: loeti_protocol::ControlState::Tool(match tool_state {
+                    ToolState::Active => loeti_protocol::ToolState::Active,
+                    ToolState::InStand(instant) => {
+                        loeti_protocol::ToolState::InStand(instant.as_millis())
+                    }
+                    ToolState::Sleeping => loeti_protocol::ToolState::Sleeping,
+                }),
+            };
+            comm::send_status(&status);
+        }
+
         if operational_state.tool_is_off || matches!(tool_state, ToolState::Sleeping) {
             let mut power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
             power_measurement.compensate(&idle_power_measurement);
@@ -639,12 +654,11 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
             // Skip the rest of the control loop.
             Timer::after_millis(LOOP_PERIOD_MS).await;
 
-            // Communicate idle measurement to a host machine.
             #[cfg(feature = "comm")]
             comm::send_measurement(&loeti_protocol::Measurement {
                 time_ms: Instant::now().as_millis(),
                 temperature_deg_c: tool.temperature_deg_c,
-                set_temperature_deg_c: set_temperature_deg_c,
+                set_temperature_deg_c,
                 ..Default::default()
             });
             continue;
@@ -652,7 +666,6 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
 
         let _measurement = tool.run_temperature_control(set_temperature_deg_c.unwrap())?;
 
-        // Communicate active measurement to a host machine.
         #[cfg(feature = "comm")]
         comm::send_measurement(&_measurement);
 
@@ -721,6 +734,20 @@ pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u3
         let result = control(&mut tool_resources, supply).await;
 
         if let Err(error) = result {
+            #[cfg(feature = "comm")]
+            {
+                let status = loeti_protocol::Status {
+                    time_ms: Instant::now().as_millis(),
+                    control_state: match error {
+                        Error::NoTool => loeti_protocol::ControlState::NoTool,
+                        Error::NoTip => loeti_protocol::ControlState::NoTip,
+                        Error::UnknownTool => loeti_protocol::ControlState::UnknownTool,
+                        Error::ToolMismatch => loeti_protocol::ControlState::ToolMismatch,
+                    },
+                };
+                comm::send_status(&status);
+            }
+
             let sleep_on_error = PERSISTENT_MUTEX.lock(|x| x.borrow().off_on_change);
 
             OPERATIONAL_STATE_MUTEX.lock(|x| {
