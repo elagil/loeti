@@ -1,19 +1,22 @@
-export PROJECT_DIR := "firmware/loeti"
+export FIRMWARE_DIR := "firmware/loeti"
+export APP_DIR := "app"
 
 style: format lint
 
 format:
-    cd $PROJECT_DIR && \
+    cd $FIRMWARE_DIR && \
+    cargo +nightly fmt --all
+    cd $APP_DIR && \
     cargo +nightly fmt --all
 
 lint:
-    cd $PROJECT_DIR && \
+    cd $FIRMWARE_DIR && \
+    cargo clippy -- -D warnings
+    cd $APP_DIR && \
     cargo clippy -- -D warnings
 
 build:
-    cd $PROJECT_DIR && \
+    cd $FIRMWARE_DIR && \
     cargo build --release
-
-run:
-    cd $PROJECT_DIR && \
-    cargo run --release
+    cd $APP_DIR && \
+    cargo build

@@ -1,0 +1,16 @@
+[package]
+name = "loeti-app"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+loeti-protocol = { path = "../protocol" }
+serde = "1.0.219"
+postcard-schema = "0.2.5"
+ergot = { version = "0.12.0", features = ["std", "nusb-v0_1"] }
+mutex = { version = "1.0.2", features = ["std"] }
+tokio = { version = "1.45.1", features = ["full"] }
+env_logger = "0.11.8"
+log = "0.4.28"
+egui_plot = "0.34.0"
+eframe = "0.33.2"

@@ -96,7 +96,7 @@ pub const TOOLS: &[ToolProperties] = unique_items![
             constant_c: 51.865,
         },
 
-        p: 0.01,
+        p: 0.02,
         i: 0.1,
         d: 0.0,
     },
@@ -112,7 +112,7 @@ pub const TOOLS: &[ToolProperties] = unique_items![
             constant_c: 30.614,
         },
 
-        p: 0.125,
+        p: 0.2,
         i: 1.0,
         d: 0.0,
     },

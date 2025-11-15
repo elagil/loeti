@@ -31,6 +31,8 @@ mod library;
 use library::{TOOLS, ToolProperties};
 use uom::ConstZero;
 
+#[cfg(feature = "comm")]
+use crate::comm;
 use crate::ui::display::{display_current_power, display_current_temperature, display_power_limit};
 use crate::{AutoSleep, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX};
 
@@ -162,11 +164,6 @@ async fn measure_tool(
     let detect_ratio = adc_value_to_potential(adc_buffer[0])
         / ElectricPotential::new::<electric_potential::volt>(3.3);
     let temperature_potential = adc_value_to_potential(adc_buffer[1]);
-
-    info!(
-        "temp: {}",
-        temperature_potential.get::<electric_potential::volt>()
-    );
 
     if detect_ratio > detect_ratio_threshold {
         Err(Error::NoTool)
@@ -446,7 +443,10 @@ impl Tool {
     }
 
     /// Runs a temperature control step.
-    fn run_temperature_control(&mut self, set_temperature_deg_c: f32) -> Result<(), Error> {
+    fn run_temperature_control(
+        &mut self,
+        set_temperature_deg_c: f32,
+    ) -> Result<loeti_protocol::Measurement, Error> {
         let current_limit_a = self.current_limit_a();
         self.temperature_pid.output_limit = current_limit_a;
 
@@ -491,7 +491,17 @@ impl Tool {
             current_setpoint_a
         );
 
-        Ok(())
+        Ok(loeti_protocol::Measurement {
+            time_ms: Instant::now().as_millis(),
+            pid: Some(loeti_protocol::Pid {
+                output: control_output.output,
+                p: control_output.p,
+                i: control_output.i,
+                d: control_output.d,
+            }),
+            set_temperature_deg_c: Some(set_temperature_deg_c),
+            temperature_deg_c: self.temperature_deg_c,
+        })
     }
 
     /// The ratio of the current setpoint and the maximum current that can be practically supplied.
@@ -628,10 +638,23 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
 
             // Skip the rest of the control loop.
             Timer::after_millis(LOOP_PERIOD_MS).await;
+
+            // Communicate idle measurement to a host machine.
+            #[cfg(feature = "comm")]
+            comm::send_measurement(&loeti_protocol::Measurement {
+                time_ms: Instant::now().as_millis(),
+                temperature_deg_c: tool.temperature_deg_c,
+                set_temperature_deg_c: set_temperature_deg_c,
+                ..Default::default()
+            });
             continue;
         }
 
-        tool.run_temperature_control(set_temperature_deg_c.unwrap())?;
+        let _measurement = tool.run_temperature_control(set_temperature_deg_c.unwrap())?;
+
+        // Communicate active measurement to a host machine.
+        #[cfg(feature = "comm")]
+        comm::send_measurement(&_measurement);
 
         let mut current_loop_ticker = Ticker::every(Duration::from_millis(CURRENT_LOOP_PERIOD_MS));
         for _ in 0..CURRENT_CONTROL_CYCLE_COUNT {
