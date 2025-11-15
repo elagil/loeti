@@ -1,7 +1,7 @@
 //! Application for plotting live PID outputs and temperatures.
 #![warn(missing_docs)]
 
-use eframe::egui::{self, Color32, FontId, RichText, Stroke, Vec2b};
+use eframe::egui::{self, Color32, FontId, RichText, Vec2b};
 use egui_plot::{Legend, Line, LineStyle, Plot, PlotPoint, PlotPoints};
 use ergot::{
     Address,
@@ -9,7 +9,7 @@ use ergot::{
     toolkits::nusb_v0_1::{RouterStack, find_new_devices, register_router_interface},
     well_known::ErgotPingEndpoint,
 };
-use loeti_protocol::{Measurement, MeasurementTopic};
+use loeti_protocol::{ControlState, Measurement, MeasurementTopic, Status, StatusTopic, ToolState};
 use log::{info, warn};
 use tokio::time::{interval, sleep, timeout};
 
@@ -40,6 +40,7 @@ struct DataManager {
     ds: Vec<PlotPoint>,
     temperatures_deg_c: Vec<PlotPoint>,
     set_temperatures_deg_c: Vec<PlotPoint>,
+    status: Status,
 }
 
 impl DataManager {
@@ -52,6 +53,7 @@ impl DataManager {
             ds: Vec::new(),
             temperatures_deg_c: Vec::new(),
             set_temperatures_deg_c: Vec::new(),
+            status: Default::default(),
         }
     }
 
@@ -61,6 +63,10 @@ impl DataManager {
 
     fn temperature_deg_c(&self) -> Option<f64> {
         self.temperatures_deg_c.last().map(|v| v.y)
+    }
+
+    fn update_status(&mut self, status: Status) {
+        self.status = status
     }
 
     fn push(&mut self, measurement: &Measurement) {
@@ -120,22 +126,31 @@ impl DataManager {
 /// The application that plots PID and temperature data.
 struct PlotApp {
     data: DataManager,
-    rcvr: BoxedReceiverHandle<MeasurementTopic, crate::RouterStack>,
+    measurement_receiver: BoxedReceiverHandle<MeasurementTopic, crate::RouterStack>,
+    status_receiver: BoxedReceiverHandle<StatusTopic, crate::RouterStack>,
 }
 
 impl PlotApp {
     /// Create a new plot application.
     fn new(_cc: &eframe::CreationContext<'_>, stack: crate::RouterStack) -> Self {
-        let rcvr = Box::pin(
+        let measurement_receiver = Box::pin(
             stack
                 .topics()
                 .heap_bounded_receiver::<MeasurementTopic>(128, None),
         );
-        let rcvr = rcvr.subscribe_boxed();
+        let measurement_receiver = measurement_receiver.subscribe_boxed();
+
+        let status_receiver = Box::pin(
+            stack
+                .topics()
+                .heap_bounded_receiver::<StatusTopic>(128, None),
+        );
+        let status_receiver = status_receiver.subscribe_boxed();
 
         Self {
             data: DataManager::new(),
-            rcvr,
+            measurement_receiver,
+            status_receiver,
         }
     }
 }
@@ -147,12 +162,33 @@ impl PlotApp {
             ui.add_space(5.0);
 
             ui.horizontal(|ui| {
+                let status_text = match &self.data.status.control_state {
+                    ControlState::NoTool => "No tool".to_string(),
+                    ControlState::NoTip => "No tip".to_string(),
+                    ControlState::UnknownTool => "Unknown tool".to_string(),
+                    ControlState::Tool(state) => match state {
+                        ToolState::Active => "Tool detected".to_string(),
+                        ToolState::Sleeping => "Sleep".to_string(),
+                        ToolState::InStand(since) => format!(
+                            "In stand for {:.0} s",
+                            (self.data.status.time_ms - since) as f64 / 1000.0
+                        ),
+                    },
+                    ControlState::ToolMismatch => "Tool mismatch".to_string(),
+                };
+
+                ui.label(RichText::new(status_text).color(Color32::LIGHT_GREEN));
+
+                ui.separator();
+
                 ui.add(
                     egui::Slider::new(&mut self.data.plot_duration_s, 10.0..=3600.0)
                         .logarithmic(true)
                         .text("Duration to plot")
                         .suffix(" s"),
                 );
+
+                ui.separator();
 
                 if ui.button("Clear").clicked() {
                     self.data = DataManager::new();
@@ -171,7 +207,7 @@ impl PlotApp {
                     self.data.temperature_deg_c().unwrap_or_default()
                 ))
                 .font(FontId::proportional(40.0))
-                .color(Color32::LIGHT_RED),
+                .color(Color32::LIGHT_GREEN),
             );
 
             ui.add_space(5.0);
@@ -180,13 +216,17 @@ impl PlotApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             if let Some(slices) = self.data.get() {
                 let temperature: Line<'_> =
-                    Line::new("Current", PlotPoints::from(slices.temperatures_deg_c));
+                    Line::new("Current", PlotPoints::from(slices.temperatures_deg_c))
+                        .width(3.0)
+                        .color(Color32::LIGHT_GREEN);
                 let set_temperature =
                     Line::new("Setpoint", PlotPoints::from(slices.set_temperatures_deg_c))
-                        .style(LineStyle::Dashed { length: 10.0 });
+                        .style(LineStyle::Dashed { length: 10.0 })
+                        .color(Color32::GRAY);
 
                 let control_output = Line::new("Output", PlotPoints::from(slices.outputs))
-                    .stroke(Stroke::new(3.0, Color32::LIGHT_GRAY));
+                    .width(3.0)
+                    .color(Color32::LIGHT_GRAY);
                 let control_p = Line::new("P", PlotPoints::from(slices.ps));
                 let control_i = Line::new("I", PlotPoints::from(slices.is));
                 let control_d = Line::new("D", PlotPoints::from(slices.ds));
@@ -198,13 +238,13 @@ impl PlotApp {
                 let link_cursor = Vec2b::new(true, false);
 
                 Plot::new("pid_plot")
-                    .view_aspect(2.0)
                     .legend(Legend::default())
                     .y_axis_label("PID control")
                     .height(plt_height)
                     .width(ui.available_width())
                     .link_axis(link_group_id, link_axis)
                     .link_cursor(link_group_id, link_cursor)
+                    .set_margin_fraction([0.0, 0.2].into())
                     .show(ui, |plot_ui| {
                         plot_ui.line(control_output);
                         plot_ui.line(control_p);
@@ -213,7 +253,6 @@ impl PlotApp {
                     });
 
                 Plot::new("temperature_plot")
-                    .view_aspect(2.0)
                     .legend(Legend::default())
                     .x_axis_label("Time / s")
                     .y_axis_label("Temperature / °C")
@@ -221,6 +260,7 @@ impl PlotApp {
                     .width(ui.available_width())
                     .link_axis(link_group_id, link_axis)
                     .link_cursor(link_group_id, link_cursor)
+                    .set_margin_fraction([0.0, 0.2].into())
                     .show(ui, |plot_ui| {
                         plot_ui.line(temperature);
                         plot_ui.line(set_temperature);
@@ -232,8 +272,12 @@ impl PlotApp {
 
 impl eframe::App for PlotApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if let Some(msg) = self.rcvr.try_recv() {
+        if let Some(msg) = self.measurement_receiver.try_recv() {
             self.data.push(&msg.t);
+        }
+
+        if let Some(msg) = self.status_receiver.try_recv() {
+            self.data.update_status(msg.t);
         }
 
         self.plot(ctx);
@@ -251,7 +295,6 @@ async fn main() {
     let stack: RouterStack = RouterStack::new();
 
     tokio::task::spawn(ping_all(stack.clone()));
-    tokio::task::spawn(read_measurement(stack.clone()));
     tokio::task::spawn(manage_connections(stack.clone()));
 
     let mut native_options = eframe::NativeOptions::default();
@@ -328,21 +371,5 @@ async fn ping_all(stack: RouterStack) {
                 portmap.remove(&net);
             }
         }
-    }
-}
-
-/// Read a measurement from the device.
-async fn read_measurement(stack: RouterStack) {
-    let rcvr = Box::pin(
-        stack
-            .topics()
-            .heap_bounded_receiver::<MeasurementTopic>(128, None),
-    );
-
-    let mut rcvr = rcvr.subscribe_boxed();
-
-    loop {
-        let msg = rcvr.recv().await;
-        info!("{:?}", msg.t);
     }
 }

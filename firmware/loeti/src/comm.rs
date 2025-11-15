@@ -52,6 +52,13 @@ pub fn send_measurement(measurement: &loeti_protocol::Measurement) {
         .broadcast::<loeti_protocol::MeasurementTopic>(measurement, None);
 }
 
+/// Send status info to the host.
+pub fn send_status(status: &loeti_protocol::Status) {
+    _ = crate::comm::STACK
+        .topics()
+        .broadcast::<loeti_protocol::StatusTopic>(status, None);
+}
+
 /// Handles the low level USB management
 #[embassy_executor::task]
 pub async fn usb_task(mut usb: embassy_usb::UsbDevice<'static, AppDriver>) {
