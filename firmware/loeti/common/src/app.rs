@@ -41,7 +41,7 @@ pub async fn app(spawner: Spawner) {
             source: PllSource::HSI,
             prediv: PllPreDiv::DIV4,
             mul: PllMul::MUL85,
-            divp: Some(PllPDiv::DIV20), // 17 MHz ADC clock
+            divp: Some(PllPDiv::DIV5), // 68 MHz ADC clock -> ~266 kHz after 256x oversampling
             divq: None,
             divr: Some(PllRDiv::DIV2), // 170 MHz system clock
         });
@@ -179,8 +179,8 @@ pub async fn app(spawner: Spawner) {
         });
 
         let mut adc = Adc::new(p.ADC1);
-        adc.set_oversampling_ratio(5); // 64x
-        adc.set_oversampling_shift(2); // Scale back to 16 bit
+        adc.set_oversampling_ratio(7); // 256x
+        adc.set_oversampling_shift(4); // Scale back to 16 bit
         adc.enable_regular_oversampling_mode(
             embassy_stm32::adc::vals::Rovsm::RESUMED,
             embassy_stm32::adc::vals::Trovs::AUTOMATIC,
