@@ -32,6 +32,9 @@ jobs:
       - name: Lint
         run: just lint
 
+      - name: Create release binaries
+        run: just release
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
