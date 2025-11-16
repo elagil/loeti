@@ -35,7 +35,9 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          path: firmware/loeti/target/thumbv7em-none-eabihf/release/loeti
+          path: |
+            firmware/loeti/board_v6/target/thumbv7em-none-eabihf/release/loeti_v6
+            firmware/loeti/board_v7/target/thumbv7em-none-eabihf/release/loeti_v7
 
   release:
     runs-on: ubuntu-latest
