@@ -15,6 +15,9 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@v3
 
+      - name: Install dependencies
+        run: cargo install cargo-binutils
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
