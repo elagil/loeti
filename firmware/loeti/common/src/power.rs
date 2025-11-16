@@ -1,11 +1,11 @@
 //! Handles USB PD negotiation.
 use crate::NEGOTIATED_SUPPLY_SIG;
-use assign_resources::assign_resources;
+use crate::app::UcpdResources;
 use defmt::{Format, debug, warn};
 use embassy_futures::select::{Either, select};
 use embassy_stm32::gpio::Output;
 use embassy_stm32::ucpd::{self, CcPhy, CcPull, CcSel, CcVState, PdPhy, Ucpd};
-use embassy_stm32::{Peri, bind_interrupts, peripherals};
+use embassy_stm32::{bind_interrupts, peripherals};
 use embassy_time::{Duration, Timer, with_timeout};
 use uom::si::{electric_current, electric_potential};
 use usbpd::protocol_layer::message::{pdo, request};
@@ -19,17 +19,6 @@ use {defmt_rtt as _, panic_probe as _};
 bind_interrupts!(struct Irqs {
     UCPD1 => ucpd::InterruptHandler<peripherals::UCPD1>;
 });
-
-assign_resources! {
-    #[allow(missing_docs)]
-    ucpd: UcpdResources {
-        ucpd: UCPD1,
-        pin_cc1: PB6,
-        pin_cc2: PB4,
-        rx_dma: DMA1_CH1,
-        tx_dma: DMA1_CH2,
-    }
-}
 
 #[derive(Debug, Format)]
 #[allow(clippy::missing_docs_in_private_items)]

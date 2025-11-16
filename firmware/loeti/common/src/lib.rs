@@ -12,16 +12,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::tool::{Error as ToolError, ToolState};
 
+pub mod app;
+
 #[cfg(feature = "comm")]
-pub mod comm;
-pub mod eeprom;
-pub mod power;
-pub mod tool;
-pub mod ui;
+pub(crate) mod comm;
+pub(crate) mod eeprom;
+pub(crate) mod power;
+pub(crate) mod tool;
+pub(crate) mod ui;
 
 /// Auto-sleep modes.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
-pub enum AutoSleep {
+pub(crate) enum AutoSleep {
     /// The tool goes to sleep after the specified number of seconds in the stand.
     AfterDurationS(u16),
     /// The tool never goes to sleep in the stand.
@@ -30,21 +32,21 @@ pub enum AutoSleep {
 
 /// Persistent storage data.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
-pub struct Persistent {
+pub(crate) struct Persistent {
     /// The max. set temperature if the tool is in its stand.
-    pub stand_temperature_deg_c: i16,
+    pub(crate) stand_temperature_deg_c: i16,
     /// The operational temperature set point in °C.
-    pub set_temperature_deg_c: i16,
+    pub(crate) set_temperature_deg_c: i16,
     /// Current margin to leave until max. supply current in mA.
-    pub current_margin_ma: u16,
+    pub(crate) current_margin_ma: u16,
     /// Auto-sleep behaviour when the tool is in the stand.
-    pub auto_sleep: AutoSleep,
+    pub(crate) auto_sleep: AutoSleep,
     /// If true, display is rotated 180°.
-    pub display_is_rotated: bool,
+    pub(crate) display_is_rotated: bool,
     /// If true, start the controller with heating switched off after power on.
-    pub off_on_power: bool,
+    pub(crate) off_on_power: bool,
     /// If true, switch off heating when the tip or iron was removed/changed.
-    pub off_on_change: bool,
+    pub(crate) off_on_change: bool,
 }
 
 impl Persistent {
@@ -64,31 +66,31 @@ impl Persistent {
 
 /// The state of the setup menu.
 #[derive(Debug, Format, Clone, Copy, Default)]
-pub struct MenuState {
+pub(crate) struct MenuState {
     /// The menu is currently open.
-    pub is_open: bool,
+    pub(crate) is_open: bool,
     /// An item was toggled and evaluation is pending.
-    pub toggle_pending: bool,
+    pub(crate) toggle_pending: bool,
 }
 
 /// The operational state of the soldering station (not persistent).
 #[derive(Debug, Format, Clone, Copy)]
-pub struct OperationalState {
+pub(crate) struct OperationalState {
     /// The state of the control menu.
-    pub menu_state: MenuState,
+    pub(crate) menu_state: MenuState,
     /// The tool's name, or a tool error.
-    pub tool: Result<&'static str, ToolError>,
+    pub(crate) tool: Result<&'static str, ToolError>,
     /// The state of the tool (e.g. active, in stand).
-    pub tool_state: Option<ToolState>,
+    pub(crate) tool_state: Option<ToolState>,
     /// If true, the tool is off (manual sleep).
-    pub tool_is_off: bool,
+    pub(crate) tool_is_off: bool,
     /// If true, the new set temperature was not confirmed yet.
-    pub set_temperature_is_pending: bool,
+    pub(crate) set_temperature_is_pending: bool,
 }
 
 impl OperationalState {
     /// Generate a default operational state.
-    pub const fn default() -> Self {
+    pub(crate) const fn default() -> Self {
         Self {
             menu_state: MenuState {
                 is_open: false,
@@ -103,15 +105,15 @@ impl OperationalState {
 }
 
 /// Signals a change in the negotiated supply (potential/mV, current/mA).
-pub static NEGOTIATED_SUPPLY_SIG: Signal<ThreadModeRawMutex, (u32, u32)> = Signal::new();
+pub(crate) static NEGOTIATED_SUPPLY_SIG: Signal<ThreadModeRawMutex, (u32, u32)> = Signal::new();
 
 /// Signals storage of persistent data.
 static STORE_PERSISTENT_SIG: Signal<ThreadModeRawMutex, ()> = Signal::new();
 
 /// Persistently stored data (on EEPROM).
-pub static PERSISTENT_MUTEX: Mutex<ThreadModeRawMutex, RefCell<Persistent>> =
+pub(crate) static PERSISTENT_MUTEX: Mutex<ThreadModeRawMutex, RefCell<Persistent>> =
     Mutex::new(RefCell::new(Persistent::default()));
 
 /// Operational state (not persistent).
-pub static OPERATIONAL_STATE_MUTEX: Mutex<ThreadModeRawMutex, RefCell<OperationalState>> =
+pub(crate) static OPERATIONAL_STATE_MUTEX: Mutex<ThreadModeRawMutex, RefCell<OperationalState>> =
     Mutex::new(RefCell::new(OperationalState::default()));

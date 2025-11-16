@@ -1,5 +1,4 @@
 //! Handles user inputs by means of a rotary encoder.
-use crc;
 use defmt::debug;
 use embassy_stm32::i2c::{self};
 use embassy_time::Timer;

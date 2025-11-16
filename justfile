@@ -1,4 +1,4 @@
-export FIRMWARE_DIR := "firmware/loeti"
+export FIRMWARE_DIR := "firmware/loeti/common"
 export APP_DIR := "app"
 
 style: format lint

@@ -8,7 +8,6 @@ license = "GPL-3.0"
 embassy-stm32 = { version = "0.4.0", features = [
     "defmt",
     "time-driver-any",
-    "stm32g431cb",
     "memory-x",
     "unstable-pac",
     "exti",
@@ -38,7 +37,7 @@ panic-probe = { version = "1.0.0", features = ["print-defmt"] }
 heapless = { version = "0.9", default-features = false }
 static_cell = "2"
 embedded-graphics = "0.8.1"
-ssd1306 = { path = "../ssd1306", features = ["async"] }
+ssd1306 = { path = "../../ssd1306", features = ["async"] }
 pid = "4.0.0"
 micromath = "2.1.0"
 
@@ -46,12 +45,12 @@ uom = { version = "0.36.0", default-features = false, features = ["si", "f32"] }
 rotary-encoder-embedded = "0.5"
 
 eeprom24x = "0.7.2"
-usbpd = { path = "../usbpd/usbpd", features = ["defmt"] }
-usbpd-traits = { path = "../usbpd/usbpd-traits", features = ["defmt"] }
+usbpd = { path = "../../usbpd/usbpd", features = ["defmt"] }
+usbpd-traits = { path = "../../usbpd/usbpd-traits", features = ["defmt"] }
 assign-resources = "0.5"
 profont = "0.7.0"
 embedded-hal-bus = { version = "0.3.0", features = ["async"] }
-embedded-menu = { path = "../embedded-menu" }
+embedded-menu = { path = "../../embedded-menu" }
 display-interface = "0.5.0"
 biquad = "0.4.2"
 crc = "3.3.0"
@@ -60,7 +59,7 @@ mutex = { version = "1.0.2", features = ["impl-unsafe-cortex-m-single-core"] }
 postcard = "1.1.1"
 postcard-schema = "0.2.5"
 serde = { version = "1.0.217", default-features = false, features = ["derive"] }
-loeti-protocol = { path = "../../protocol" }
+loeti-protocol = { path = "../../../protocol" }
 ergot = { version = "0.12.0", default-features = false, features = [
     "embassy-usb-v0_5",
     "defmt-v1",
@@ -71,12 +70,12 @@ bbq2 = { version = "0.4.1", default-features = false, features = [
 ] }
 
 [features]
-default = ["board_v7", "display"]
+default = ["board_v7"]
 
 display = []
 comm = []
-board_v6 = []
-board_v7 = []
+board_v6 = ["embassy-stm32/stm32g431cb"]
+board_v7 = ["embassy-stm32/stm32g491cc"]
 
 # cargo build/run
 [profile.dev]
