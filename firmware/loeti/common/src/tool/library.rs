@@ -112,8 +112,8 @@ pub const TOOLS: &[ToolProperties] = unique_items![
             constant_c: 30.614,
         },
 
-        p: 0.2,
-        i: 1.0,
+        p: 0.1,
+        i: 0.5,
         d: 0.0,
     },
 ];

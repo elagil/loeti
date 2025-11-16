@@ -1,6 +1,7 @@
 {
     "rust-analyzer.linkedProjects": [
-        "firmware/loeti/Cargo.toml",
+        "firmware/loeti/board_v6/Cargo.toml",
+        "firmware/loeti/common/Cargo.toml",
         "app/Cargo.toml",
     ]
 }

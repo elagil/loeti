@@ -1,0 +1,43 @@
+[package]
+edition = "2024"
+name = "board_v6"
+version = "1.0.0"
+license = "GPL-3.0"
+
+[dependencies]
+embassy-executor = { version = "0.9.1", features = [
+    "arch-cortex-m",
+    "executor-thread",
+    "defmt",
+] }
+cortex-m-rt = "0.7"
+
+loeti = { path = "../common", default-features = false, features = [
+    "board_v6",
+] }
+
+[features]
+default = ["display"]
+
+comm = ["loeti/comm"]
+display = ["loeti/display"]
+
+# cargo build/run
+[profile.dev]
+codegen-units = 1
+debug = 2
+debug-assertions = true
+incremental = false
+lto = true
+opt-level = 'z'
+overflow-checks = true
+
+# cargo build/run --release
+[profile.release]
+codegen-units = 1
+debug = 2
+debug-assertions = false
+incremental = false
+lto = true
+opt-level = 'z'
+overflow-checks = false
