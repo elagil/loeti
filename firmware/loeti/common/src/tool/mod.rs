@@ -39,8 +39,8 @@ use crate::{AutoSleep, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX};
 
 /// ADC max. value (16 bit).
 const ADC_MAX: f32 = 65535.0;
-/// ADC sample time, ~350 us.
-const ADC_SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES92_5;
+/// ADC sample time in cycles.
+const ADC_SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES247_5;
 /// The number of current control iterations per temperature control iteration.
 const CURRENT_CONTROL_CYCLE_COUNT: u64 = 5;
 /// The total loop period in ms (temperature loop).
@@ -584,7 +584,6 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
 
         let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
 
-        // Takes ~700 us.
         let tool_measurement = measure_tool(
             &mut tool_resources.adc_resources,
             detect_threshold_ratio,

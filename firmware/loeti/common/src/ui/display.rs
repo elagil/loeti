@@ -31,7 +31,7 @@ use crate::tool::{Error as ToolError, ToolState};
 use crate::ui::MENU_STEPS_SIG;
 use crate::{
     AutoSleep, OPERATIONAL_STATE_MUTEX, OperationalState, PERSISTENT_MUTEX, Persistent,
-    STORE_PERSISTENT_SIG,
+    STORE_PERSISTENT_SIG, dfu,
 };
 
 /// The inner display type (draw target).
@@ -404,6 +404,8 @@ enum MenuResult {
     OffOnPower(bool),
     /// Switch off after a tool/tip change occurs.
     OffOnChange(bool),
+    /// Go to DFU mode.
+    Dfu,
 }
 
 /// The selected current margin w.r.t. the supply's current limit in mA.
@@ -511,6 +513,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
     .add_item("Sleep / min", persistent.auto_sleep.into(), |v| {
         MenuResult::AutoSleep(v)
     })
+    .add_item("DFU mode", ">", |_| MenuResult::Dfu)
     .build();
 
     loop {
@@ -589,6 +592,7 @@ pub async fn display_task(mut display_resources: DisplayResources) {
                         PERSISTENT_MUTEX.lock(|x| x.borrow_mut().auto_sleep = v.into());
                         STORE_PERSISTENT_SIG.signal(());
                     }
+                    Some(MenuResult::Dfu) => unsafe { dfu::jump() },
                     _ => (),
                 };
             }

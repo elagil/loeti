@@ -24,6 +24,9 @@ impl TemperatureCalibration {
         // `GAIN` is the thermocouple amplifier gain.
         let tc_potential_v = tc_potential_v / GAIN;
 
+        // Enable for calibrating/fitting manually.
+        // defmt::info!("TC potential: {} V", tc_potential_v);
+
         self.quadratic_c_per_vv * tc_potential_v * tc_potential_v
             + self.linear_c_per_v * tc_potential_v
             + self.constant_c
@@ -89,11 +92,11 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         name: "JBC T210",
         max_power_w: 60.0,
         heater_resistance_ohm: 2.0,
-        detect_ratio: 0.0, //0.31973, // 4.7k
+        detect_ratio: 0.0, // 0 Ohm
         temperature_calibration: TemperatureCalibration {
-            quadratic_c_per_vv: -7423.7,
-            linear_c_per_v: 90912.0,
-            constant_c: 51.865,
+            quadratic_c_per_vv: -7.9586e6,
+            linear_c_per_v: 1.2239e5 ,
+            constant_c: 26.932
         },
 
         p: 0.02,
@@ -105,10 +108,10 @@ pub const TOOLS: &[ToolProperties] = unique_items![
         name: "JBC T245",
         max_power_w: 130.0,
         heater_resistance_ohm: 2.5,
-        detect_ratio: 0.5, // 10k
+        detect_ratio: 0.5, // 10 kOhm
         temperature_calibration: TemperatureCalibration {
-            quadratic_c_per_vv: -69720.5,
-            linear_c_per_v: 37855.0,
+            quadratic_c_per_vv: -6.972e4,
+            linear_c_per_v: 3.7855e4,
             constant_c: 30.614,
         },
 
