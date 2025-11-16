@@ -1,6 +1,6 @@
 [package]
 edition = "2024"
-name = "board_v6"
+name = "loeti_v6"
 version = "1.0.0"
 license = "GPL-3.0"
 
