@@ -16,6 +16,7 @@ pub mod app;
 
 #[cfg(feature = "comm")]
 pub(crate) mod comm;
+pub(crate) mod dfu;
 pub(crate) mod eeprom;
 pub(crate) mod power;
 pub(crate) mod tool;

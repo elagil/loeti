@@ -11,9 +11,17 @@ Supports irons with thermocouples as temperature probes, for example
 - [Hardware design](./hardware)
 - [Firmware](./firmware)
 
-## How to build
+## Updating firmware
 
-FIXME: Complete this section.
+On the device, either
+- hold the `BOOT`-button on the PCB and insert the USB cable into the data/debug port, or
+- go to the user menu (long-press encoder button), scroll down to `DFU mode`, and select.
+
+Once in DFU mode, flash a binary from the release artifacts. For example with
+
+```bash
+dfu-util -a 0 -s 0x08000000:leave -D <firmware_file_name>.bin
+```
 
 ## The finished product
 

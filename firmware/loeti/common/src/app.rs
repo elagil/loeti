@@ -41,7 +41,7 @@ pub async fn app(spawner: Spawner) {
             source: PllSource::HSI,
             prediv: PllPreDiv::DIV4,
             mul: PllMul::MUL85,
-            divp: Some(PllPDiv::DIV5), // 68 MHz ADC clock -> ~266 kHz after 256x oversampling
+            divp: Some(PllPDiv::DIV10), // 34 MHz ADC clock -> ~133 kHz after 256x oversampling
             divq: None,
             divr: Some(PllRDiv::DIV2), // 170 MHz system clock
         });

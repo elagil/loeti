@@ -19,6 +19,6 @@ lint:
 
 build:
     cd $FIRMWARE_DIR_COMMON && cargo build --release
-    cd $FIRMWARE_DIR_V6 && cargo build --release
-    cd $FIRMWARE_DIR_V7 && cargo build --release
+    cd $FIRMWARE_DIR_V6 && cargo build --release && cargo objcopy --release -- -O binary loeti_board_v6.bin
+    cd $FIRMWARE_DIR_V7 && cargo build --release && cargo objcopy --release -- -O binary loeti_board_v7.bin
     cd $APP_DIR && cargo build
