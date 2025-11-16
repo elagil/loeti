@@ -24,7 +24,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
-            firmware/loeti
+            firmware/loeti/common
+            firmware/loeti/board_v6
+            firmware/loeti/board_v7
 
       - name: Build
         run: just build
