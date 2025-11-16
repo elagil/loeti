@@ -14,6 +14,8 @@ cortex-m-rt = "0.7"
 
 loeti = { path = "../common", default-features = false, features = [
     "board_v7",
+    "display",
+    "comm",
 ] }
 
 # cargo build/run
