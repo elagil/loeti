@@ -2,6 +2,7 @@
 
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, signal::Signal};
 
+#[cfg(feature = "display")]
 pub mod display;
 pub mod encoder;
 

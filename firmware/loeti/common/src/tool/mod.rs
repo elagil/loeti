@@ -33,11 +33,14 @@ use uom::ConstZero;
 
 #[cfg(feature = "comm")]
 use crate::comm;
+#[cfg(feature = "display")]
 use crate::ui::display::{display_current_power, display_current_temperature, display_power_limit};
 use crate::{AutoSleep, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX};
 
 /// ADC max. value (16 bit).
 const ADC_MAX: f32 = 65535.0;
+/// ADC sample time, ~350 us.
+const ADC_SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES92_5;
 /// The number of current control iterations per temperature control iteration.
 const CURRENT_CONTROL_CYCLE_COUNT: u64 = 5;
 /// The total loop period in ms (temperature loop).
@@ -143,7 +146,6 @@ async fn measure_tool(
     detect_ratio_threshold: Ratio,
     temperature_potential_threshold: ElectricPotential,
 ) -> Result<RawToolMeasurement, Error> {
-    const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES247_5; // 14.56 us sampling period
     let mut adc_buffer = [0u16; 2];
 
     adc_resources
@@ -151,8 +153,8 @@ async fn measure_tool(
         .read(
             adc_resources.adc_dma.reborrow(),
             [
-                (&mut adc_resources.pin_detect, SAMPLE_TIME),
-                (&mut adc_resources.pin_temperature, SAMPLE_TIME),
+                (&mut adc_resources.pin_detect, ADC_SAMPLE_TIME),
+                (&mut adc_resources.pin_temperature, ADC_SAMPLE_TIME),
             ]
             .into_iter(),
             &mut adc_buffer,
@@ -201,7 +203,6 @@ impl PowerMeasurement {
 
 /// Measure the tool's power (voltage and current).
 async fn measure_tool_power(adc_power_resources: &mut AdcResources) -> PowerMeasurement {
-    const SAMPLE_TIME: adc::SampleTime = adc::SampleTime::CYCLES247_5;
     let mut adc_buffer = [0u16; 2];
 
     adc_power_resources
@@ -209,8 +210,8 @@ async fn measure_tool_power(adc_power_resources: &mut AdcResources) -> PowerMeas
         .read(
             adc_power_resources.adc_dma.reborrow(),
             [
-                (&mut adc_power_resources.pin_current, SAMPLE_TIME),
-                (&mut adc_power_resources.pin_voltage, SAMPLE_TIME),
+                (&mut adc_power_resources.pin_current, ADC_SAMPLE_TIME),
+                (&mut adc_power_resources.pin_voltage, ADC_SAMPLE_TIME),
             ]
             .into_iter(),
             &mut adc_buffer,
@@ -389,6 +390,7 @@ impl Tool {
     }
 
     /// Calculate the tool's power limit in W, including effective power limit from the supply.
+    #[allow(unused)]
     fn power_limit_w(&self) -> f32 {
         self.properties
             .max_power_w
@@ -507,6 +509,7 @@ impl Tool {
     /// The ratio of the current setpoint and the maximum current that can be practically supplied.
     ///
     /// This is a measure for relative output power, referred to the tool, not only the supply.
+    #[allow(unused)]
     fn power_ratio(&self) -> f32 {
         (self.current_pid.setpoint / self.current_limit_a()).max(0.0)
     }
@@ -576,8 +579,12 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
     let mut supply = Some(supply);
 
     loop {
+        // Settling time for temperature ADC filter.
+        Timer::after_millis(1).await;
+
         let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
 
+        // Takes ~700 us.
         let tool_measurement = measure_tool(
             &mut tool_resources.adc_resources,
             detect_threshold_ratio,
@@ -607,6 +614,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
             persistent.current_margin_ma as f32,
         );
 
+        #[cfg(feature = "display")]
         display_power_limit(Some(tool.power_limit_w()));
 
         if !operational_state.set_temperature_is_pending {
@@ -629,6 +637,8 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
         }
 
         tool.detect_and_calculate_temperature(tool_measurement)?;
+
+        #[cfg(feature = "display")]
         display_current_temperature(tool.temperature_deg_c);
 
         #[cfg(feature = "comm")]
@@ -649,6 +659,8 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
         if operational_state.tool_is_off || matches!(tool_state, ToolState::Sleeping) {
             let mut power_measurement = measure_tool_power(&mut tool_resources.adc_resources).await;
             power_measurement.compensate(&idle_power_measurement);
+
+            #[cfg(feature = "display")]
             display_current_power(None);
 
             // Skip the rest of the control loop.
@@ -676,6 +688,7 @@ async fn control(tool_resources: &mut ToolResources, supply: Supply) -> Result<(
             pwm_heater_channel
                 .set_duty_cycle((ratio * pwm_heater_channel.max_duty_cycle() as f32) as u16);
 
+            #[cfg(feature = "display")]
             display_current_power(Some(tool.power_ratio()));
 
             let tool_power_fut = async {
