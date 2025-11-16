@@ -16,7 +16,7 @@ jobs:
         uses: extractions/setup-just@v3
 
       - name: Install dependencies
-        run: cargo install cargo-binutils
+        run: rustup component add llvm-tools
 
       - name: Checkout
         uses: actions/checkout@v4
