@@ -1,4 +1,5 @@
 //! A library of supported tools (soldering irons).
+use loeti_protocol::PidParameters;
 
 /// Temperature calibration settings.
 #[derive(Debug, Clone, Copy, defmt::Format)]
@@ -51,13 +52,8 @@ pub struct ToolProperties {
     pub detect_ratio: f32,
     /// Temperature calibration settings.
     pub temperature_calibration: TemperatureCalibration,
-
-    /// Temperature control P-value in units of A / K.
-    pub p: f32,
-    /// Temperature control I-value in units of A / (K * ms).
-    pub i: f32,
-    /// Temperature control D-value.
-    pub d: f32,
+    /// PID parameters.
+    pub pid_parameters: PidParameters,
 }
 
 impl ToolProperties {
@@ -99,15 +95,17 @@ pub const TOOLS: &[ToolProperties] = unique_items![
             constant_c: 26.932
         },
 
-        p: 0.02,
-        i: 0.05,
-        d: 0.0,
+        pid_parameters: PidParameters {
+            p: 0.04,
+            i: 0.5,
+            d: 0.0
+        },
     },
     {
         id: JBC_T245,
         name: "JBC T245",
         max_power_w: 130.0,
-        heater_resistance_ohm: 2.5,
+        heater_resistance_ohm: 2.8,
         detect_ratio: 0.5, // 10 kOhm
         temperature_calibration: TemperatureCalibration {
             quadratic_c_per_vv: -6.972e4,
@@ -115,8 +113,10 @@ pub const TOOLS: &[ToolProperties] = unique_items![
             constant_c: 30.614,
         },
 
-        p: 0.1,
-        i: 0.25,
-        d: 0.0,
+        pid_parameters: PidParameters {
+            p: 0.2,
+            i: 0.5,
+            d: 0.0,
+        },
     },
 ];
