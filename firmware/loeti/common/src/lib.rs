@@ -10,16 +10,16 @@ use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, signal::Signal};
 use serde::{Deserialize, Serialize};
 
-use crate::tool::{Error as ToolError, ToolState};
+use crate::control::{Error as ControlError, tool::ToolState};
 
 pub mod app;
 
 #[cfg(feature = "comm")]
 pub(crate) mod comm;
+pub(crate) mod control;
 pub(crate) mod dfu;
 pub(crate) mod eeprom;
 pub(crate) mod power;
-pub(crate) mod tool;
 pub(crate) mod ui;
 
 /// Auto-sleep modes.
@@ -54,8 +54,8 @@ impl Persistent {
     /// Default persistent settings.
     const fn default() -> Self {
         Self {
-            stand_temperature_deg_c: 180,
-            set_temperature_deg_c: 300,
+            stand_temperature_deg_c: 150,
+            set_temperature_deg_c: 350,
             current_margin_ma: 200,
             auto_sleep: AutoSleep::AfterDurationS(600),
             display_is_rotated: false,
@@ -79,8 +79,8 @@ pub(crate) struct MenuState {
 pub(crate) struct OperationalState {
     /// The state of the control menu.
     pub(crate) menu_state: MenuState,
-    /// The tool's name, or a tool error.
-    pub(crate) tool: Result<&'static str, ToolError>,
+    /// The tool's name, or the control error.
+    pub(crate) tool: Result<&'static str, ControlError>,
     /// The state of the tool (e.g. active, in stand).
     pub(crate) tool_state: Option<ToolState>,
     /// If true, the tool is off (manual sleep).
@@ -97,7 +97,7 @@ impl OperationalState {
                 is_open: false,
                 toggle_pending: false,
             },
-            tool: Err(ToolError::NoTool),
+            tool: Err(ControlError::NoTool),
             tool_state: None,
             tool_is_off: true,
             set_temperature_is_pending: false,

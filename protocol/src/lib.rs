@@ -7,10 +7,10 @@ use postcard_schema::Schema;
 use serde::{Deserialize, Serialize};
 
 /// PID information.
-#[derive(Default, Clone, Schema, Serialize, Deserialize, Debug)]
-pub struct Pid {
-    /// PID total output.
-    pub output: f32,
+///
+/// Can be used for setup or reporting.
+#[derive(Clone, Copy, Schema, Serialize, Deserialize, Debug, defmt::Format)]
+pub struct PidParameters {
     /// PID P-component.
     pub p: f32,
     /// PID I-component.
@@ -24,8 +24,8 @@ pub struct Pid {
 pub struct Measurement {
     /// Timestamp in milliseconds of the measurement.
     pub time_ms: u64,
-    /// PID control output.
-    pub pid: Option<Pid>,
+    /// PID control components and total output.
+    pub pid_state: Option<(PidParameters, f32)>,
     /// The set temperature in °C.
     pub set_temperature_deg_c: Option<f32>,
     /// The current tool temperature in °C.
@@ -33,11 +33,12 @@ pub struct Measurement {
 }
 
 /// The state of the tool.
-#[derive(Default, Clone, Schema, Serialize, Deserialize, Debug)]
+#[derive(Clone, Schema, Serialize, Deserialize, Debug)]
 pub enum ToolState {
     /// The tool is active.
-    #[default]
-    Active,
+    ///
+    /// Also provide current PID parameters for the tool.
+    Active(PidParameters),
     /// The tool was placed in its stand at the recorded timestamp in ms.
     InStand(u64),
     /// The tool was automatically switched to sleep mode.
@@ -50,7 +51,7 @@ pub enum ControlState {
     /// No tool is present.
     #[default]
     NoTool,
-    /// A tool is present, but no tip.
+    /// A tool is present, but no tip (by thermocouple).
     NoTip,
     /// The tool is not known.
     UnknownTool,
@@ -69,8 +70,8 @@ pub struct Status {
     pub control_state: ControlState,
 }
 
-// Device -> Host Measurement endpoint (no response expected)
-topic!(MeasurementTopic, Measurement, "loeti/measurement");
+// Measurement topic
+topic!(MeasurementTopic, Measurement, "topic/measurement");
 
-// Device -> Host Status endpoint (no response expected)
-topic!(StatusTopic, Status, "loeti/status");
+// Status topic
+topic!(StatusTopic, Status, "topic/status");

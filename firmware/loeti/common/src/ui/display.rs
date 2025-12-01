@@ -27,7 +27,7 @@ use ssd1306::Ssd1306Async;
 use ssd1306::mode::BufferedGraphicsModeAsync;
 use ssd1306::prelude::{Brightness, DisplayRotation, DisplaySize102x64, SPIInterface};
 
-use crate::tool::{Error as ToolError, ToolState};
+use crate::control::{Error as ToolError, tool::ToolState};
 use crate::ui::MENU_STEPS_SIG;
 use crate::{
     AutoSleep, OPERATIONAL_STATE_MUTEX, OperationalState, PERSISTENT_MUTEX, Persistent,

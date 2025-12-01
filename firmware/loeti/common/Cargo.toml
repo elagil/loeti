@@ -70,7 +70,7 @@ bbq2 = { version = "0.4.1", default-features = false, features = [
 ] }
 
 [features]
-default = ["board_v7"]
+default = ["board_v7", "display", "comm"]
 
 display = []
 comm = []
