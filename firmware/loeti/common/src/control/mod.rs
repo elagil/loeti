@@ -9,7 +9,8 @@ use defmt::{Format, debug, error, warn};
 use embassy_futures::select::{Either, select};
 use embassy_stm32::dac::Ch1;
 use embassy_stm32::mode::Blocking;
-use embassy_stm32::{dac, exti::ExtiInput, gpio::Input, peripherals, timer::simple_pwm::SimplePwm};
+use embassy_stm32::timer::simple_pwm::SimplePwm;
+use embassy_stm32::{dac, exti::ExtiInput, gpio::Input, peripherals};
 use embassy_time::{Duration, Ticker, Timer, WithTimeout};
 use library::{TOOLS, ToolProperties};
 use tool::{Tool, ToolState};
@@ -23,14 +24,11 @@ use uom::si::{electric_current, power};
 type PwmHeaterChannel<'d> =
     embassy_stm32::timer::simple_pwm::SimplePwmChannel<'d, peripherals::TIM1>;
 
-/// The type for the DAC for setting current limits.
-type DacCurrentLimit = dac::DacChannel<'static, peripherals::DAC1, Ch1, Blocking>;
-
 #[cfg(feature = "comm")]
 use crate::comm;
 #[cfg(feature = "display")]
 use crate::ui::display::{display_current_power, display_current_temperature, display_power_limit};
-use crate::{AutoSleep, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX};
+use crate::{AutoSleep, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, Persistent};
 
 /// The number of current control iterations per temperature control iteration.
 const CURRENT_CONTROL_CYCLE_COUNT: u64 = 5;
@@ -39,11 +37,11 @@ const LOOP_PERIOD_MS: u64 = 100;
 /// The current loop period in ms.
 const CURRENT_LOOP_PERIOD_MS: u64 = LOOP_PERIOD_MS / CURRENT_CONTROL_CYCLE_COUNT;
 
-// DAC total gain is 0.2 V/A
+// Current monitor total gain (shunt + amplifier): 0.2 V/A
 /// The DAC output voltage for a 10 A current limit.
 const DAC_VOLTAGE_10A: u16 = 2825; // 2.0 V output -> Limit to 10 A
-/// The DAC output voltage for a 0.5 A current limit.
-const DAC_VOLTAGE_0A5: u16 = 141; // 0.1 V output -> Limit to 0.5 A
+/// The DAC output voltage for a 0.1 A current limit.
+const DAC_VOLTAGE_0A1: u16 = 28; // 0.02 V output -> Limit to 0.1 A
 
 /// Errors during tool detection.
 #[derive(Debug, Format, Clone, Copy)]
@@ -74,6 +72,13 @@ pub struct ToolResources {
 
     /// A pin for detecting the tool sleep position (in holder).
     pub pin_sleep: Input<'static>,
+}
+
+impl ToolResources {
+    /// Get the PWM heater channel.
+    fn pwm_heater_channel(&mut self) -> PwmHeaterChannel<'_> {
+        self.pwm_heater.ch1()
+    }
 }
 
 /// Properties of the tool's power supply.
@@ -167,27 +172,40 @@ impl<'d> Control<'d> {
         this
     }
 
-    /// Check if a tip is inserted by passing a test current.
-    async fn test_tip_current(
-        dac_current_limit: &mut DacCurrentLimit,
-        exti_current_alert: &mut ExtiInput<'_>,
-        pwm_heater_channel: &mut PwmHeaterChannel<'_>,
-    ) -> Result<(), Error> {
+    /// Check if a tip is inserted by passing a small test current.
+    ///
+    /// Use the current-sensor overcurrent interrupt for a quick evaluation.
+    /// Before passing the test current, the current limit is set to just 100 mA.
+    async fn test_tip_current(&mut self) -> Result<(), Error> {
         {
-            dac_current_limit.set(dac::Value::Bit12Right(DAC_VOLTAGE_0A5));
+            // Set a low current limit.
+            self.tool_resources
+                .dac_current_limit
+                .set(dac::Value::Bit12Right(DAC_VOLTAGE_0A1));
 
-            pwm_heater_channel
-                .set_duty_cycle((0.1 * pwm_heater_channel.max_duty_cycle() as f32) as u16);
+            // Enable heater power output.
+            let duty = 0.1 * self.tool_resources.pwm_heater_channel().max_duty_cycle() as f32;
+            self.tool_resources
+                .pwm_heater_channel()
+                .set_duty_cycle(duty as u16);
 
-            let tip_present = exti_current_alert
+            // React to overcurrent event. Times out if no tip is present.
+            let tip_present = self
+                .tool_resources
+                .exti_current_alert
                 .wait_for_low()
-                .with_timeout(Duration::from_micros(100))
+                .with_timeout(Duration::from_micros(50))
                 .await
                 .is_ok();
 
-            pwm_heater_channel.set_duty_cycle_fully_off();
+            self.tool_resources
+                .pwm_heater_channel()
+                .set_duty_cycle_fully_off();
 
-            dac_current_limit.set(dac::Value::Bit12Right(DAC_VOLTAGE_10A));
+            // Restore original current limit.
+            self.tool_resources
+                .dac_current_limit
+                .set(dac::Value::Bit12Right(DAC_VOLTAGE_10A));
 
             if !tip_present {
                 return Err(Error::NoTip);
@@ -197,15 +215,36 @@ impl<'d> Control<'d> {
         }
     }
 
+    /// Detect a connected tool.
+    async fn detect_tool(&mut self, persistent: &Persistent) -> Result<(), Error> {
+        let tool_measurement = self.tool_resources.adc_resources.measure_tool().await?;
+
+        // Check if tool is in its stand.
+        let tool_in_stand = self.tool_resources.pin_sleep.is_low();
+
+        self.test_tip_current().await?;
+
+        if self.tool.is_none() {
+            self.tool = Some(Tool::new(tool_measurement, self.supply.take().unwrap())?);
+        };
+
+        let tool = self.tool.as_mut().unwrap();
+        tool.detect_and_calculate_temperature(tool_measurement)?;
+        tool.update_tool_state(tool_in_stand, persistent.auto_sleep);
+
+        Ok(())
+    }
+
     /// Handles the main tool control loop.
     ///
     /// - Detects whether a tool is present
     /// - Runs temperature (outer) control loop, while measuring tool temperature
     /// - Runs current (inner) control loop, while measuring voltage and current on the tool
     async fn run(&mut self) -> Result<(), Error> {
-        let mut pwm_heater_channel = self.tool_resources.pwm_heater.ch1();
-        pwm_heater_channel.set_duty_cycle_fully_off();
-        pwm_heater_channel.enable();
+        self.tool_resources
+            .pwm_heater_channel()
+            .set_duty_cycle_fully_off();
+        self.tool_resources.pwm_heater_channel().enable();
 
         let idle_power_measurement = self.tool_resources.adc_resources.measure_tool_power().await;
 
@@ -223,29 +262,12 @@ impl<'d> Control<'d> {
 
             let persistent = PERSISTENT_MUTEX.lock(|x| *x.borrow());
 
-            let tool_measurement = self.tool_resources.adc_resources.measure_tool().await?;
-
-            // Check if tool is in its stand.
-            let tool_in_stand = self.tool_resources.pin_sleep.is_low();
-
-            Self::test_tip_current(
-                &mut self.tool_resources.dac_current_limit,
-                &mut self.tool_resources.exti_current_alert,
-                &mut pwm_heater_channel,
-            )
-            .await?;
-
-            if self.tool.is_none() {
-                self.tool = Some(Tool::new(tool_measurement, self.supply.take().unwrap())?);
-            };
-
+            self.detect_tool(&persistent).await?;
             let tool = self.tool.as_mut().unwrap();
-
-            let tool_state = tool.update_tool_state(tool_in_stand, persistent.auto_sleep);
 
             let operational_state = OPERATIONAL_STATE_MUTEX.lock(|x| {
                 let mut operational_state = x.borrow_mut();
-                operational_state.tool_state = Some(tool_state);
+                operational_state.tool_state = Some(tool.state);
                 operational_state.tool = Ok(tool.name());
 
                 *operational_state
@@ -266,7 +288,7 @@ impl<'d> Control<'d> {
                     .min(self.operational_temperature_deg_c.unwrap_or(f32::INFINITY)),
             );
 
-            let set_temperature_deg_c = if tool_in_stand {
+            let set_temperature_deg_c = if tool.in_stand() {
                 stand_temperature_deg_c
             } else {
                 self.operational_temperature_deg_c
@@ -277,8 +299,6 @@ impl<'d> Control<'d> {
                 continue;
             }
 
-            tool.detect_and_calculate_temperature(tool_measurement)?;
-
             #[cfg(feature = "display")]
             display_current_temperature(tool.temperature_deg_c);
 
@@ -286,7 +306,7 @@ impl<'d> Control<'d> {
             {
                 let status = loeti_protocol::Status {
                     time_ms: embassy_time::Instant::now().as_millis(),
-                    control_state: loeti_protocol::ControlState::Tool(match tool_state {
+                    control_state: loeti_protocol::ControlState::Tool(match tool.state {
                         ToolState::Active => {
                             loeti_protocol::ToolState::Active(tool.get_temperature_pid_parameters())
                         }
@@ -299,7 +319,7 @@ impl<'d> Control<'d> {
                 comm::send_status(&status);
             }
 
-            if operational_state.tool_is_off || matches!(tool_state, ToolState::Sleeping) {
+            if operational_state.tool_is_off || matches!(tool.state, ToolState::Sleeping) {
                 // FIXME: Handle inside of Tool?
                 tool.temperature_pid.reset_integral_term();
 
@@ -334,8 +354,10 @@ impl<'d> Control<'d> {
             for _ in 0..CURRENT_CONTROL_CYCLE_COUNT {
                 let ratio = tool.pwm_ratio();
 
-                pwm_heater_channel
-                    .set_duty_cycle((ratio * pwm_heater_channel.max_duty_cycle() as f32) as u16);
+                let duty = ratio * self.tool_resources.pwm_heater_channel().max_duty_cycle() as f32;
+                self.tool_resources
+                    .pwm_heater_channel()
+                    .set_duty_cycle(duty as u16);
 
                 #[cfg(feature = "display")]
                 display_current_power(Some(tool.power_ratio()));
@@ -369,7 +391,9 @@ impl<'d> Control<'d> {
                 };
             }
 
-            pwm_heater_channel.set_duty_cycle_fully_off();
+            self.tool_resources
+                .pwm_heater_channel()
+                .set_duty_cycle_fully_off();
         }
     }
 }
