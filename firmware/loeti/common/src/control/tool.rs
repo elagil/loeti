@@ -84,6 +84,11 @@ impl Tool {
         Ok(tool)
     }
 
+    /// If true, the tool is in its stand.
+    pub(super) fn in_stand(&self) -> bool {
+        !matches!(self.state, ToolState::Active)
+    }
+
     /// Update the tool's state, based on whether it is currently in its stand, and the auto sleep duration.
     pub(super) fn update_tool_state(&mut self, in_stand: bool, auto_sleep: AutoSleep) -> ToolState {
         if !in_stand {
