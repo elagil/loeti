@@ -26,6 +26,8 @@ pub const ADC_SAMPLE_TIME_CURRENT: adc::SampleTime = adc::SampleTime::CYCLES640_
 
 /// The ADC reference voltage.
 pub const VREFBUF_V: f32 = 2.9;
+/// DAC max. value (12 bit).
+pub const DAC_MAX: f32 = 4096.0;
 /// The analog supply voltage.
 pub const ANALOG_SUPPLY_V: f32 = 3.3;
 /// The value at which an ADC voltage is considered to be at the upper limit.
@@ -38,7 +40,7 @@ fn adc_value_to_potential(value: u16) -> ElectricPotential {
     ElectricPotential::new::<volt>(VREFBUF_V * (value as f32) / ADC_MAX)
 }
 
-/// A tool's raw measurements.
+/// A tool's raw measurements (detection and temperature).
 #[derive(Clone, Copy)]
 pub(super) struct RawToolMeasurement {
     /// The result of measuring the detection circuit.
@@ -71,29 +73,29 @@ impl RawToolMeasurement {
 }
 
 /// A tool power measurement.
-pub(super) struct PowerMeasurement {
+pub struct ToolPowerMeasurement {
     /// The electric current through the tool.
-    pub(super) current: ElectricCurrent,
+    pub current: ElectricCurrent,
     /// The supply voltage.
     ///
     /// FIXME: Use for checking drop from negotiated voltage?
-    _potential: ElectricPotential,
+    pub _potential: ElectricPotential,
 }
 
-impl PowerMeasurement {
+impl ToolPowerMeasurement {
     /// Calculate the tool's power dissipation.
-    pub(super) fn _power(&self) -> Power {
+    pub fn _power(&self) -> Power {
         self._potential * self.current
     }
 
     /// Compensate current with an idle power measurement.
-    pub(super) fn compensate(&mut self, idle: &Self) {
+    pub fn compensate(&mut self, idle: &Self) {
         self.current = (self.current - idle.current).max(ElectricCurrent::ZERO);
     }
 }
 
-/// Resources for the ADC.
-pub struct AdcResources {
+/// Sensors, resources for measurements.
+pub struct Sensors {
     /// The ADC.
     pub adc: adc::Adc<'static, peripherals::ADC1>,
     /// The ADC temperature input pin.
@@ -108,11 +110,11 @@ pub struct AdcResources {
     pub adc_dma: Peri<'static, peripherals::DMA1_CH6>,
 }
 
-impl AdcResources {
+impl Sensors {
     /// Take raw measurements of a tool.
     ///
     /// When the tool properties are known, they can be translated to useful values (e.g. temperature).
-    pub(super) async fn measure_tool(&mut self) -> Result<RawToolMeasurement, Error> {
+    pub async fn measure_tool(&mut self) -> Result<RawToolMeasurement, Error> {
         let mut adc_buffer = [0u16; 2];
 
         self.adc
@@ -144,7 +146,7 @@ impl AdcResources {
     }
 
     /// Measure the tool's power (voltage and current).
-    pub(super) async fn measure_tool_power(&mut self) -> PowerMeasurement {
+    pub async fn measure_tool_power(&mut self) -> ToolPowerMeasurement {
         let mut adc_buffer = [0u16; 2];
 
         self.adc
@@ -165,7 +167,7 @@ impl AdcResources {
         const VOLTAGE_DIVIDER_RATIO: f32 = 7.667;
         let potential = VOLTAGE_DIVIDER_RATIO * adc_value_to_potential(adc_buffer[1]);
 
-        PowerMeasurement {
+        ToolPowerMeasurement {
             current,
             _potential: potential,
         }

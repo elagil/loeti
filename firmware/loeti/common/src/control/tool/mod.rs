@@ -2,7 +2,7 @@
 
 use core::f32;
 
-use super::{AutoSleep, Error, LOOP_PERIOD_MS, Supply, TOOLS, ToolProperties, measurement};
+use super::{AutoSleep, Error, Supply, TEMPERATURE_CONTROL_LOOP_PERIOD_MS, TOOLS, ToolProperties};
 use defmt::{Format, debug, info, trace};
 use embassy_time::{Duration, Instant};
 use pid::{self, Pid};
@@ -11,6 +11,9 @@ use uom::si::f32::Ratio;
 use uom::si::ratio;
 use uom::si::ratio::percent;
 use uom::si::thermodynamic_temperature;
+
+pub mod resources;
+pub mod sensors;
 
 /// The state of the tool.
 #[derive(Debug, Clone, Copy, Format)]
@@ -48,7 +51,7 @@ impl Tool {
     ///
     /// Limits the tool's current capability to the maximum available supply current.
     pub(super) fn new(
-        tool_measurement: measurement::RawToolMeasurement,
+        tool_measurement: sensors::RawToolMeasurement,
         supply: Supply,
     ) -> Result<Self, Error> {
         let properties = Tool::detect(tool_measurement)?;
@@ -144,7 +147,7 @@ impl Tool {
 
     /// Detect a tool, based on a measurement.
     fn detect(
-        tool_measurement: measurement::RawToolMeasurement,
+        tool_measurement: sensors::RawToolMeasurement,
     ) -> Result<&'static ToolProperties, Error> {
         const DETECTION_RATIO_ABS_TOLERANCE: f32 = 0.05;
 
@@ -165,7 +168,7 @@ impl Tool {
     /// Checks for unexpected tool changes during the control cycle.
     pub(super) fn detect_and_calculate_temperature(
         &mut self,
-        tool_measurement: measurement::RawToolMeasurement,
+        tool_measurement: sensors::RawToolMeasurement,
     ) -> Result<(), Error> {
         let new_properties = Tool::detect(tool_measurement)?;
         if new_properties.name != self.name() {
@@ -205,15 +208,20 @@ impl Tool {
         let pid_parameters = &self.properties.pid_parameters;
         self.temperature_pid
             .p(pid_parameters.p, UNLIMITED_OUTPUT)
-            .d(pid_parameters.d * LOOP_PERIOD_MS as f32, UNLIMITED_OUTPUT);
+            .d(
+                pid_parameters.d * TEMPERATURE_CONTROL_LOOP_PERIOD_MS as f32,
+                UNLIMITED_OUTPUT,
+            );
 
         // The I-component is capped at the current limit to avoid excessive windup.
         let is_current_limited = current_setpoint_a >= current_limit_a || current_setpoint_a == 0.0;
         if is_current_limited {
             self.temperature_pid.i(0.0, current_limit_a);
         } else {
-            self.temperature_pid
-                .i(pid_parameters.i / LOOP_PERIOD_MS as f32, current_limit_a);
+            self.temperature_pid.i(
+                pid_parameters.i / TEMPERATURE_CONTROL_LOOP_PERIOD_MS as f32,
+                current_limit_a,
+            );
         }
 
         // Mitigate downward setpoint steps to cause undershoot.
@@ -261,7 +269,7 @@ impl Tool {
     /// Runs a power control step.
     pub(super) fn run_current_control(
         &mut self,
-        power_measurement: &measurement::PowerMeasurement,
+        power_measurement: &sensors::ToolPowerMeasurement,
     ) {
         let control_output = self
             .current_pid
