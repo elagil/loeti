@@ -1,8 +1,7 @@
 //! Drives the tool's heating element, based on target and actual temperature.
 
-use super::sensors;
+use super::{Error, sensors};
 use core::f32;
-use defmt::Format;
 use embassy_stm32::dac::Ch1;
 use embassy_stm32::mode::Blocking;
 use embassy_stm32::timer::simple_pwm::SimplePwm;
@@ -20,20 +19,6 @@ type PwmHeaterChannel<'d> =
 pub const PEAK_CURRENT_LIMIT_A: f32 = 10.0;
 /// Current monitor total gain (shunt + amplifier): 0.2 V/A
 pub const CURRENT_MONITOR_GAIN_V_PER_A: f32 = 0.2;
-
-/// Errors during tool detection.
-
-#[derive(Debug, Format, Clone, Copy)]
-pub enum Error {
-    /// No tool was found.
-    NoTool,
-    /// Tool was detected, but no tip.
-    NoTip,
-    /// The detected tool is unknown.
-    UnknownTool,
-    /// Tool type mismatch during control loop operation.
-    ToolMismatch,
-}
 
 /// Resources for driving the tool's heater and taking associated measurements.
 pub struct ToolResources {

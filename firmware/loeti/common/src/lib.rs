@@ -5,8 +5,8 @@
 
 use core::cell::RefCell;
 
+use crate::control::tool::Error;
 use crate::control::tool::ToolState;
-use crate::control::tool::resources::Error;
 use defmt::Format;
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, signal::Signal};
