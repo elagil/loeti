@@ -42,7 +42,7 @@ fn adc_value_to_potential(value: u16) -> ElectricPotential {
 
 /// A tool's raw measurements (detection and temperature).
 #[derive(Clone, Copy)]
-pub(super) struct RawToolMeasurement {
+pub struct RawToolMeasurement {
     /// The result of measuring the detection circuit.
     ///
     /// The detection ratio is used for assigning a certain tool from the library of supported tools.

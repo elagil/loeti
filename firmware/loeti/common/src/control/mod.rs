@@ -3,12 +3,11 @@
 mod library;
 pub mod tool;
 
-use crate::control::tool::resources::Error;
+use crate::control::tool::Error;
 use crate::control::tool::resources::ToolResources;
 use core::f32;
 use defmt::{debug, error, warn};
 use embassy_futures::select::{Either, select};
-use embassy_stm32::peripherals;
 use embassy_time::{Duration, Ticker, Timer};
 use library::{TOOLS, ToolProperties};
 use tool::{Tool, ToolState};
@@ -17,10 +16,6 @@ use uom::si::f32::ElectricCurrent;
 use uom::si::f32::ElectricPotential;
 use uom::si::f32::Power;
 use uom::si::{electric_current, power};
-
-/// The type for the PWM heater channel.
-type PwmHeaterChannel<'d> =
-    embassy_stm32::timer::simple_pwm::SimplePwmChannel<'d, peripherals::TIM1>;
 
 #[cfg(feature = "comm")]
 use crate::comm;
@@ -109,14 +104,12 @@ struct Control<'d> {
 impl<'d> Control<'d> {
     /// Create a new control instance.
     fn new(tool_resources: &'d mut ToolResources, supply: Supply) -> Self {
-        let this = Self {
+        Self {
             tool: None,
             tool_resources,
             supply: Some(supply),
             operational_temperature_deg_c: None,
-        };
-
-        this
+        }
     }
 
     /// Detect a connected tool.

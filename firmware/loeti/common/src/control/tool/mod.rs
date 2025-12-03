@@ -2,7 +2,7 @@
 
 use core::f32;
 
-use super::{AutoSleep, Error, Supply, TEMPERATURE_CONTROL_LOOP_PERIOD_MS, TOOLS, ToolProperties};
+use super::{AutoSleep, Supply, TEMPERATURE_CONTROL_LOOP_PERIOD_MS, TOOLS, ToolProperties};
 use defmt::{Format, debug, info, trace};
 use embassy_time::{Duration, Instant};
 use pid::{self, Pid};
@@ -14,6 +14,20 @@ use uom::si::thermodynamic_temperature;
 
 pub mod resources;
 pub mod sensors;
+
+/// Errors related to tool detection.
+
+#[derive(Debug, Format, Clone, Copy)]
+pub enum Error {
+    /// No tool was found.
+    NoTool,
+    /// Tool was detected, but no tip.
+    NoTip,
+    /// The detected tool is unknown.
+    UnknownTool,
+    /// Tool type mismatch during control loop operation.
+    ToolMismatch,
+}
 
 /// The state of the tool.
 #[derive(Debug, Clone, Copy, Format)]
@@ -27,7 +41,7 @@ pub enum ToolState {
 }
 
 /// A tool (soldering iron).
-pub(super) struct Tool {
+pub struct Tool {
     /// Unique properties of the tool.
     pub(super) properties: &'static ToolProperties,
     /// The temperature control.

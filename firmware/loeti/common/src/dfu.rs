@@ -3,6 +3,9 @@ use cortex_m::asm::bootstrap;
 use cortex_m::interrupt;
 
 /// Go to DFU mode.
+///
+/// # Safety
+/// Jumps to raw pointer address.
 #[allow(unused)]
 pub unsafe fn jump() -> ! {
     // FIXME: Move to board implementation?
