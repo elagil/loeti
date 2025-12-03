@@ -5,26 +5,26 @@
 
 use core::cell::RefCell;
 
+use crate::control::tool::ToolState;
+use crate::control::tool::resources::Error;
 use defmt::Format;
 use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, signal::Signal};
 use serde::{Deserialize, Serialize};
 
-use crate::control::{Error as ControlError, tool::ToolState};
-
 pub mod app;
 
 #[cfg(feature = "comm")]
-pub(crate) mod comm;
-pub(crate) mod control;
-pub(crate) mod dfu;
-pub(crate) mod eeprom;
-pub(crate) mod power;
-pub(crate) mod ui;
+pub mod comm;
+pub mod control;
+pub mod dfu;
+pub mod eeprom;
+pub mod power;
+pub mod ui;
 
 /// Auto-sleep modes.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
-pub(crate) enum AutoSleep {
+pub enum AutoSleep {
     /// The tool goes to sleep after the specified number of seconds in the stand.
     AfterDurationS(u16),
     /// The tool never goes to sleep in the stand.
@@ -33,21 +33,21 @@ pub(crate) enum AutoSleep {
 
 /// Persistent storage data.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Format, Clone, Copy)]
-pub(crate) struct Persistent {
+pub struct Persistent {
     /// The max. set temperature if the tool is in its stand.
-    pub(crate) stand_temperature_deg_c: i16,
+    pub stand_temperature_deg_c: i16,
     /// The operational temperature set point in °C.
-    pub(crate) set_temperature_deg_c: i16,
+    pub set_temperature_deg_c: i16,
     /// Current margin to leave until max. supply current in mA.
-    pub(crate) current_margin_ma: u16,
+    pub current_margin_ma: u16,
     /// Auto-sleep behaviour when the tool is in the stand.
-    pub(crate) auto_sleep: AutoSleep,
+    pub auto_sleep: AutoSleep,
     /// If true, display is rotated 180°.
-    pub(crate) display_is_rotated: bool,
+    pub display_is_rotated: bool,
     /// If true, start the controller with heating switched off after power on.
-    pub(crate) off_on_power: bool,
+    pub off_on_power: bool,
     /// If true, switch off heating when the tip or iron was removed/changed.
-    pub(crate) off_on_change: bool,
+    pub off_on_change: bool,
 }
 
 impl Persistent {
@@ -67,37 +67,37 @@ impl Persistent {
 
 /// The state of the setup menu.
 #[derive(Debug, Format, Clone, Copy, Default)]
-pub(crate) struct MenuState {
+pub struct MenuState {
     /// The menu is currently open.
-    pub(crate) is_open: bool,
+    pub is_open: bool,
     /// An item was toggled and evaluation is pending.
-    pub(crate) toggle_pending: bool,
+    pub toggle_pending: bool,
 }
 
 /// The operational state of the soldering station (not persistent).
 #[derive(Debug, Format, Clone, Copy)]
-pub(crate) struct OperationalState {
+pub struct OperationalState {
     /// The state of the control menu.
-    pub(crate) menu_state: MenuState,
+    pub menu_state: MenuState,
     /// The tool's name, or the control error.
-    pub(crate) tool: Result<&'static str, ControlError>,
+    pub tool: Result<&'static str, Error>,
     /// The state of the tool (e.g. active, in stand).
-    pub(crate) tool_state: Option<ToolState>,
+    pub tool_state: Option<ToolState>,
     /// If true, the tool is off (manual sleep).
-    pub(crate) tool_is_off: bool,
+    pub tool_is_off: bool,
     /// If true, the new set temperature was not confirmed yet.
-    pub(crate) set_temperature_is_pending: bool,
+    pub set_temperature_is_pending: bool,
 }
 
 impl OperationalState {
     /// Generate a default operational state.
-    pub(crate) const fn default() -> Self {
+    pub const fn default() -> Self {
         Self {
             menu_state: MenuState {
                 is_open: false,
                 toggle_pending: false,
             },
-            tool: Err(ControlError::NoTool),
+            tool: Err(Error::NoTool),
             tool_state: None,
             tool_is_off: true,
             set_temperature_is_pending: false,
@@ -106,15 +106,15 @@ impl OperationalState {
 }
 
 /// Signals a change in the negotiated supply (potential/mV, current/mA).
-pub(crate) static NEGOTIATED_SUPPLY_SIG: Signal<ThreadModeRawMutex, (u32, u32)> = Signal::new();
+pub static NEGOTIATED_SUPPLY_SIG: Signal<ThreadModeRawMutex, (u32, u32)> = Signal::new();
 
 /// Signals storage of persistent data.
 static STORE_PERSISTENT_SIG: Signal<ThreadModeRawMutex, ()> = Signal::new();
 
 /// Persistently stored data (on EEPROM).
-pub(crate) static PERSISTENT_MUTEX: Mutex<ThreadModeRawMutex, RefCell<Persistent>> =
+pub static PERSISTENT_MUTEX: Mutex<ThreadModeRawMutex, RefCell<Persistent>> =
     Mutex::new(RefCell::new(Persistent::default()));
 
 /// Operational state (not persistent).
-pub(crate) static OPERATIONAL_STATE_MUTEX: Mutex<ThreadModeRawMutex, RefCell<OperationalState>> =
+pub static OPERATIONAL_STATE_MUTEX: Mutex<ThreadModeRawMutex, RefCell<OperationalState>> =
     Mutex::new(RefCell::new(OperationalState::default()));

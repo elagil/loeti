@@ -1,17 +1,15 @@
 //! Drives the tool's heating element, based on target and actual temperature.
 
 mod library;
-pub mod measurement;
 pub mod tool;
 
+use crate::control::tool::resources::Error;
+use crate::control::tool::resources::ToolResources;
 use core::f32;
-use defmt::{Format, debug, error, warn};
+use defmt::{debug, error, warn};
 use embassy_futures::select::{Either, select};
-use embassy_stm32::dac::Ch1;
-use embassy_stm32::mode::Blocking;
-use embassy_stm32::timer::simple_pwm::SimplePwm;
-use embassy_stm32::{dac, exti::ExtiInput, gpio::Input, peripherals};
-use embassy_time::{Duration, Ticker, Timer, WithTimeout};
+use embassy_stm32::peripherals;
+use embassy_time::{Duration, Ticker, Timer};
 use library::{TOOLS, ToolProperties};
 use tool::{Tool, ToolState};
 use uom::si::electric_potential;
@@ -33,53 +31,10 @@ use crate::{AutoSleep, OPERATIONAL_STATE_MUTEX, PERSISTENT_MUTEX, Persistent};
 /// The number of current control iterations per temperature control iteration.
 const CURRENT_CONTROL_CYCLE_COUNT: u64 = 5;
 /// The total loop period in ms (temperature loop).
-const LOOP_PERIOD_MS: u64 = 100;
+const TEMPERATURE_CONTROL_LOOP_PERIOD_MS: u64 = 100;
 /// The current loop period in ms.
-const CURRENT_LOOP_PERIOD_MS: u64 = LOOP_PERIOD_MS / CURRENT_CONTROL_CYCLE_COUNT;
-
-// Current monitor total gain (shunt + amplifier): 0.2 V/A
-/// The DAC output voltage for a 10 A current limit.
-const DAC_VOLTAGE_10A: u16 = 2825; // 2.0 V output -> Limit to 10 A
-/// The DAC output voltage for a 0.1 A current limit.
-const DAC_VOLTAGE_0A1: u16 = 28; // 0.02 V output -> Limit to 0.1 A
-
-/// Errors during tool detection.
-#[derive(Debug, Format, Clone, Copy)]
-pub enum Error {
-    /// No tool was found.
-    NoTool,
-    /// Tool was detected, but no tip.
-    NoTip,
-    /// The detected tool is unknown.
-    UnknownTool,
-    /// Tool type mismatch during control loop operation.
-    ToolMismatch,
-}
-
-/// Resources for driving the tool's heater and taking associated measurements.
-pub struct ToolResources {
-    /// ADC for measurements.
-    pub adc_resources: measurement::AdcResources,
-
-    /// The DAC that sets the current limit for the current sensing IC (INA301A).
-    pub dac_current_limit: dac::DacChannel<'static, peripherals::DAC1, Ch1, Blocking>,
-
-    /// External interrupt for current alerts.
-    pub exti_current_alert: ExtiInput<'static>,
-
-    /// The PWM for driving the tool's heating element.
-    pub pwm_heater: SimplePwm<'static, peripherals::TIM1>,
-
-    /// A pin for detecting the tool sleep position (in holder).
-    pub pin_sleep: Input<'static>,
-}
-
-impl ToolResources {
-    /// Get the PWM heater channel.
-    fn pwm_heater_channel(&mut self) -> PwmHeaterChannel<'_> {
-        self.pwm_heater.ch1()
-    }
-}
+const CURRENT_CONTROL_LOOP_PERIOD_MS: u64 =
+    TEMPERATURE_CONTROL_LOOP_PERIOD_MS / CURRENT_CONTROL_CYCLE_COUNT;
 
 /// Properties of the tool's power supply.
 #[derive(Default, Debug, Clone)]
@@ -161,68 +116,17 @@ impl<'d> Control<'d> {
             operational_temperature_deg_c: None,
         };
 
-        this.tool_resources
-            .dac_current_limit
-            .set_mode(dac::Mode::NormalExternalBuffered);
-        this.tool_resources.dac_current_limit.enable();
-        this.tool_resources
-            .dac_current_limit
-            .set(dac::Value::Bit12Right(DAC_VOLTAGE_10A));
-
         this
-    }
-
-    /// Check if a tip is inserted by passing a small test current.
-    ///
-    /// Use the current-sensor overcurrent interrupt for a quick evaluation.
-    /// Before passing the test current, the current limit is set to just 100 mA.
-    async fn test_tip_current(&mut self) -> Result<(), Error> {
-        {
-            // Set a low current limit.
-            self.tool_resources
-                .dac_current_limit
-                .set(dac::Value::Bit12Right(DAC_VOLTAGE_0A1));
-
-            // Enable heater power output.
-            let duty = 0.1 * self.tool_resources.pwm_heater_channel().max_duty_cycle() as f32;
-            self.tool_resources
-                .pwm_heater_channel()
-                .set_duty_cycle(duty as u16);
-
-            // React to overcurrent event. Times out if no tip is present.
-            let tip_present = self
-                .tool_resources
-                .exti_current_alert
-                .wait_for_low()
-                .with_timeout(Duration::from_micros(50))
-                .await
-                .is_ok();
-
-            self.tool_resources
-                .pwm_heater_channel()
-                .set_duty_cycle_fully_off();
-
-            // Restore original current limit.
-            self.tool_resources
-                .dac_current_limit
-                .set(dac::Value::Bit12Right(DAC_VOLTAGE_10A));
-
-            if !tip_present {
-                return Err(Error::NoTip);
-            }
-
-            Ok(())
-        }
     }
 
     /// Detect a connected tool.
     async fn detect_tool(&mut self, persistent: &Persistent) -> Result<(), Error> {
-        let tool_measurement = self.tool_resources.adc_resources.measure_tool().await?;
+        let tool_measurement = self.tool_resources.sensors.measure_tool().await?;
 
         // Check if tool is in its stand.
         let tool_in_stand = self.tool_resources.pin_sleep.is_low();
 
-        self.test_tip_current().await?;
+        self.tool_resources.test_tip_current().await?;
 
         if self.tool.is_none() {
             self.tool = Some(Tool::new(tool_measurement, self.supply.take().unwrap())?);
@@ -246,7 +150,7 @@ impl<'d> Control<'d> {
             .set_duty_cycle_fully_off();
         self.tool_resources.pwm_heater_channel().enable();
 
-        let idle_power_measurement = self.tool_resources.adc_resources.measure_tool_power().await;
+        let idle_power_measurement = self.tool_resources.sensors.measure_tool_power().await;
 
         // Measure idle current for potential offset compensation.
         debug!(
@@ -323,14 +227,13 @@ impl<'d> Control<'d> {
                 // FIXME: Handle inside of Tool?
                 tool.temperature_pid.reset_integral_term();
 
-                let mut power_measurement =
-                    self.tool_resources.adc_resources.measure_tool_power().await;
+                let mut power_measurement = self.tool_resources.sensors.measure_tool_power().await;
                 power_measurement.compensate(&idle_power_measurement);
 
                 #[cfg(feature = "display")]
                 display_current_power(None);
 
-                Timer::after_millis(LOOP_PERIOD_MS).await;
+                Timer::after_millis(TEMPERATURE_CONTROL_LOOP_PERIOD_MS).await;
 
                 #[cfg(feature = "comm")]
                 comm::send_measurement(&loeti_protocol::Measurement {
@@ -350,24 +253,19 @@ impl<'d> Control<'d> {
             comm::send_measurement(&_measurement);
 
             let mut current_loop_ticker =
-                Ticker::every(Duration::from_millis(CURRENT_LOOP_PERIOD_MS));
+                Ticker::every(Duration::from_millis(CURRENT_CONTROL_LOOP_PERIOD_MS));
             for _ in 0..CURRENT_CONTROL_CYCLE_COUNT {
-                let ratio = tool.pwm_ratio();
-
-                let duty = ratio * self.tool_resources.pwm_heater_channel().max_duty_cycle() as f32;
-                self.tool_resources
-                    .pwm_heater_channel()
-                    .set_duty_cycle(duty as u16);
+                self.tool_resources.set_pwm_duty_cycle(tool.pwm_ratio());
 
                 #[cfg(feature = "display")]
                 display_current_power(Some(tool.power_ratio()));
 
                 let tool_power_fut = async {
                     // Measure current and voltage after the low-pass filter settles - in the middle of the loop period.
-                    Timer::after_millis(CURRENT_LOOP_PERIOD_MS / 2).await;
+                    Timer::after_millis(CURRENT_CONTROL_LOOP_PERIOD_MS / 2).await;
 
                     let mut power_measurement =
-                        self.tool_resources.adc_resources.measure_tool_power().await;
+                        self.tool_resources.sensors.measure_tool_power().await;
                     power_measurement.compensate(&idle_power_measurement);
 
                     // Wait for the end of this cycle.
@@ -403,12 +301,6 @@ impl<'d> Control<'d> {
 /// Takes current and temperature measurements, and adjusts the heater PWM duty cycle accordingly.
 #[embassy_executor::task]
 pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u32, u32)) {
-    debug!("Maximum measurable voltage: {} V", measurement::MAX_ADC_V);
-    debug!(
-        "Maximum measurable detection resistor ratio: {}",
-        measurement::MAX_ADC_RATIO
-    );
-
     loop {
         let supply = Supply {
             current_limit: ElectricCurrent::new::<electric_current::milliampere>(

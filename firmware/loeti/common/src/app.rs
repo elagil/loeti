@@ -164,7 +164,8 @@ pub async fn app(spawner: Spawner) {
 
     // Launch iron control
     if let Ok(negotiated_supply) = negotiated_supply {
-        use crate::control::{ToolResources, measurement::AdcResources};
+        use crate::control::tool::resources::ToolResources;
+        use crate::control::tool::sensors::Sensors;
         use embassy_stm32::adc::{Adc, AdcChannel};
         use embassy_stm32::dac::DacCh1;
         use embassy_stm32::pac::VREFBUF;
@@ -188,7 +189,7 @@ pub async fn app(spawner: Spawner) {
         );
 
         #[cfg(feature = "board_v6")]
-        let adc_resources = AdcResources {
+        let sensors = Sensors {
             adc,
             pin_temperature: p.PA0.degrade_adc(),
             pin_detect: p.PA1.degrade_adc(),
@@ -198,7 +199,7 @@ pub async fn app(spawner: Spawner) {
         };
 
         #[cfg(feature = "board_v7")]
-        let adc_resources = AdcResources {
+        let sensors = Sensors {
             adc,
             pin_temperature: p.PA1.degrade_adc(),
             pin_detect: p.PA0.degrade_adc(),
@@ -207,8 +208,8 @@ pub async fn app(spawner: Spawner) {
             adc_dma: p.DMA1_CH6,
         };
 
-        let tool_resources = ToolResources {
-            adc_resources,
+        let mut tool_resources = ToolResources {
+            sensors,
             dac_current_limit: DacCh1::new_blocking(p.DAC1, p.PA4),
             exti_current_alert: ExtiInput::new(p.PB11, p.EXTI11, Pull::None),
             pwm_heater: SimplePwm::new(
@@ -222,6 +223,7 @@ pub async fn app(spawner: Spawner) {
             ),
             pin_sleep: Input::new(p.PB10, Pull::Up),
         };
+        tool_resources.init();
 
         spawner.must_spawn(control::tool_task(tool_resources, negotiated_supply));
     }
