@@ -35,6 +35,8 @@ use crate::{
     STORE_PERSISTENT_SIG, dfu,
 };
 
+mod hat;
+
 /// The inner display type (draw target).
 type InnerDisplay = Ssd1306Async<
     SPIInterface<
@@ -58,7 +60,7 @@ static POWER_LIMIT_W_SIG: Signal<ThreadModeRawMutex, Option<f32>> = Signal::new(
 static MESSAGE_SIG: Signal<ThreadModeRawMutex, &str> = Signal::new();
 
 /// Display refresh rate in Hz.
-const DISPLAY_REFRESH_RATE_HZ: u64 = 30;
+const DISPLAY_REFRESH_RATE_HZ: u64 = 50;
 
 /// Display height in pixels.
 const DISPLAY_HEIGHT: i32 = 64;
@@ -107,6 +109,8 @@ struct Display<'d> {
     power_bar_width: i32,
     /// The ticker that dictates display refresh rate.
     refresh_ticker: Ticker,
+    /// The number of draws.
+    draw_count: u64,
 }
 
 impl<'d> Display<'d> {
@@ -129,6 +133,7 @@ impl<'d> Display<'d> {
             ),
             power_bar_width: 0,
             refresh_ticker: Ticker::every(Duration::from_hz(DISPLAY_REFRESH_RATE_HZ)),
+            draw_count: 0,
         }
     }
 
@@ -165,9 +170,14 @@ impl<'d> Display<'d> {
     }
 
     /// Update the available power.
-    fn update_power(&mut self, power: Option<f32>) {
+    fn update_power(&mut self, operational_state: &OperationalState, power_limit: Option<f32>) {
         self.power_string.clear();
-        if let Some(power) = power {
+        let power = match power_limit {
+            Some(x) => x,
+            None => operational_state.negotiated_power_w,
+        };
+
+        if !power.is_nan() {
             write!(&mut self.power_string, "{} W", power.round() as i16).unwrap();
         }
     }
@@ -202,12 +212,15 @@ impl<'d> Display<'d> {
 
     /// Draw all elements of the main view.
     fn draw_main_view(&mut self, operational_state: &OperationalState, persistent: &Persistent) {
+        self.draw_count += 1;
+
         const SET_TEMP_ARROW_Y: i32 = 7;
         const SET_TEMP_Y: i32 = 7;
         const ARROW_WIDTH: i32 = 3;
 
         if operational_state.tool.is_err() {
             display_idle_state();
+            self.draw_waiting_animation();
         }
 
         self.message_string = match operational_state.tool {
@@ -533,8 +546,8 @@ pub async fn display_task(mut display_resources: DisplayResources) {
             display.update_message(message);
         }
 
-        if let Some(power) = POWER_LIMIT_W_SIG.try_take() {
-            display.update_power(power);
+        if let Some(power_limit) = POWER_LIMIT_W_SIG.try_take() {
+            display.update_power(&operational_state, power_limit);
         }
 
         if let Some(power_ratio) = POWER_RATIO_BARGRAPH_SIG.try_take() {
