@@ -136,7 +136,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
         };
 
         ui_state = match (switch_event, ui_state) {
-            (SwitchEvent::ShortPress, UiState::Temperature) => {
+            (SwitchEvent::ShortPress | SwitchEvent::LongPress, UiState::Temperature) => {
                 OPERATIONAL_STATE_MUTEX.lock(|x| {
                     x.borrow_mut().set_temperature_is_pending = false;
                 });
@@ -148,9 +148,11 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
             (SwitchEvent::ShortPress, UiState::Idle) => {
                 let tool_is_off = OPERATIONAL_STATE_MUTEX.lock(|x| {
                     let mut operational_state = x.borrow_mut();
-                    if operational_state.tool.is_ok() {
+
+                    if operational_state.tool.is_ok() || !operational_state.tool_is_off {
                         operational_state.tool_is_off = !operational_state.tool_is_off;
                     }
+
                     operational_state.tool_is_off
                 });
                 debug!("Toggle tool state ({})", tool_is_off);
@@ -180,7 +182,7 @@ pub async fn rotary_encoder_task(resources: RotaryEncoderResources) {
 
                 UiState::Idle
             }
-            _ => ui_state,
+            (SwitchEvent::None, _) => ui_state,
         };
 
         ticker.next().await;

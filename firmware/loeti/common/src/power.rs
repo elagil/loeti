@@ -8,7 +8,8 @@ use embassy_stm32::ucpd::{self, CcPhy, CcPull, CcSel, CcVState, PdPhy, Ucpd};
 use embassy_stm32::{bind_interrupts, peripherals};
 use embassy_time::{Duration, Timer, with_timeout};
 use uom::si::{electric_current, electric_potential};
-use usbpd::protocol_layer::message::{pdo, request};
+use usbpd::protocol_layer::message::data::request;
+use usbpd::protocol_layer::message::data::source_capabilities::SourceCapabilities;
 use usbpd::sink::device_policy_manager::DevicePolicyManager;
 use usbpd::sink::policy_engine::Sink;
 use usbpd::timers::Timer as SinkTimer;
@@ -42,7 +43,7 @@ impl<'d> UcpdSinkDriver<'d> {
 }
 
 impl SinkDriver for UcpdSinkDriver<'_> {
-    async fn wait_for_vbus(&self) {
+    async fn wait_for_vbus(&mut self) {
         // The sink policy engine is only running when attached. Therefore VBus is present.
     }
 
@@ -126,10 +127,7 @@ struct Device {
 }
 
 impl DevicePolicyManager for Device {
-    async fn request(
-        &mut self,
-        source_capabilities: &pdo::SourceCapabilities,
-    ) -> request::PowerSource {
+    async fn request(&mut self, source_capabilities: &SourceCapabilities) -> request::PowerSource {
         let supply = request::PowerSource::find_highest_fixed_voltage(source_capabilities).unwrap();
         self.negotiated_potential_mv =
             Some(supply.0.voltage().get::<electric_potential::millivolt>());
