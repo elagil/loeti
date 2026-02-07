@@ -51,7 +51,7 @@ impl Supply {
     }
 
     /// Calculate the supply's maximum power output.
-    fn _power_limit(&self) -> Power {
+    fn power_limit(&self) -> Power {
         self.current_limit * self.potential
     }
 
@@ -304,6 +304,10 @@ pub async fn tool_task(mut tool_resources: ToolResources, negotiated_supply: (u3
             ),
             ..Default::default()
         };
+
+        OPERATIONAL_STATE_MUTEX.lock(|x| {
+            x.borrow_mut().negotiated_power_w = supply.power_limit().get::<power::watt>();
+        });
 
         let mut control = Control::new(&mut tool_resources, supply);
         let result = control.run().await;

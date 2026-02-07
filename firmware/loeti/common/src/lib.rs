@@ -87,6 +87,8 @@ pub struct OperationalState {
     pub tool_is_off: bool,
     /// If true, the new set temperature was not confirmed yet.
     pub set_temperature_is_pending: bool,
+    /// The negotiated power in W.
+    pub negotiated_power_w: f32,
 }
 
 impl OperationalState {
@@ -101,6 +103,7 @@ impl OperationalState {
             tool_state: None,
             tool_is_off: true,
             set_temperature_is_pending: false,
+            negotiated_power_w: f32::NAN,
         }
     }
 }

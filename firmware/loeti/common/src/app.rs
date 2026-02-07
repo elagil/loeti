@@ -68,6 +68,7 @@ pub async fn app(spawner: Spawner) {
         spawner.must_spawn(power::ucpd_task(resources.ucpd, ndb_pin));
     }
 
+    // Wait for USB PD power negotiation to complete
     let negotiated_supply = crate::NEGOTIATED_SUPPLY_SIG
         .wait()
         .with_timeout(Duration::from_secs(3))
